@@ -8,6 +8,7 @@ import com.ncert7.aitutorandlab.data.local.dao.ChapterDao
 import com.ncert7.aitutorandlab.data.local.dao.ConceptDao
 import com.ncert7.aitutorandlab.data.local.dao.ProgressDao
 import com.ncert7.aitutorandlab.data.local.dao.StreakDao
+import com.ncert7.aitutorandlab.data.local.dao.SimulationInteractionDao
 import com.ncert7.aitutorandlab.data.local.dao.StudentDao
 import com.ncert7.aitutorandlab.data.local.dao.SubjectDao
 import com.ncert7.aitutorandlab.repository.StreakRepository
@@ -79,6 +80,13 @@ object DatabaseModule {
     fun provideChapterAgentProgressDao(database: EduAiDatabase): ChapterAgentProgressDao {
         return database.chapterAgentProgressDao()
     }
+
+    @Provides
+    @Singleton
+    fun provideSimulationInteractionDao(database: EduAiDatabase): SimulationInteractionDao {
+        return database.simulationInteractionDao()
+    }
+
     @Provides
     @Singleton
     fun provideStreakManager(

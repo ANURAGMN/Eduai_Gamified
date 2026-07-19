@@ -5,7 +5,10 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import com.ncert7.aitutorandlab.debug.DebugLogger
+import com.ncert7.aitutorandlab.service.analytics.InteractionTracker
 import com.ncert7.aitutorandlab.service.analytics.SessionManager
+import com.ncert7.aitutorandlab.service.sync.DataSyncService
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class AppLifecycleObserver : DefaultLifecycleObserver {
@@ -30,7 +33,10 @@ class AppLifecycleObserver : DefaultLifecycleObserver {
         super.onStop(owner)
         DebugLogger.debugLog("AppLifecycleObserver", "App → Background")
         owner.lifecycleScope.launch {
+            InteractionTracker.endSession()
+            delay(300)
             SessionManager.endSession()
+            DataSyncService.syncSimulationInteractions()
             DebugLogger.debugLog("AppLifecycleObserver", "Session ended")
         }
     }

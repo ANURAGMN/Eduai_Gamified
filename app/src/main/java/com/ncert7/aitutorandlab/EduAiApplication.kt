@@ -11,6 +11,8 @@ import com.ncert7.aitutorandlab.data.local.database.EduAiDatabase
 import com.ncert7.aitutorandlab.debug.DebugLogger
 import com.ncert7.aitutorandlab.service.analytics.ContentClickAnalyticsTracker
 import com.ncert7.aitutorandlab.service.analytics.FunnelAnalyticsTracker
+import com.ncert7.aitutorandlab.repository.SimulationInteractionRepository
+import com.ncert7.aitutorandlab.service.analytics.InteractionTracker
 import com.ncert7.aitutorandlab.service.analytics.SessionManager
 import com.ncert7.aitutorandlab.service.ads.ClickAdGate
 import com.ncert7.aitutorandlab.service.analytics.SimulationAnalyticsTracker
@@ -55,14 +57,23 @@ class EduAiApplication : Application(), Configuration.Provider {
         FunnelAnalyticsTracker.initialize(this)
         ClickAdGate.initialize(this)
 
-        // Register app lifecycle observer (this will handle session start/end)
+        val database = EduAiDatabase.getInstance(this)
+        val sharedPref = SharedPreferenceUtils(this)
+        InteractionTracker.initialize(
+            SimulationInteractionRepository(
+                interactionDao = database.simulationInteractionDao(),
+                sharedPreferenceUtils = sharedPref
+            )
+        )
+
+        // Register app lifecycle observer (handles session start/end on foreground/background)
         appLifecycleObserver = AppLifecycleObserver()
         appLifecycleObserver.register()
 
-        // Start initial session
+        // Cold start: ProcessLifecycleOwner may already be STARTed before the observer registers
         applicationScope.launch {
             SessionManager.startSession()
-            DebugLogger.debugLog("EduAiApplication", "AppLifecycleObserver registered and initial session started")
+            DebugLogger.debugLog("EduAiApplication", "Initial session started on app launch")
         }
 
         scheduleDailySync()

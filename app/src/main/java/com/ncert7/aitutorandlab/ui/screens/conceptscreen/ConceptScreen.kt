@@ -35,7 +35,7 @@ fun ConceptScreen(
     onBackClick: () -> Unit = {},
     onConceptClick: (conceptId: String, problemId: String, conceptType: String) -> Unit = { _, _, _ -> },
     onSimulationAgentClick: (String, String) -> Unit = { _, _ -> },
-    onSimulationClick: (title: String, url: String, conceptId: String) -> Unit = { _, _, _ -> },
+    onSimulationClick: (title: String, url: String, conceptId: String, subjectName: String, chapterName: String) -> Unit = { _, _, _, _, _ -> },
     onGoHome:() -> Unit = {},
     onGoSetting:() -> Unit = {},
     viewModel: ConceptViewModel = hiltViewModel(),
@@ -66,7 +66,13 @@ fun ConceptScreen(
                     }
                     "concept_sim_view" -> {
                         if (nav.simulationTitle != null && nav.simulationUrl != null && nav.conceptId != null) {
-                            onSimulationClick(nav.simulationTitle, nav.simulationUrl, nav.conceptId)
+                            onSimulationClick(
+                                nav.simulationTitle,
+                                nav.simulationUrl,
+                                nav.conceptId,
+                                state.subjectName,
+                                state.chapterName
+                            )
                         }
                     }
                 }

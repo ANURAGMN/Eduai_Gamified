@@ -10,6 +10,7 @@ import com.ncert7.aitutorandlab.data.local.dao.ChapterDao
 import com.ncert7.aitutorandlab.data.local.dao.ConceptDao
 import com.ncert7.aitutorandlab.data.local.dao.ProgressDao
 import com.ncert7.aitutorandlab.data.local.dao.SessionDao
+import com.ncert7.aitutorandlab.data.local.dao.SimulationInteractionDao
 import com.ncert7.aitutorandlab.data.local.dao.StreakDao
 import com.ncert7.aitutorandlab.data.local.dao.StudentDao
 import com.ncert7.aitutorandlab.data.local.dao.SubjectDao
@@ -19,6 +20,7 @@ import com.ncert7.aitutorandlab.data.local.entities.ChapterEntity
 import com.ncert7.aitutorandlab.data.local.entities.ConceptEntity
 import com.ncert7.aitutorandlab.data.local.entities.ProgressEntity
 import com.ncert7.aitutorandlab.data.local.entities.SessionEntity
+import com.ncert7.aitutorandlab.data.local.entities.SimulationInteractionEntity
 import com.ncert7.aitutorandlab.data.local.entities.StreakEntity
 import com.ncert7.aitutorandlab.data.local.entities.StudentEntity
 import com.ncert7.aitutorandlab.data.local.entities.SubjectEntity
@@ -36,9 +38,10 @@ import com.ncert7.aitutorandlab.data.local.entities.SubjectEntity
         AppAnalyticsEntity::class,
         ProgressEntity::class,
         StreakEntity::class,
-        ChapterAgentProgressEntity::class
+        ChapterAgentProgressEntity::class,
+        SimulationInteractionEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class EduAiDatabase : RoomDatabase() {
@@ -52,6 +55,7 @@ abstract class EduAiDatabase : RoomDatabase() {
     abstract fun appAnalyticsDao(): AppAnalyticsDao
     abstract fun streakDao(): StreakDao
     abstract fun chapterAgentProgressDao(): ChapterAgentProgressDao
+    abstract fun simulationInteractionDao(): SimulationInteractionDao
 
     companion object {
         @Volatile
@@ -66,7 +70,7 @@ abstract class EduAiDatabase : RoomDatabase() {
                     EduAiDatabase::class.java,
                     DATABASE_NAME
                 )
-                    .addMigrations(MIGRATION_1_2)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                     .fallbackToDestructiveMigration(false)
                     .build()
                 INSTANCE = instance

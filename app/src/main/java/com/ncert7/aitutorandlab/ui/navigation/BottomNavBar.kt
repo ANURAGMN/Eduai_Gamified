@@ -156,7 +156,9 @@ private fun BottomNavBarContent(
                                 } else {
                                     "empty"
                                 }
-                                navController.navigate("concept_sim_view/$encodedUrl/$title/$encodedConceptId")
+                                navController.navigate(
+                                    "concept_sim_view/$encodedUrl/$title/$encodedConceptId//"
+                                )
                             }
                         )
                     },
@@ -292,11 +294,14 @@ private fun BottomNavBarContent(
                     onSimulationAgentClick = { simulationId, conceptId ->
                         navController.navigate("simulation_agent/$simulationId?conceptId=$conceptId")
                     },
-                    onSimulationClick = { title, url, conceptId ->
-                        //  Encode the URL to prevent navigation crashes due to '/'
+                    onSimulationClick = { title, url, conceptId, subjectName, chapterName ->
                         val encodedUrl = java.net.URLEncoder.encode(url, "UTF-8")
                         val encodedConceptId = java.net.URLEncoder.encode(conceptId, "UTF-8")
-                        navController.navigate("concept_sim_view/$encodedUrl/$title/$encodedConceptId")
+                        val encodedSubject = java.net.URLEncoder.encode(subjectName, "UTF-8")
+                        val encodedChapter = java.net.URLEncoder.encode(chapterName, "UTF-8")
+                        navController.navigate(
+                            "concept_sim_view/$encodedUrl/$title/$encodedConceptId/$encodedSubject/$encodedChapter"
+                        )
                     },
                     onGoSetting = {
                         navController.navigate("setting") {
@@ -404,17 +409,23 @@ private fun BottomNavBarContent(
                 arguments = listOf(
                     navArgument("url") { type = NavType.StringType },
                     navArgument("title") { type = NavType.StringType },
-                    navArgument("conceptId") { type = NavType.StringType }
+                    navArgument("conceptId") { type = NavType.StringType },
+                    navArgument("subjectName") { type = NavType.StringType; defaultValue = "" },
+                    navArgument("chapterName") { type = NavType.StringType; defaultValue = "" }
                 )
             ) { backStackEntry ->
                 val url = backStackEntry.arguments?.getString("url") ?: ""
                 val title = backStackEntry.arguments?.getString("title") ?: "Simulation"
                 val conceptId = backStackEntry.arguments?.getString("conceptId") ?: ""
+                val subjectName = backStackEntry.arguments?.getString("subjectName") ?: ""
+                val chapterName = backStackEntry.arguments?.getString("chapterName") ?: ""
 
                 ConceptSimulationViewer(
                     simulationUrl = url,
                     simulationTitle = title,
                     conceptId = conceptId,
+                    subjectName = subjectName,
+                    chapterName = chapterName,
                     onBackClick = { navController.popBackStack() }
                 )
             }

@@ -84,6 +84,15 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // Simulation HTML interactions: simulation_interactions/{studentId}/daily/{date}
+    match /simulation_interactions/{studentId}/daily/{date} {
+      allow read: if true;
+      allow create, update: if isEduAiWrite()
+        && request.resource.data.keys().hasAll(['studentId'])
+        && request.resource.data.studentId == studentId;
+      allow delete: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

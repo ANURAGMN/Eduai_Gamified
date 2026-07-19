@@ -1,26 +1,25 @@
 package com.ncert7.aitutorandlab.ui.screens.simulation_agent.components
 
 import android.annotation.SuppressLint
+import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
+import com.ncert7.aitutorandlab.service.analytics.InteractionTracker
 
-/**
- * Custom WebViewClient to track when simulation page finishes loading
- */
 class SimulationWebViewClient(
     private val onPageFinished: () -> Unit
 ) : WebViewClient() {
     override fun onPageFinished(view: WebView?, url: String?) {
         super.onPageFinished(view, url)
+        view?.evaluateJavascript(SimulationInteractionScript.injectionScript, null)
         onPageFinished()
     }
 }
 
-/** WebView component for rendering simulation HTML  */
 @Composable
 fun SimulationWebView(
     url: String,
@@ -33,7 +32,6 @@ fun SimulationWebView(
             @SuppressLint("SetJavaScriptEnabled")
             val webView = WebView(context).apply {
                 settings.apply {
-                    // Enable JavaScript for simulations (safe - internal simulations only)
                     javaScriptEnabled = true
                     domStorageEnabled = true
                     loadWithOverviewMode = true
@@ -41,11 +39,21 @@ fun SimulationWebView(
                 }
                 webViewClient = SimulationWebViewClient(onPageFinished)
 
-                // Add JavaScript interface for receiving parameter changes from the simulation
                 addJavascriptInterface(
                     SimulationJavaScriptInterface(onParamsChanged),
                     "SimulationAndroidInterface"
                 )
+                addJavascriptInterface(object {
+                    @JavascriptInterface
+                    fun logButtonClick(buttonName: String) {
+                        InteractionTracker.logInteraction(buttonName)
+                    }
+
+                    @JavascriptInterface
+                    fun logVerdict(isCorrect: Boolean) {
+                        InteractionTracker.logVerdict(isCorrect)
+                    }
+                }, "AndroidBridge")
 
                 loadUrl(url)
             }

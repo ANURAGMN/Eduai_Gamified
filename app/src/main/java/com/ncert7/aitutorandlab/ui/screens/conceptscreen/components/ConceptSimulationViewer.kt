@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -16,28 +17,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ncert7.aitutorandlab.debug.DebugLogger
+import com.ncert7.aitutorandlab.service.analytics.InteractionTracker
 import com.ncert7.aitutorandlab.service.analytics.ScreenName
 import com.ncert7.aitutorandlab.service.analytics.TrackScreenEvent
 import com.ncert7.aitutorandlab.ui.screens.conceptscreen.viewmodel.ConceptSimulationViewModel
 import com.ncert7.aitutorandlab.ui.screens.simulation_agent.components.SimulationWebView
 import java.net.URLDecoder
 
-/**
- * ConceptSimulationViewer displays a simulation in a WebView for the concept screen.
- *
- * When the WebView finishes loading, it marks the simulation URL as completed
- * via [ConceptSimulationViewModel] so that chapter progress is updated.
- *
- * @param simulationUrl The HTML file url to load
- * @param simulationTitle The title of the simulation
- * @param conceptId The concept whose progress should be updated when page loads (empty = skip tracking)
- * @param onBackClick Callback function to be invoked when the back button is clicked
- */
 @Composable
 fun ConceptSimulationViewer(
     simulationUrl: String,
     simulationTitle: String,
     conceptId: String = "",
+    subjectName: String = "",
+    chapterName: String = "",
     onBackClick: () -> Unit = {},
     viewModel: ConceptSimulationViewModel = hiltViewModel()
 ) {
@@ -56,7 +49,6 @@ fun ConceptSimulationViewer(
 
     val isInitPending by viewModel.isAdCheckPending.collectAsState()
 
-    // Decode URL-encoded title to show original name (URL stays encoded for web requests)
     val decodedTitle = try {
         URLDecoder.decode(simulationTitle, "UTF-8")
     } catch (e: Exception) {
@@ -69,7 +61,18 @@ fun ConceptSimulationViewer(
         simulationUrl
     }
 
-    // Prevent double-marking if the WebView fires onPageFinished multiple times
+    val decodedSubject = try {
+        URLDecoder.decode(subjectName, "UTF-8")
+    } catch (e: Exception) {
+        subjectName
+    }
+
+    val decodedChapter = try {
+        URLDecoder.decode(chapterName, "UTF-8")
+    } catch (e: Exception) {
+        chapterName
+    }
+
     var progressMarked by remember { mutableStateOf(false) }
 
     LaunchedEffect(decodedConceptId, decodedUrl, decodedTitle) {
@@ -83,9 +86,20 @@ fun ConceptSimulationViewer(
                 simulationUrl = decodedUrl,
                 simulationTitle = decodedTitle
             )
+            InteractionTracker.startSession(
+                simulationTitle = decodedTitle,
+                subjectName = decodedSubject,
+                chapterName = decodedChapter
+            )
         }
     }
-    // Handle page loaded
+
+    DisposableEffect(Unit) {
+        onDispose {
+            InteractionTracker.endSession()
+        }
+    }
+
     val handlePageLoaded = {
         if (decodedConceptId.isNotEmpty() && decodedConceptId != "empty" && !progressMarked) {
             progressMarked = true
@@ -97,26 +111,23 @@ fun ConceptSimulationViewer(
         }
     }
 
-    val handleBackClick = {
-        onBackClick()
-    }
-
     when {
         isInitPending -> {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = androidx.compose.ui.Alignment.Center) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = androidx.compose.ui.Alignment.Center
+            ) {
                 CircularProgressIndicator()
             }
         }
         else -> Column(
             modifier = Modifier.fillMaxSize()
         ) {
-            // Header
             SimulationHeader(
                 title = decodedTitle,
-                onBackClick = handleBackClick
+                onBackClick = onBackClick
             )
 
-            // WebView
             Box(
                 modifier = Modifier
                     .fillMaxSize()

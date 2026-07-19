@@ -5,12 +5,15 @@ import com.ncert7.aitutorandlab.data.local.dao.ChapterDao
 import com.ncert7.aitutorandlab.data.local.dao.ConceptDao
 import com.ncert7.aitutorandlab.data.local.dao.ProgressDao
 import com.ncert7.aitutorandlab.data.local.dao.StreakDao
+import com.ncert7.aitutorandlab.data.local.dao.SimulationInteractionDao
 import com.ncert7.aitutorandlab.data.local.dao.StudentDao
 import com.ncert7.aitutorandlab.data.local.dao.SubjectDao
+import com.ncert7.aitutorandlab.data.local.SharedPreferenceUtils
 import com.ncert7.aitutorandlab.repository.ChapterRepository
 import com.ncert7.aitutorandlab.repository.ConceptRepository
 import com.ncert7.aitutorandlab.repository.FirebaseRepository
 import com.ncert7.aitutorandlab.repository.ProgressRepository
+import com.ncert7.aitutorandlab.repository.SimulationInteractionRepository
 import com.ncert7.aitutorandlab.repository.StreakRepository
 import com.ncert7.aitutorandlab.repository.StudentLocalRepository
 import com.ncert7.aitutorandlab.repository.SubjectRepository
@@ -79,5 +82,14 @@ object RepositoryModule {
         chapterAgentProgressDao: ChapterAgentProgressDao
     ): ProgressRepository {
         return ProgressRepository(progressDao, chapterAgentProgressDao)
+    }
+
+    @Provides
+    @Singleton
+    fun provideSimulationInteractionRepository(
+        simulationInteractionDao: SimulationInteractionDao,
+        sharedPreferenceUtils: SharedPreferenceUtils
+    ): SimulationInteractionRepository {
+        return SimulationInteractionRepository(simulationInteractionDao, sharedPreferenceUtils)
     }
 }

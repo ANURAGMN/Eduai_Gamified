@@ -23,6 +23,7 @@ class SharedPreferenceUtils(context: Context) {
         private const val KEY_SIM_OPEN_COUNT = "key_sim_open_count"
         private const val KEY_SIM_OPEN_DATE = "key_sim_open_date"
         private const val KEY_LEGACY_PROGRESS_MIGRATION = "legacy_progress_migration_v1"
+        private const val KEY_SIMULATION_LAST_SYNCED_DATE = "key_simulation_last_synced_date"
     }
 
     fun setIdToken(idToken: String) {
@@ -207,5 +208,13 @@ class SharedPreferenceUtils(context: Context) {
 
     fun setLegacyProgressMigrationDone() {
         prefs.edit { putBoolean(KEY_LEGACY_PROGRESS_MIGRATION, true) }
+    }
+
+    fun setSimulationLastSyncedDate(day: String) {
+        prefs.edit { putString(KEY_SIMULATION_LAST_SYNCED_DATE, day) }
+    }
+
+    fun getSimulationLastSyncedDate(): String? {
+        return prefs.getString(KEY_SIMULATION_LAST_SYNCED_DATE, null)
     }
 }

@@ -32,6 +32,7 @@ object DataSyncService {
     private lateinit var database: EduAiDatabase
     private lateinit var sharedPref: SharedPreferenceUtils
     private var syncManager: ProgressAnalyticsSessionSyncManager? = null
+    private var simulationSyncManager: SimulationSyncManager? = null
     private var connectivityObserver: NetworkConnectivityObserver? = null
     private var networkListenerJob: Job? = null  // Track the network listener job
 
@@ -175,6 +176,7 @@ object DataSyncService {
                             DebugLogger.errorLog(TAG, " Full sync failed:\n${result.message}")
                         }
                     }
+                    syncSimulationInteractionsInternal()
                 } else {
                     DebugLogger.debugLog(TAG, " Device offline, scheduling background sync")
                     scheduleBackgroundSync()
@@ -183,6 +185,34 @@ object DataSyncService {
                 DebugLogger.errorLog(TAG, " Full sync error: ${e.message}")
                 scheduleBackgroundSync()
             }
+        }
+    }
+
+    fun syncSimulationInteractions() {
+        scope.launch {
+            syncSimulationInteractionsInternal()
+        }
+    }
+
+    private suspend fun syncSimulationInteractionsInternal() {
+        try {
+            if (simulationSyncManager == null) {
+                simulationSyncManager = SimulationSyncManager(
+                    interactionDao = database.simulationInteractionDao(),
+                    sharedPreferenceUtils = sharedPref
+                )
+            }
+
+            val result = simulationSyncManager?.syncTodayIfNeeded()
+            if (result?.success == true) {
+                DebugLogger.debugLog(TAG, "Simulation interaction sync: ${result.message}")
+            } else if (result != null) {
+                DebugLogger.errorLog(TAG, "Simulation interaction sync failed: ${result.message}")
+                scheduleBackgroundSync()
+            }
+        } catch (e: Exception) {
+            DebugLogger.errorLog(TAG, "Simulation interaction sync error: ${e.message}")
+            scheduleBackgroundSync()
         }
     }
 
