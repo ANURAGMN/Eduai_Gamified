@@ -1,6 +1,7 @@
 package com.ncert7.aitutorandlab.ui.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -9,6 +10,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import com.ncert7.aitutorandlab.debug.DebugLogger
 import com.ncert7.aitutorandlab.service.ads.ClickAdGate
+import com.ncert7.aitutorandlab.service.analytics.AdAnalyticsTracker
+import com.ncert7.aitutorandlab.service.analytics.AdInteraction
+import com.ncert7.aitutorandlab.service.analytics.AdPlacement
+import com.ncert7.aitutorandlab.service.analytics.AdType
 import com.ncert7.aitutorandlab.ui.components.AdDialog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -52,6 +57,13 @@ fun NavigationAdGate(content: @Composable (GatedNavigationAction) -> Unit) {
     content(gated)
 
     if (showAd) {
+        LaunchedEffect(Unit) {
+            AdAnalyticsTracker.trackAndWait(
+                AdType.BANNER,
+                AdInteraction.SHOWN,
+                AdPlacement.AD_DIALOG
+            )
+        }
         AdDialog(
             context = context,
             onDismiss = {

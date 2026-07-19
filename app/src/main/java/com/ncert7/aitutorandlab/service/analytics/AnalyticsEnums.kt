@@ -25,7 +25,8 @@ enum class EventType(val type: String) {
     EXIT("EXIT"),
     CLICK("CLICK"),
     COMPLETE("COMPLETE"),
-    FUNNEL("FUNNEL")
+    FUNNEL("FUNNEL"),
+    AD("AD")
 }
 
 /** Onboarding / sign-in funnel steps (stored with screenName = FUNNEL). */
@@ -62,4 +63,25 @@ enum class ContentClickType(val value: String) {
 enum class SimulationInteraction(val value: String) {
     URL("URL"),
     AGENT("AGENT")
+}
+
+/** Ad format shown in the app (extend when interstitial/rewarded are added). */
+enum class AdType(val value: String) {
+    BANNER("BANNER")
+}
+
+/** Where the ad was shown. */
+enum class AdPlacement(val value: String) {
+    AD_DIALOG("AD_DIALOG")
+}
+
+/** Ad lifecycle events synced to Firestore (screenName = AD). */
+enum class AdInteraction(val value: String) {
+    SHOWN("SHOWN"),
+    LOADED("LOADED"),
+    IMPRESSION("IMPRESSION"),
+    CLICK("CLICK"),
+    OPENED("OPENED"),
+    CLOSED("CLOSED"),
+    FAILED("FAILED")
 }

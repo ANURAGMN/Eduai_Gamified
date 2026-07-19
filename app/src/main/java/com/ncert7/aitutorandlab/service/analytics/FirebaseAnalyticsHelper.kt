@@ -62,6 +62,22 @@ object FirebaseAnalyticsHelper {
         firebaseAnalytics?.logEvent("funnel_step", bundle)
     }
 
+    fun logAdEvent(
+        adType: AdType,
+        interaction: AdInteraction,
+        placement: AdPlacement,
+        detail: String? = null
+    ) {
+        val bundle = Bundle().apply {
+            putString("ad_type", adType.value)
+            putString("ad_interaction", interaction.value)
+            putString("ad_placement", placement.value)
+            putString("language", getCurrentLanguageCode())
+            detail?.let { putString("ad_detail", it) }
+        }
+        firebaseAnalytics?.logEvent("ad_event", bundle)
+    }
+
     private fun logEvent(
         eventName: String,
         itemId: String,
