@@ -25,6 +25,9 @@ import java.util.UUID
  */
 object SessionManager {
 
+    private const val MAX_ORPHAN_SESSION_MS = 2L * 60 * 60 * 1000
+    private const val MAX_ORPHAN_SCREEN_MS = 2L * 60 * 60 * 1000
+
     private lateinit var database: EduAiDatabase
     private lateinit var sharedPrefs: SharedPreferenceUtils
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -54,10 +57,17 @@ object SessionManager {
                     return@withContext
                 }
 
-                // Check and cleanup any old session
+                // Check and cleanup any old session(s) still open locally or in prefs
+                val studentId = sharedPrefs.getUserId() ?: ""
                 val oldSessionId = sharedPrefs.getCurrentSession()
                 if (oldSessionId != null) {
                     cleanupOldSession(oldSessionId)
+                }
+                if (studentId.isNotBlank()) {
+                    database.sessionDao()
+                        .getOpenSessionsForStudent(studentId)
+                        .filter { it.sessionId != oldSessionId }
+                        .forEach { cleanupOldSession(it.sessionId) }
                 }
 
                 // Create new session
@@ -235,15 +245,29 @@ object SessionManager {
             DebugLogger.debugLog("SessionManager", "Cleaning up old session: $oldSessionId")
 
             val oldSession = database.sessionDao().getSession(oldSessionId)
-            if (oldSession?.sessionEndTime == null) {
-                // Close active screens
-                closeAllActiveScreens(oldSessionId)
-
-                // End the session
+            if (oldSession != null && oldSession.sessionEndTime == null) {
                 val endTime = System.currentTimeMillis()
-                val updatedSession = oldSession!!.copy(
-                    sessionEndTime = endTime,
-                    durationMillis = endTime - oldSession.sessionStartTime
+                val rawDuration = endTime - oldSession.sessionStartTime
+                val duration = rawDuration.coerceAtMost(MAX_ORPHAN_SESSION_MS)
+                val cappedEndTime = oldSession.sessionStartTime + duration
+
+                if (rawDuration > MAX_ORPHAN_SESSION_MS) {
+                    DebugLogger.debugLog(
+                        "SessionManager",
+                        "Capping orphan session ${rawDuration / 1000}s -> ${duration / 1000}s"
+                    )
+                }
+
+                // Close active screens using capped end time
+                closeAllActiveScreens(
+                    sessionId = oldSessionId,
+                    exitTime = cappedEndTime,
+                    capOrphanDuration = true
+                )
+
+                val updatedSession = oldSession.copy(
+                    sessionEndTime = cappedEndTime,
+                    durationMillis = duration
                 )
                 database.sessionDao().updateSession(updatedSession)
 
@@ -254,20 +278,29 @@ object SessionManager {
         }
     }
 
-    private suspend fun closeAllActiveScreens(sessionId: String) {
+    private suspend fun closeAllActiveScreens(
+        sessionId: String,
+        exitTime: Long = System.currentTimeMillis(),
+        capOrphanDuration: Boolean = false
+    ) {
         try {
             val activeAnalytics = database.appAnalyticsDao()
                 .getAnalyticsForSession(sessionId)
                 .filter { it.exitTime == null }
 
             if (activeAnalytics.isNotEmpty()) {
-                val exitTime = System.currentTimeMillis()
                 activeAnalytics.forEach { analytics ->
-                    val duration = exitTime - analytics.entryTime
+                    val rawDuration = exitTime - analytics.entryTime
+                    val duration = if (capOrphanDuration) {
+                        rawDuration.coerceAtMost(MAX_ORPHAN_SCREEN_MS)
+                    } else {
+                        rawDuration
+                    }
+                    val actualExitTime = analytics.entryTime + duration
                     database.appAnalyticsDao().updateAnalyticsExit(
                         analyticsId = analytics.analyticsId,
                         eventType = EventType.EXIT.type,
-                        exitTime = exitTime,
+                        exitTime = actualExitTime,
                         durationMillis = duration
                     )
                 }

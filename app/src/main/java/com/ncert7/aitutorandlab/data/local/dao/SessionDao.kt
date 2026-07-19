@@ -54,6 +54,12 @@ interface SessionDao {
     @Query("UPDATE sessions SET studentId = :studentId, isSynced = 0 WHERE studentId = ''")
     suspend fun backfillEmptyStudentId(studentId: String)
 
+    // Get open (unclosed) sessions for a student — used to cap orphan inflation
+    @Query(
+        "SELECT * FROM sessions WHERE studentId = :studentId AND sessionEndTime IS NULL ORDER BY sessionStartTime ASC"
+    )
+    suspend fun getOpenSessionsForStudent(studentId: String): List<SessionEntity>
+
     // Delete a session
     @Query("DELETE FROM sessions WHERE sessionId = :sessionId")
     suspend fun deleteSession(sessionId: String)
