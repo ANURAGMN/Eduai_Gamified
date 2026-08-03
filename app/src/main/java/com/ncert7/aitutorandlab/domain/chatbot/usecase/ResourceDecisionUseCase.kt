@@ -1,5 +1,6 @@
 package com.ncert7.aitutorandlab.domain.chatbot.usecase
 
+import com.ncert7.aitutorandlab.config.ConceptMapFeatureAvailability
 import com.ncert7.aitutorandlab.data.remote.SessionMetadata
 import com.ncert7.aitutorandlab.debug.DebugLogger
 import com.ncert7.aitutorandlab.domain.chatbot.model.ResourceDecision
@@ -25,7 +26,7 @@ class ResourceDecisionUseCase @Inject constructor() {
                     )
                 }
 
-                from == "CI" && to == "SIM_CC" -> {
+                from == "CI" && to == "SIM_CC" && ConceptMapFeatureAvailability.isEnabled() -> {
                     ResourceDecision.ShowConceptMap(triggerText = "")
                 }
 

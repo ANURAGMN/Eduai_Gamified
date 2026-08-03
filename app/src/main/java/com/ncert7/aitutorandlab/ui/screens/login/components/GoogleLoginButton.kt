@@ -34,6 +34,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.ncert7.aitutorandlab.R
 import com.ncert7.aitutorandlab.debug.DebugLogger
+import com.ncert7.aitutorandlab.debug.OnboardingDebugHelper
 import com.ncert7.aitutorandlab.service.auth.GoogleSignIn
 import com.ncert7.aitutorandlab.service.auth.NetworkException
 import com.ncert7.aitutorandlab.service.analytics.FunnelAnalyticsTracker
@@ -67,7 +68,7 @@ fun GoogleLoginButton(
             is ExistingUserSyncState.Success -> {
                 if (!hasNavigated) {
                     hasNavigated = true
-                    // Navigate to main screen
+                    OnboardingDebugHelper.prepareOnboardingReplayAfterSignIn(context)
                     navController.navigate("main") {
                         popUpTo("login") { inclusive = true }
                     }
@@ -75,8 +76,12 @@ fun GoogleLoginButton(
                 }
             }
             is ExistingUserSyncState.Error -> {
-                onError("Failed to sync user data. Please try again.")
+                onError(
+                    state.exception.message?.takeIf { it.isNotBlank() }
+                        ?: "Failed to sync user data. Please try again."
+                )
                 userViewModel.resetExistingUserSyncState()
+                userViewModel.resetLoginState()
             }
             else -> {}
         }
@@ -87,7 +92,7 @@ fun GoogleLoginButton(
 
         when (val state = loginState) {
             is LoginState.ExistingUser -> {
-                // Trigger save and sync for existing user
+                userViewModel.resetLoginState()
                 userViewModel.saveExistingUserLocally(context)
             }
             is LoginState.NewUser -> {
@@ -95,21 +100,25 @@ fun GoogleLoginButton(
                 navController.navigate("userDetailEntry")
             }
             is LoginState.Error -> {
-                // Display error message to user
                 val errorMessage = when (state.exception) {
                     is NetworkException -> state.exception.message ?: "Network error. Please try again."
                     else -> when {
+                        state.exception.message?.contains("busy", ignoreCase = true) == true ||
+                            state.exception.message?.contains("quota", ignoreCase = true) == true ->
+                            state.exception.message!!
                         state.exception.message?.contains("network", ignoreCase = true) == true ||
                                 state.exception.message?.contains("timeout", ignoreCase = true) == true ||
                                 state.exception.message?.contains("connection", ignoreCase = true) == true -> {
                             "Network error. Please check your connection and try again."
                         }
                         else -> {
-                            "Login failed. Please try again."
+                            state.exception.message?.takeIf { it.isNotBlank() }
+                                ?: "Login failed. Please try again."
                         }
                     }
                 }
                 onError(errorMessage)
+                userViewModel.resetLoginState()
             }
             else -> {}
         }
@@ -124,6 +133,7 @@ fun GoogleLoginButton(
     ) { result ->
         GoogleSignIn.handleSignInActivityResult(
             context = context,
+            scope = scope,
             resultCode = result.resultCode,
             data = result.data,
             onLoginSuccess = { firebaseUser ->
@@ -149,7 +159,8 @@ fun GoogleLoginButton(
         )
     }
 
-    val isLoading = loginState is LoginState.Loading
+    val isLoading = loginState is LoginState.Loading ||
+        existingUserSyncState is ExistingUserSyncState.Syncing
 
     OutlinedButton(
         onClick = {

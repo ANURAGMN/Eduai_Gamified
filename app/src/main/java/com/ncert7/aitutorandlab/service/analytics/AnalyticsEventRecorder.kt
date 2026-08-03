@@ -8,7 +8,8 @@ import com.ncert7.aitutorandlab.debug.DebugLogger
 import com.ncert7.aitutorandlab.service.sync.DataSyncService
 
 /**
- * Persists click events to local DB and triggers real-time Firestore sync.
+ * Persists click events to local DB (for ad-gating) and logs to GA4.
+ * Firestore mirror disabled — see [AnalyticsFirestoreMirror].
  */
 object AnalyticsEventRecorder {
 
@@ -31,6 +32,7 @@ object AnalyticsEventRecorder {
     ) {
         if (itemId.isBlank()) return
         try {
+            SessionManager.ensureActiveSession()
             val sessionId = SessionManager.getCurrentSessionId()
             if (sessionId == null) {
                 DebugLogger.debugLog(TAG, "No active session — skipping $eventType for $itemId")
@@ -48,10 +50,12 @@ object AnalyticsEventRecorder {
                     source = source,
                     interactionType = interactionType,
                     appName = AppConfig.APP_NAME,
-                    isSynced = false
+                    isSynced = !AnalyticsFirestoreMirror.ENABLED,
                 )
             )
-            DataSyncService.syncAnalyticsUpdate(analyticsId)
+            if (AnalyticsFirestoreMirror.ENABLED) {
+                DataSyncService.syncAnalyticsUpdate(analyticsId)
+            }
         } catch (e: Exception) {
             DebugLogger.errorLog(TAG, "Failed to record $eventType: ${e.message}")
         }
@@ -77,6 +81,7 @@ object AnalyticsEventRecorder {
         detail: String? = null
     ) {
         try {
+            SessionManager.ensureActiveSession()
             val sessionId = SessionManager.getCurrentSessionId()
             if (sessionId == null) {
                 DebugLogger.debugLog(TAG, "No active session — skipping ad ${interaction.value}")
@@ -95,10 +100,12 @@ object AnalyticsEventRecorder {
                     interactionType = interaction.value +
                         (detail?.let { "|$it" }.orEmpty()),
                     appName = AppConfig.APP_NAME,
-                    isSynced = false
+                    isSynced = !AnalyticsFirestoreMirror.ENABLED,
                 )
             )
-            DataSyncService.syncAnalyticsUpdate(analyticsId)
+            if (AnalyticsFirestoreMirror.ENABLED) {
+                DataSyncService.syncAnalyticsUpdate(analyticsId)
+            }
         } catch (e: Exception) {
             DebugLogger.errorLog(TAG, "Failed to record ad event: ${e.message}")
         }

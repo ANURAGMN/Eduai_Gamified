@@ -4,13 +4,19 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ncert7.aitutorandlab.data.local.SharedPreferenceUtils
 import com.ncert7.aitutorandlab.debug.DebugLogger
+import com.ncert7.aitutorandlab.domain.examplan.PlanTrialProgressTracker
+import com.ncert7.aitutorandlab.domain.examplan.SimulationTrialThresholds
+import com.ncert7.aitutorandlab.domain.examplan.TrialSessionStore
 import com.ncert7.aitutorandlab.domain.progress.ProgressEventTracker
 import com.ncert7.aitutorandlab.repository.ConceptRepository
 import com.ncert7.aitutorandlab.service.analytics.SimulationAnalyticsTracker
 import com.ncert7.aitutorandlab.service.analytics.SimulationInteraction
 import com.ncert7.aitutorandlab.service.sync.DataSyncService
 import com.ncert7.aitutorandlab.ui.screens.conceptscreen.dataclass.ConceptScreenState
+import com.ncert7.aitutorandlab.ui.screens.conceptscreen.components.SimulationTrialPromptKind
+import com.ncert7.aitutorandlab.ui.screens.conceptscreen.SimulationViewerTiming
 import com.ncert7.aitutorandlab.utils.StreakManager
+import com.ncert7.aitutorandlab.utils.TrialCopy
 import com.ncert7.aitutorandlab.utils.getCurrentLanguageCode
 import com.ncert7.aitutorandlab.utils.isKannada
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -21,7 +27,8 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
- * Lightweight ViewModel used by [ConceptSimulationViewer] to track simulation URL progress.
+ * Lightweight ViewModel used by [com.ncert7.aitutorandlab.ui.screens.conceptscreen.components.ConceptSimulationViewer]
+ * to track simulation URL progress.
  * Delegates to [ProgressEventTracker] which handles the full chain:
  *   1. Write to progress table
  *   2. Recalculate chapter progress
@@ -31,13 +38,11 @@ import javax.inject.Inject
 class ConceptSimulationViewModel @Inject constructor(
     private val conceptRepository: ConceptRepository,
     private val progressEventTracker: ProgressEventTracker,
+    private val planTrialProgressTracker: PlanTrialProgressTracker,
     private val streakManager: StreakManager,
     private val sharedPrefs: SharedPreferenceUtils
 ) : ViewModel() {
 
-    companion object {
-        private const val TAG = "ConceptSimulationVM"
-    }
     private val _state = MutableStateFlow(ConceptScreenState())
     val state: StateFlow<ConceptScreenState> = _state.asStateFlow()
 
@@ -50,107 +55,285 @@ class ConceptSimulationViewModel @Inject constructor(
     private val _simulationUrl = MutableStateFlow("")
     val simulationUrl: StateFlow<String> = _simulationUrl.asStateFlow()
 
-    // Trigger for forcing recomposition after progress update
     private val _progressUpdateTrigger = MutableStateFlow(0)
     val progressUpdateTrigger: StateFlow<Int> = _progressUpdateTrigger.asStateFlow()
 
-    /**
-     * Mark the simulation URL for [conceptId] as loaded/completed.
-     * Safe to call multiple times — idempotent at the DB level.
-     *
-     *  FIXED: Properly marks both SIMULATION (URL) and updates chapter progress
-     * This ensures progress bars update in real-time across all 3 screens
-     */
+    private val _trialThresholds = MutableStateFlow<SimulationTrialThresholds?>(null)
+    val trialThresholds: StateFlow<SimulationTrialThresholds?> = _trialThresholds.asStateFlow()
+
+    private val _trialPrompt = MutableStateFlow<SimulationTrialPromptKind?>(null)
+    val trialPrompt: StateFlow<SimulationTrialPromptKind?> = _trialPrompt.asStateFlow()
+
+    companion object {
+        private const val TAG = "ConceptSimulationVM"
+        const val TRIAL_EXPLORE_PROMPT_MS = SimulationViewerTiming.TRIAL_OVERLAY_MS
+    }
+
+    private var timeExplorePromptShown = false
+    /** Captured when the page loads so proceed still works if the store is cleared. */
+    private var capturedTrialItemId: Long? = null
+
+    fun captureTrialItemId() {
+        capturedTrialItemId = TrialSessionStore.activeTrialItemId ?: capturedTrialItemId
+    }
+
     fun markSimulationUrlCompleted(conceptId: String) {
         if (conceptId.isBlank()) return
+        if (TrialSessionStore.activeTrialItemId != null) {
+            DebugLogger.debugLog(TAG, "Trial mode — URL completion tracked via click count")
+            return
+        }
         viewModelScope.launch {
             val studentId = sharedPrefs.getUserId() ?: run {
                 DebugLogger.errorLog(TAG, "No studentId — cannot mark simulation URL completed")
                 return@launch
             }
             val language = getCurrentLanguageCode()
-
-            // Mark the URL as completed - this triggers chapter progress update via ProgressEventTracker
             progressEventTracker.markSimulationUrlCompleted(studentId, conceptId, language)
             DebugLogger.debugLog(TAG, " Simulation URL completed tracked: conceptId=$conceptId [$language]")
         }
     }
 
-    /**
-     * Prepare simulation viewer state. Ad gate runs at navigation time (before this screen).
-     */
+    fun syncTrialSimClickCount(clickCount: Int) {
+        val trialItemId = TrialSessionStore.activeTrialItemId ?: return
+        viewModelScope.launch {
+            planTrialProgressTracker.syncToCount(trialItemId, clickCount)
+        }
+    }
+
+    suspend fun flushTrialSimClickCount(clickCount: Int) {
+        val trialItemId = TrialSessionStore.activeTrialItemId ?: return
+        planTrialProgressTracker.syncToCount(trialItemId, clickCount)
+        planTrialProgressTracker.reconcileCompletion(trialItemId)
+    }
+
+    fun onHtmlInteractionBudget(htmlBudget: Int) {
+        val trialItemId = TrialSessionStore.activeTrialItemId ?: return
+        viewModelScope.launch {
+            val thresholds = planTrialProgressTracker.applyHtmlInteractionBudget(trialItemId, htmlBudget)
+            _trialThresholds.value = thresholds
+            DebugLogger.debugLog(
+                TAG,
+                "Trial sim thresholds — budget=$htmlBudget, complete@${thresholds.completionAt}, " +
+                    "second@${thresholds.secondPromptAt}",
+            )
+        }
+    }
+
+    fun onTrialSimClickCountChanged(clickCount: Int) {
+        // Clicks still sync knowledge bites; proceed prompt is time-based only.
+        DebugLogger.debugLog(TAG, "Trial sim interactions: $clickCount")
+    }
+
+    /** Called after the simulation has been visible for [SimulationViewerTiming.TRIAL_OVERLAY_MS]. */
+    fun showTimeBasedExplorePromptIfNeeded() {
+        if (timeExplorePromptShown || _trialPrompt.value != null) {
+            DebugLogger.debugLog(TAG, "Trial explore prompt skipped — already shown")
+            return
+        }
+        timeExplorePromptShown = true
+        _trialPrompt.value = SimulationTrialPromptKind.TIME_EXPLORATION
+        DebugLogger.debugLog(TAG, "Trial explore prompt shown after 2 minutes")
+    }
+
+    /** Milliseconds left before the second (footer / description) narration plays (survives rotation). */
+    fun remainingFooterDelayMs(): Long {
+        val started = _viewerSession.value.startedAtMs
+        if (started <= 0L) return SimulationViewerTiming.FOOTER_TTS_MS
+        val elapsed = System.currentTimeMillis() - started
+        return (SimulationViewerTiming.FOOTER_TTS_MS - elapsed).coerceAtLeast(0L)
+    }
+
+    /** Milliseconds left before the proceed overlay should appear (survives rotation). */
+    fun remainingOverlayDelayMs(): Long {
+        val started = _viewerSession.value.startedAtMs
+        if (started <= 0L) return SimulationViewerTiming.TRIAL_OVERLAY_MS
+        val elapsed = System.currentTimeMillis() - started
+        return (SimulationViewerTiming.TRIAL_OVERLAY_MS - elapsed).coerceAtLeast(0L)
+    }
+
+    data class SimViewerSession(
+        val url: String = "",
+        val startedAtMs: Long = 0L,
+        val pageReadyHandled: Boolean = false,
+        val introHandled: Boolean = false,
+        val footerHandled: Boolean = false,
+        val guideUnlocked: Boolean = false,
+        val harvestJson: String? = null,
+        val guideStepIdx: Int = 0,
+        val guideDismissed: Boolean = false,
+        /** Highest guide step already read aloud — survives rotation so TTS isn't repeated. */
+        val narratedStepIdx: Int = -1,
+    )
+
+    private val _viewerSession = MutableStateFlow(SimViewerSession())
+    val viewerSession: StateFlow<SimViewerSession> = _viewerSession.asStateFlow()
+
+    /** Starts or resumes a viewer session; resets state only when the URL changes. */
+    fun beginViewerSession(url: String): Boolean {
+        if (url.isBlank()) return false
+        if (_viewerSession.value.url == url) return false
+        _viewerSession.value =
+            SimViewerSession(
+                url = url,
+                startedAtMs = System.currentTimeMillis(),
+            )
+        resetTrialPromptState()
+        DebugLogger.debugLog(TAG, "New simulation viewer session: $url")
+        return true
+    }
+
+    fun shouldHandlePageReady(url: String): Boolean =
+        _viewerSession.value.url == url && !_viewerSession.value.pageReadyHandled
+
+    fun markPageReadyHandled(url: String) {
+        if (_viewerSession.value.url != url) return
+        _viewerSession.value = _viewerSession.value.copy(pageReadyHandled = true)
+    }
+
+    fun shouldHandleIntro(url: String): Boolean =
+        _viewerSession.value.url == url && !_viewerSession.value.introHandled
+
+    fun markIntroHandled(url: String) {
+        if (_viewerSession.value.url != url) return
+        _viewerSession.value = _viewerSession.value.copy(introHandled = true)
+    }
+
+    fun shouldHandleFooter(url: String): Boolean =
+        _viewerSession.value.url == url && !_viewerSession.value.footerHandled
+
+    fun markFooterHandled(url: String) {
+        if (_viewerSession.value.url != url) return
+        _viewerSession.value = _viewerSession.value.copy(footerHandled = true)
+    }
+
+    fun storeHarvestJson(url: String, json: String) {
+        if (_viewerSession.value.url != url || _viewerSession.value.harvestJson != null) return
+        _viewerSession.value = _viewerSession.value.copy(harvestJson = json)
+    }
+
+    fun unlockGuide(url: String) {
+        if (_viewerSession.value.url != url || _viewerSession.value.guideUnlocked) return
+        _viewerSession.value = _viewerSession.value.copy(guideUnlocked = true)
+        DebugLogger.debugLog(TAG, "Guided coach unlocked after intro TTS")
+    }
+
+    fun setGuideStepIdx(url: String, idx: Int) {
+        if (_viewerSession.value.url != url) return
+        _viewerSession.value = _viewerSession.value.copy(guideStepIdx = idx)
+    }
+
+    /** Records that [idx] has been narrated so it isn't re-spoken on recomposition/rotation. */
+    fun markStepNarrated(url: String, idx: Int) {
+        if (_viewerSession.value.url != url || _viewerSession.value.narratedStepIdx == idx) return
+        _viewerSession.value = _viewerSession.value.copy(narratedStepIdx = idx)
+    }
+
+    fun dismissGuide(url: String) {
+        if (_viewerSession.value.url != url) return
+        _viewerSession.value = _viewerSession.value.copy(guideDismissed = true)
+    }
+
+    fun clearViewerSession() {
+        _viewerSession.value = SimViewerSession()
+    }
+
+    fun resetTrialPromptState() {
+        timeExplorePromptShown = false
+        _trialPrompt.value = null
+        capturedTrialItemId = null
+    }
+
+    /** Full reset when leaving the viewer entirely. */
+    fun resetViewerSession() {
+        resetTrialPromptState()
+        clearViewerSession()
+    }
+
+    fun dismissTrialPromptContinueExploring() {
+        _trialPrompt.value = null
+    }
+
+    fun clearTrialPrompt() {
+        _trialPrompt.value = null
+    }
+
+    suspend fun completeTrialSimProceed(clickCount: Int) {
+        val trialItemId = TrialSessionStore.activeTrialItemId ?: capturedTrialItemId ?: return
+        planTrialProgressTracker.syncToCount(trialItemId, clickCount)
+        planTrialProgressTracker.recordGeReached(trialItemId)
+    }
+
+    suspend fun keyConceptFallback(conceptId: String): String? {
+        if (conceptId.isBlank()) return null
+        return conceptRepository.getConcept(conceptId)?.description?.trim()?.takeIf { it.isNotEmpty() }
+    }
+
+    fun trialPromptCopy(kind: SimulationTrialPromptKind, languageCode: String): Pair<String, String> =
+        when (kind) {
+            SimulationTrialPromptKind.TIME_EXPLORATION ->
+                TrialCopy.simTimeExplorePrompt(languageCode)
+        }
+
     fun initializeSimulationWithAdCheck(
         conceptId: String,
         simulationUrl: String? = null,
         simulationTitle: String? = null
     ) {
+        if (simulationUrl != null && simulationTitle != null) {
+            _simulationTitle.value = simulationTitle
+            _simulationUrl.value = simulationUrl
+            _isAdCheckPending.value = false
+            DebugLogger.debugLog(
+                TAG,
+                "initializeSimulationWithAdCheck (external) for $conceptId: title=$simulationTitle",
+            )
+            return
+        }
+
         _isAdCheckPending.value = true
         viewModelScope.launch {
             try {
-                if (simulationUrl != null && simulationTitle != null) {
-                    _simulationTitle.value = simulationTitle
-                    _simulationUrl.value = simulationUrl
+                val concept = _state.value.concepts.find { it.id == conceptId }
+                _simulationTitle.value = concept?.name ?: "Simulation"
 
-                    DebugLogger.debugLog(
-                        "ConceptViewModel",
-                        "initializeSimulationWithAdCheck (external data) for $conceptId: title=$simulationTitle, url=$simulationUrl"
-                    )
-                } else {
-                    val concept = _state.value.concepts.find { it.id == conceptId }
-                    _simulationTitle.value = concept?.name ?: "Simulation"
-
-                    if (concept == null) {
-                        DebugLogger.errorLog("ConceptViewModel", "Concept not found in state for ID: $conceptId")
-                        _simulationUrl.value = ""
-                        return@launch
-                    }
-
-                    //TODO:handle nullable
-                    val selectedUrl = getSelectedSimulationUrl(concept.simulationUrl,concept.simulationUrlKannada)
-                    _simulationUrl.value = selectedUrl ?: ""
-
-                    DebugLogger.debugLog(
-                        "ConceptViewModel",
-                        "initializeSimulationWithAdCheck (state search) for $conceptId: title=${_simulationTitle.value}, url=${_simulationUrl.value}"
-                    )
+                if (concept == null) {
+                    DebugLogger.errorLog(TAG, "Concept not found in state for ID: $conceptId")
+                    _simulationUrl.value = ""
+                    return@launch
                 }
 
+                val selectedUrl = getSelectedSimulationUrl(concept.simulationUrl, concept.simulationUrlKannada)
+                _simulationUrl.value = selectedUrl ?: ""
+
                 DebugLogger.debugLog(
-                    "ConceptViewModel",
-                    "Simulation viewer ready for $conceptId"
+                    TAG,
+                    "initializeSimulationWithAdCheck (state search) for $conceptId: url=${_simulationUrl.value}",
                 )
             } catch (e: Exception) {
-                DebugLogger.errorLog("ConceptViewModel", "Error initializing simulation: ${e.message} | ${e.stackTraceToString()}")
+                DebugLogger.errorLog(TAG, "Error initializing simulation: ${e.message} | ${e.stackTraceToString()}")
             } finally {
                 _isAdCheckPending.value = false
             }
         }
     }
 
-    /**
-     * Selects the appropriate simulation URL based on device language preference
-     * NO FALLBACK: If Kannada is selected but Kannada URL doesn't exist, returns null
-     * If English is selected but English URL doesn't exist, returns null
-     */
     private fun getSelectedSimulationUrl(
         englishUrl: String?,
         kannadaUrl: String?
     ): String? {
         return if (isKannada()) {
-            // Use ONLY Kannada URL, no fallback to English
             kannadaUrl?.takeIf { it.isNotBlank() && it != "Not found" }
         } else {
-            // Use ONLY English URL
             englishUrl?.takeIf { it.isNotBlank() && it != "Not found" }
         }
     }
-    /**
-     * Track that a simulation has completed
-     * Called when the simulation WebView finishes loading successfully
-     * ✅ FIXED: Uses ProgressEventTracker to ensure chapter progress is updated
-     * and flows through all 3 screens (ProgressScreen, ChapterScreen, ConceptScreen header)
-     */
+
     fun markSimulationCompleted(conceptId: String) {
+        if (TrialSessionStore.activeTrialItemId != null) {
+            DebugLogger.debugLog(TAG, "Trial mode — skipping URL completion on page load")
+            return
+        }
         viewModelScope.launch {
             try {
                 val studentId = sharedPrefs.getUserId() ?: ""
@@ -162,8 +345,6 @@ class ConceptSimulationViewModel @Inject constructor(
                 )
 
                 if (studentId.isNotEmpty() && conceptId.isNotEmpty()) {
-                    // Use ProgressEventTracker to ensure chapter progress is recalculated
-                    // This triggers updates in ALL 3 screens via the reactive Flow
                     DebugLogger.debugLog(TAG, "📍 About to call progressEventTracker.markSimulationUrlCompleted with language=$language")
                     progressEventTracker.markSimulationUrlCompleted(studentId, conceptId, language)
 
@@ -172,14 +353,12 @@ class ConceptSimulationViewModel @Inject constructor(
                         "✅ Simulation URL marked as COMPLETED for concept: $conceptId [$language] - Progress bars should update!"
                     )
 
-                    // Verify progress was actually saved
                     val progress = conceptRepository.getProgress(studentId, "SIMULATION", conceptId, language)
                     DebugLogger.debugLog(
                         TAG,
                         "🔍 Verification: Progress for SIMULATION/$conceptId/$language = ${progress?.status ?: "NOT FOUND"} (progress was ${if (progress != null) "FOUND" else "NOT FOUND"})"
                     )
 
-                    // Update user's streak when simulation is completed
                     streakManager.onConceptOpened { newStreak ->
                         DebugLogger.debugLog(TAG, "Streak updated to: $newStreak on simulation completion")
                     }
@@ -189,7 +368,6 @@ class ConceptSimulationViewModel @Inject constructor(
                         interaction = SimulationInteraction.URL
                     )
 
-                    // Trigger real-time sync to Firestore
                     if (progress != null) {
                         DebugLogger.debugLog(TAG, "📤 Syncing progress to Firestore for progressId=${progress.progressId}")
                         DataSyncService.syncProgressUpdate(progress.progressId, studentId)
@@ -197,7 +375,6 @@ class ConceptSimulationViewModel @Inject constructor(
                         DebugLogger.errorLog(TAG, "⚠️ Progress was null after marking - sync skipped")
                     }
 
-                    // Force UI recomposition by incrementing trigger
                     _progressUpdateTrigger.value = _progressUpdateTrigger.value + 1
                     DebugLogger.debugLog(TAG, "🔄 UI recomposition triggered: ${_progressUpdateTrigger.value}")
                 } else {
@@ -213,5 +390,9 @@ class ConceptSimulationViewModel @Inject constructor(
                 )
             }
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
     }
 }

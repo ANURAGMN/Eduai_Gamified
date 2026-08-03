@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.ncert7.aitutorandlab.R
+import com.ncert7.aitutorandlab.debug.OnboardingDebugHelper
 import com.ncert7.aitutorandlab.service.auth.PadaamsEmailAuth
 import com.ncert7.aitutorandlab.service.analytics.FunnelAnalyticsTracker
 import com.ncert7.aitutorandlab.service.analytics.FunnelStep
@@ -62,10 +63,11 @@ fun EmailSignInForm(
         existingUserSyncState is ExistingUserSyncState.Syncing
 
     LaunchedEffect(existingUserSyncState) {
-        when (existingUserSyncState) {
+        when (val state = existingUserSyncState) {
             is ExistingUserSyncState.Success -> {
                 if (!hasNavigated) {
                     hasNavigated = true
+                    OnboardingDebugHelper.prepareOnboardingReplayAfterSignIn(context)
                     navController.navigate("main") {
                         popUpTo("login") { inclusive = true }
                     }
@@ -74,8 +76,12 @@ fun EmailSignInForm(
                 }
             }
             is ExistingUserSyncState.Error -> {
-                onError("Sign-in failed. Please try again.")
+                onError(
+                    state.exception.message?.takeIf { it.isNotBlank() }
+                        ?: "Sign-in failed. Please try again."
+                )
                 userViewModel.resetExistingUserSyncState()
+                userViewModel.resetLoginState()
             }
             else -> {}
         }
@@ -83,7 +89,11 @@ fun EmailSignInForm(
 
     LaunchedEffect(loginState) {
         if (loginState is LoginState.Error) {
-            onError("Invalid credentials. Use your @padaams.in account — not Gmail.")
+            val msg = (loginState as LoginState.Error).exception.message
+            onError(
+                msg?.takeIf { it.isNotBlank() }
+                    ?: "Invalid credentials. Use your @padaams.in account — not Gmail."
+            )
             userViewModel.resetLoginState()
         }
     }

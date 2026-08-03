@@ -114,7 +114,10 @@ class AgenticAIClient(
                             }
                             is ErrorHandler.ResponseHandlerResult.ServerError -> {
                                 lastEx = result.exception
-                                // Don't break - allow retry for 5xx errors
+                                // Quota / internal errors return 500 for ~60s — don't chain retries.
+                                if (ErrorHandler.extractStatusCode(result.exception.message.orEmpty()) == 500) {
+                                    break
+                                }
                             }
                             is ErrorHandler.ResponseHandlerResult.ClientError -> {
                                 lastEx = result.exception

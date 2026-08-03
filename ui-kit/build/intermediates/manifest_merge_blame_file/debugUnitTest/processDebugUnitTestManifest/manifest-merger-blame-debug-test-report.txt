@@ -1,0 +1,155 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.anurag.eduai.uikit.test" >
+4
+5    <uses-sdk
+5-->C:\Users\anurag.mn\Desktop\Eduapp\ui-kit\build\intermediates\tmp\manifest\test\debug\tempFile1ProcessTestManifest6689660678147079836.xml:5:5-74
+6        android:minSdkVersion="28"
+6-->C:\Users\anurag.mn\Desktop\Eduapp\ui-kit\build\intermediates\tmp\manifest\test\debug\tempFile1ProcessTestManifest6689660678147079836.xml:5:15-41
+7        android:targetSdkVersion="28" />
+7-->C:\Users\anurag.mn\Desktop\Eduapp\ui-kit\build\intermediates\tmp\manifest\test\debug\tempFile1ProcessTestManifest6689660678147079836.xml:5:42-71
+8
+9    <instrumentation
+9-->C:\Users\anurag.mn\Desktop\Eduapp\ui-kit\build\intermediates\tmp\manifest\test\debug\tempFile1ProcessTestManifest6689660678147079836.xml:11:5-13:77
+10        android:name="android.test.InstrumentationTestRunner"
+10-->C:\Users\anurag.mn\Desktop\Eduapp\ui-kit\build\intermediates\tmp\manifest\test\debug\tempFile1ProcessTestManifest6689660678147079836.xml:11:22-75
+11        android:label="Tests for com.anurag.eduai.uikit.test"
+11-->C:\Users\anurag.mn\Desktop\Eduapp\ui-kit\build\intermediates\tmp\manifest\test\debug\tempFile1ProcessTestManifest6689660678147079836.xml:13:22-75
+12        android:targetPackage="com.anurag.eduai.uikit.test" />
+12-->C:\Users\anurag.mn\Desktop\Eduapp\ui-kit\build\intermediates\tmp\manifest\test\debug\tempFile1ProcessTestManifest6689660678147079836.xml:12:22-73
+13
+14    <permission
+14-->[androidx.core:core:1.16.0] C:\Users\anurag.mn\.gradle\caches\8.13\transforms\1ee979983cb975fc4b3c693fb0cd4006\transformed\core-1.16.0\AndroidManifest.xml:22:5-24:47
+15        android:name="com.anurag.eduai.uikit.test.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+15-->[androidx.core:core:1.16.0] C:\Users\anurag.mn\.gradle\caches\8.13\transforms\1ee979983cb975fc4b3c693fb0cd4006\transformed\core-1.16.0\AndroidManifest.xml:23:9-81
+16        android:protectionLevel="signature" />
+16-->[androidx.core:core:1.16.0] C:\Users\anurag.mn\.gradle\caches\8.13\transforms\1ee979983cb975fc4b3c693fb0cd4006\transformed\core-1.16.0\AndroidManifest.xml:24:9-44
+17
+18    <uses-permission android:name="com.anurag.eduai.uikit.test.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+18-->[androidx.core:core:1.16.0] C:\Users\anurag.mn\.gradle\caches\8.13\transforms\1ee979983cb975fc4b3c693fb0cd4006\transformed\core-1.16.0\AndroidManifest.xml:26:5-97
+18-->[androidx.core:core:1.16.0] C:\Users\anurag.mn\.gradle\caches\8.13\transforms\1ee979983cb975fc4b3c693fb0cd4006\transformed\core-1.16.0\AndroidManifest.xml:26:22-94
+19
+20    <application
+20-->C:\Users\anurag.mn\Desktop\Eduapp\ui-kit\build\intermediates\tmp\manifest\test\debug\tempFile1ProcessTestManifest6689660678147079836.xml:7:5-9:19
+21        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+21-->[androidx.core:core:1.16.0] C:\Users\anurag.mn\.gradle\caches\8.13\transforms\1ee979983cb975fc4b3c693fb0cd4006\transformed\core-1.16.0\AndroidManifest.xml:28:18-86
+22        android:debuggable="true" >
+22-->C:\Users\anurag.mn\Desktop\Eduapp\ui-kit\build\intermediates\tmp\manifest\test\debug\tempFile1ProcessTestManifest6689660678147079836.xml:7:18-43
+23        <uses-library android:name="android.test.runner" />
+23-->C:\Users\anurag.mn\Desktop\Eduapp\ui-kit\build\intermediates\tmp\manifest\test\debug\tempFile1ProcessTestManifest6689660678147079836.xml:8:9-60
+23-->C:\Users\anurag.mn\Desktop\Eduapp\ui-kit\build\intermediates\tmp\manifest\test\debug\tempFile1ProcessTestManifest6689660678147079836.xml:8:23-57
+24
+25        <provider
+25-->[:ui-kit] C:\Users\anurag.mn\Desktop\Eduapp\ui-kit\build\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:8:9-16:20
+26            android:name="androidx.core.content.FileProvider"
+26-->[:ui-kit] C:\Users\anurag.mn\Desktop\Eduapp\ui-kit\build\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:9:13-62
+27            android:authorities="com.anurag.eduai.uikit.test.eduai.share"
+27-->[:ui-kit] C:\Users\anurag.mn\Desktop\Eduapp\ui-kit\build\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:10:13-63
+28            android:exported="false"
+28-->[:ui-kit] C:\Users\anurag.mn\Desktop\Eduapp\ui-kit\build\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:11:13-37
+29            android:grantUriPermissions="true" >
+29-->[:ui-kit] C:\Users\anurag.mn\Desktop\Eduapp\ui-kit\build\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:12:13-47
+30            <meta-data
+30-->[:ui-kit] C:\Users\anurag.mn\Desktop\Eduapp\ui-kit\build\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:13:13-15:61
+31                android:name="android.support.FILE_PROVIDER_PATHS"
+31-->[:ui-kit] C:\Users\anurag.mn\Desktop\Eduapp\ui-kit\build\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:14:17-67
+32                android:resource="@xml/eduai_share_paths" />
+32-->[:ui-kit] C:\Users\anurag.mn\Desktop\Eduapp\ui-kit\build\intermediates\merged_manifest\debug\processDebugManifest\AndroidManifest.xml:15:17-58
+33        </provider>
+34
+35        <activity
+35-->[androidx.compose.ui:ui-tooling-android:1.10.0] C:\Users\anurag.mn\.gradle\caches\8.13\transforms\0ac6f375d6117bb6eebadd26dee687bf\transformed\ui-tooling\AndroidManifest.xml:23:9-25:39
+36            android:name="androidx.compose.ui.tooling.PreviewActivity"
+36-->[androidx.compose.ui:ui-tooling-android:1.10.0] C:\Users\anurag.mn\.gradle\caches\8.13\transforms\0ac6f375d6117bb6eebadd26dee687bf\transformed\ui-tooling\AndroidManifest.xml:24:13-71
+37            android:exported="true" />
+37-->[androidx.compose.ui:ui-tooling-android:1.10.0] C:\Users\anurag.mn\.gradle\caches\8.13\transforms\0ac6f375d6117bb6eebadd26dee687bf\transformed\ui-tooling\AndroidManifest.xml:25:13-36
+38        <activity
+38-->[androidx.compose.ui:ui-test-manifest:1.10.0] C:\Users\anurag.mn\.gradle\caches\8.13\transforms\78f860a13d0849b3411f8e0044d787ff\transformed\ui-test-manifest-1.10.0\AndroidManifest.xml:23:9-26:79
+39            android:name="androidx.activity.ComponentActivity"
+39-->[androidx.compose.ui:ui-test-manifest:1.10.0] C:\Users\anurag.mn\.gradle\caches\8.13\transforms\78f860a13d0849b3411f8e0044d787ff\transformed\ui-test-manifest-1.10.0\AndroidManifest.xml:24:13-63
+40            android:exported="true"
+40-->[androidx.compose.ui:ui-test-manifest:1.10.0] C:\Users\anurag.mn\.gradle\caches\8.13\transforms\78f860a13d0849b3411f8e0044d787ff\transformed\ui-test-manifest-1.10.0\AndroidManifest.xml:25:13-36
+41            android:theme="@android:style/Theme.Material.Light.NoActionBar" />
+41-->[androidx.compose.ui:ui-test-manifest:1.10.0] C:\Users\anurag.mn\.gradle\caches\8.13\transforms\78f860a13d0849b3411f8e0044d787ff\transformed\ui-test-manifest-1.10.0\AndroidManifest.xml:26:13-76
+42
+43        <provider
+43-->[androidx.emoji2:emoji2:1.4.0] C:\Users\anurag.mn\.gradle\caches\8.13\transforms\91bb0a3170b12078ce0f2f5dbc39ab1d\transformed\emoji2-1.4.0\AndroidManifest.xml:24:9-32:20
+44            android:name="androidx.startup.InitializationProvider"
+44-->[androidx.emoji2:emoji2:1.4.0] C:\Users\anurag.mn\.gradle\caches\8.13\transforms\91bb0a3170b12078ce0f2f5dbc39ab1d\transformed\emoji2-1.4.0\AndroidManifest.xml:25:13-67
+45            android:authorities="com.anurag.eduai.uikit.test.androidx-startup"
+45-->[androidx.emoji2:emoji2:1.4.0] C:\Users\anurag.mn\.gradle\caches\8.13\transforms\91bb0a3170b12078ce0f2f5dbc39ab1d\transformed\emoji2-1.4.0\AndroidManifest.xml:26:13-68
+46            android:exported="false" >
+46-->[androidx.emoji2:emoji2:1.4.0] C:\Users\anurag.mn\.gradle\caches\8.13\transforms\91bb0a3170b12078ce0f2f5dbc39ab1d\transformed\emoji2-1.4.0\AndroidManifest.xml:27:13-37
+47            <meta-data
+47-->[androidx.emoji2:emoji2:1.4.0] C:\Users\anurag.mn\.gradle\caches\8.13\transforms\91bb0a3170b12078ce0f2f5dbc39ab1d\transformed\emoji2-1.4.0\AndroidManifest.xml:29:13-31:52
+48                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+48-->[androidx.emoji2:emoji2:1.4.0] C:\Users\anurag.mn\.gradle\caches\8.13\transforms\91bb0a3170b12078ce0f2f5dbc39ab1d\transformed\emoji2-1.4.0\AndroidManifest.xml:30:17-75
+49                android:value="androidx.startup" />
+49-->[androidx.emoji2:emoji2:1.4.0] C:\Users\anurag.mn\.gradle\caches\8.13\transforms\91bb0a3170b12078ce0f2f5dbc39ab1d\transformed\emoji2-1.4.0\AndroidManifest.xml:31:17-49
+50            <meta-data
+50-->[androidx.lifecycle:lifecycle-process:2.9.4] C:\Users\anurag.mn\.gradle\caches\8.13\transforms\6369c37ea24388a6e20f46c7ad7b520e\transformed\lifecycle-process-2.9.4\AndroidManifest.xml:29:13-31:52
+51                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+51-->[androidx.lifecycle:lifecycle-process:2.9.4] C:\Users\anurag.mn\.gradle\caches\8.13\transforms\6369c37ea24388a6e20f46c7ad7b520e\transformed\lifecycle-process-2.9.4\AndroidManifest.xml:30:17-78
+52                android:value="androidx.startup" />
+52-->[androidx.lifecycle:lifecycle-process:2.9.4] C:\Users\anurag.mn\.gradle\caches\8.13\transforms\6369c37ea24388a6e20f46c7ad7b520e\transformed\lifecycle-process-2.9.4\AndroidManifest.xml:31:17-49
+53            <meta-data
+53-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\anurag.mn\.gradle\caches\8.13\transforms\310d2ff3c6a16be69db090942189a50e\transformed\profileinstaller-1.4.0\AndroidManifest.xml:29:13-31:52
+54                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+54-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\anurag.mn\.gradle\caches\8.13\transforms\310d2ff3c6a16be69db090942189a50e\transformed\profileinstaller-1.4.0\AndroidManifest.xml:30:17-85
+55                android:value="androidx.startup" />
+55-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\anurag.mn\.gradle\caches\8.13\transforms\310d2ff3c6a16be69db090942189a50e\transformed\profileinstaller-1.4.0\AndroidManifest.xml:31:17-49
+56        </provider>
+57
+58        <uses-library
+58-->[androidx.window:window:1.5.0] C:\Users\anurag.mn\.gradle\caches\8.13\transforms\34f5e37bbd3b51ae5e3034bbeec5c049\transformed\window-1.5.0\AndroidManifest.xml:23:9-25:40
+59            android:name="androidx.window.extensions"
+59-->[androidx.window:window:1.5.0] C:\Users\anurag.mn\.gradle\caches\8.13\transforms\34f5e37bbd3b51ae5e3034bbeec5c049\transformed\window-1.5.0\AndroidManifest.xml:24:13-54
+60            android:required="false" />
+60-->[androidx.window:window:1.5.0] C:\Users\anurag.mn\.gradle\caches\8.13\transforms\34f5e37bbd3b51ae5e3034bbeec5c049\transformed\window-1.5.0\AndroidManifest.xml:25:13-37
+61        <uses-library
+61-->[androidx.window:window:1.5.0] C:\Users\anurag.mn\.gradle\caches\8.13\transforms\34f5e37bbd3b51ae5e3034bbeec5c049\transformed\window-1.5.0\AndroidManifest.xml:26:9-28:40
+62            android:name="androidx.window.sidecar"
+62-->[androidx.window:window:1.5.0] C:\Users\anurag.mn\.gradle\caches\8.13\transforms\34f5e37bbd3b51ae5e3034bbeec5c049\transformed\window-1.5.0\AndroidManifest.xml:27:13-51
+63            android:required="false" />
+63-->[androidx.window:window:1.5.0] C:\Users\anurag.mn\.gradle\caches\8.13\transforms\34f5e37bbd3b51ae5e3034bbeec5c049\transformed\window-1.5.0\AndroidManifest.xml:28:13-37
+64
+65        <receiver
+65-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\anurag.mn\.gradle\caches\8.13\transforms\310d2ff3c6a16be69db090942189a50e\transformed\profileinstaller-1.4.0\AndroidManifest.xml:34:9-52:20
+66            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+66-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\anurag.mn\.gradle\caches\8.13\transforms\310d2ff3c6a16be69db090942189a50e\transformed\profileinstaller-1.4.0\AndroidManifest.xml:35:13-76
+67            android:directBootAware="false"
+67-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\anurag.mn\.gradle\caches\8.13\transforms\310d2ff3c6a16be69db090942189a50e\transformed\profileinstaller-1.4.0\AndroidManifest.xml:36:13-44
+68            android:enabled="true"
+68-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\anurag.mn\.gradle\caches\8.13\transforms\310d2ff3c6a16be69db090942189a50e\transformed\profileinstaller-1.4.0\AndroidManifest.xml:37:13-35
+69            android:exported="true"
+69-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\anurag.mn\.gradle\caches\8.13\transforms\310d2ff3c6a16be69db090942189a50e\transformed\profileinstaller-1.4.0\AndroidManifest.xml:38:13-36
+70            android:permission="android.permission.DUMP" >
+70-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\anurag.mn\.gradle\caches\8.13\transforms\310d2ff3c6a16be69db090942189a50e\transformed\profileinstaller-1.4.0\AndroidManifest.xml:39:13-57
+71            <intent-filter>
+71-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\anurag.mn\.gradle\caches\8.13\transforms\310d2ff3c6a16be69db090942189a50e\transformed\profileinstaller-1.4.0\AndroidManifest.xml:40:13-42:29
+72                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+72-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\anurag.mn\.gradle\caches\8.13\transforms\310d2ff3c6a16be69db090942189a50e\transformed\profileinstaller-1.4.0\AndroidManifest.xml:41:17-91
+72-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\anurag.mn\.gradle\caches\8.13\transforms\310d2ff3c6a16be69db090942189a50e\transformed\profileinstaller-1.4.0\AndroidManifest.xml:41:25-88
+73            </intent-filter>
+74            <intent-filter>
+74-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\anurag.mn\.gradle\caches\8.13\transforms\310d2ff3c6a16be69db090942189a50e\transformed\profileinstaller-1.4.0\AndroidManifest.xml:43:13-45:29
+75                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+75-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\anurag.mn\.gradle\caches\8.13\transforms\310d2ff3c6a16be69db090942189a50e\transformed\profileinstaller-1.4.0\AndroidManifest.xml:44:17-85
+75-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\anurag.mn\.gradle\caches\8.13\transforms\310d2ff3c6a16be69db090942189a50e\transformed\profileinstaller-1.4.0\AndroidManifest.xml:44:25-82
+76            </intent-filter>
+77            <intent-filter>
+77-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\anurag.mn\.gradle\caches\8.13\transforms\310d2ff3c6a16be69db090942189a50e\transformed\profileinstaller-1.4.0\AndroidManifest.xml:46:13-48:29
+78                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+78-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\anurag.mn\.gradle\caches\8.13\transforms\310d2ff3c6a16be69db090942189a50e\transformed\profileinstaller-1.4.0\AndroidManifest.xml:47:17-88
+78-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\anurag.mn\.gradle\caches\8.13\transforms\310d2ff3c6a16be69db090942189a50e\transformed\profileinstaller-1.4.0\AndroidManifest.xml:47:25-85
+79            </intent-filter>
+80            <intent-filter>
+80-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\anurag.mn\.gradle\caches\8.13\transforms\310d2ff3c6a16be69db090942189a50e\transformed\profileinstaller-1.4.0\AndroidManifest.xml:49:13-51:29
+81                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+81-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\anurag.mn\.gradle\caches\8.13\transforms\310d2ff3c6a16be69db090942189a50e\transformed\profileinstaller-1.4.0\AndroidManifest.xml:50:17-95
+81-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\anurag.mn\.gradle\caches\8.13\transforms\310d2ff3c6a16be69db090942189a50e\transformed\profileinstaller-1.4.0\AndroidManifest.xml:50:25-92
+82            </intent-filter>
+83        </receiver>
+84    </application>
+85
+86</manifest>

@@ -58,12 +58,13 @@ object MobileAdsInitializer {
         if (!BuildConfig.DEBUG && usingTestIds) {
             DebugLogger.errorLog(
                 TAG,
-                "Release build is using Google sample AdMob IDs — replace ADMOB_APP_ID and BANNER_AD_UNIT_ID in local.properties"
+                "Release build is using Google sample AdMob IDs — replace ADMOB_APP_ID, BANNER_AD_UNIT_ID, and REWARDED_AD_UNIT_ID in local.properties"
             )
         }
     }
 
     fun isUsingTestAdIds(): Boolean =
         BuildConfig.ADMOB_APP_ID.contains(TEST_APP_ID_SUFFIX) ||
-            BuildConfig.BANNER_AD_UNIT_ID.contains(TEST_APP_ID_SUFFIX)
+            BuildConfig.BANNER_AD_UNIT_ID.contains(TEST_APP_ID_SUFFIX) ||
+            BuildConfig.REWARDED_AD_UNIT_ID.contains(TEST_APP_ID_SUFFIX)
 }

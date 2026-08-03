@@ -10,6 +10,35 @@ object SubjectIds {
     const val SCIENCE = "9a7d0d20-7b8d-4b8c-8c12-5a1a8a55f002"
 }
 
+/** Remote subject icons (same URLs stored on Firestore Concept docs in the live app). */
+object SubjectIconUrls {
+    const val MATH = "https://anuragmn.github.io/EduAI_app/Simulations/maths.png"
+    const val SCIENCE = "https://anuragmn.github.io/EduAI_app/Simulations/science.png"
+}
+
+/** Prefer synced iconUrl; fall back to known Math/Science artwork from the live app. */
+fun resolveSubjectIconUrl(
+    subjectId: String?,
+    subjectName: String? = null,
+    storedIconUrl: String? = null,
+): String? {
+    if (!storedIconUrl.isNullOrBlank()) return storedIconUrl
+    return when (subjectId) {
+        SubjectIds.MATH -> SubjectIconUrls.MATH
+        SubjectIds.SCIENCE -> SubjectIconUrls.SCIENCE
+        else -> {
+            val name = subjectName.orEmpty()
+            when {
+                name.contains("math", ignoreCase = true) ||
+                    name.contains("ಗಣಿತ", ignoreCase = false) -> SubjectIconUrls.MATH
+                name.contains("science", ignoreCase = true) ||
+                    name.contains("ವಿಜ್ಞಾನ", ignoreCase = false) -> SubjectIconUrls.SCIENCE
+                else -> null
+            }
+        }
+    }
+}
+
 /**
  * Resolve legacy subject name prefs to stable subject IDs.
  */
@@ -53,20 +82,27 @@ fun ConceptEntity.getLocalizedName(languageCode: String = getCurrentLanguageCode
     }
 }
 
+/** Optional prefs fallback when AppCompat locales are not applied yet (e.g. right after login). */
+private var storedLanguagePreference: (() -> String?)? = null
+
+fun bindStoredLanguagePreference(provider: () -> String?) {
+    storedLanguagePreference = provider
+}
+
 /**
  * Check if the app is currently in Kannada language
  */
-fun isKannada(): Boolean {
-    val currentLocale = AppCompatDelegate.getApplicationLocales()[0]?.language
-    return currentLocale == "kn"
-}
+fun isKannada(): Boolean = isKannadaLanguage(getCurrentLanguageCode())
 
 /**
  * Get current app language code (`en` or `kn`).
  */
 fun getCurrentLanguageCode(): String {
     val currentLocale = AppCompatDelegate.getApplicationLocales()[0]?.language
-    return normalizeLanguageCode(currentLocale)
+    if (!currentLocale.isNullOrBlank()) {
+        return normalizeLanguageCode(currentLocale)
+    }
+    return normalizeLanguageCode(storedLanguagePreference?.invoke())
 }
 
 /**

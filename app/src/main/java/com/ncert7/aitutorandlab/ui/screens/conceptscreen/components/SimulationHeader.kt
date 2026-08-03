@@ -32,7 +32,11 @@ styled with a gradient background.
 @Composable
 fun SimulationHeader(
     title: String,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    voiceEnabled: Boolean = true,
+    onVoiceEnabledChange: (Boolean) -> Unit = {},
+    languageCode: String = "en",
+    showVoiceToggle: Boolean = true,
 ) {
     val dimens = LocalDimensions.current
     
@@ -62,5 +66,13 @@ fun SimulationHeader(
             softWrap = false,
             modifier = Modifier.weight(1f)
         )
+
+        if (showVoiceToggle) {
+            SimulationVoiceToggle(
+                voiceEnabled = voiceEnabled,
+                onVoiceEnabledChange = onVoiceEnabledChange,
+                languageCode = languageCode,
+            )
+        }
     }
 }

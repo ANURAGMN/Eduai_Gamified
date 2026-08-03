@@ -2,6 +2,7 @@ package com.ncert7.aitutorandlab.service.logging
 
 import android.content.Context
 import com.google.firebase.firestore.FirebaseFirestore
+import com.ncert7.aitutorandlab.config.AppConfig
 import com.ncert7.aitutorandlab.data.local.SharedPreferenceUtils
 import com.ncert7.aitutorandlab.debug.DebugLogger
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -139,15 +140,7 @@ class FirestoreErrorLogger @Inject constructor(
     /**
      * Get app name from context
      */
-    private fun getAppName(): String {
-        return try {
-            val packageManager = context.packageManager
-            val applicationInfo = context.applicationInfo
-            packageManager.getApplicationLabel(applicationInfo).toString()
-        } catch (e: Exception) {
-            "EduAI"
-        }
-    }
+    private fun getAppName(): String = AppConfig.APP_NAME
 
     /**
      * Get device information

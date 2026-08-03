@@ -10,6 +10,7 @@ import com.ncert7.aitutorandlab.data.local.SharedPreferenceUtils
 import com.ncert7.aitutorandlab.data.local.database.EduAiDatabase
 import com.ncert7.aitutorandlab.debug.DebugLogger
 import com.ncert7.aitutorandlab.utils.NetworkConnectivityObserver
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -24,6 +25,11 @@ import java.util.concurrent.TimeUnit
  */
 object DataSyncService {
     private const val TAG = "DataSyncService"
+
+    // Stable WorkManager unique names (so KEEP dedupes) + debounce window for coalesced uploads.
+    private const val BACKGROUND_SYNC_WORK = "DATA_SYNC_WORK"
+    private const val DEFERRED_UPLOAD_WORK = "firestore_deferred_upload"
+    private const val DEFERRED_UPLOAD_DELAY_MIN = 5L
     private val supervisorJob = SupervisorJob()
     private val scope = CoroutineScope(supervisorJob + Dispatchers.IO)
 
@@ -35,6 +41,22 @@ object DataSyncService {
     private var simulationSyncManager: SimulationSyncManager? = null
     private var connectivityObserver: NetworkConnectivityObserver? = null
     private var networkListenerJob: Job? = null  // Track the network listener job
+
+    // Garden/space reward mirror — lazy so it's created after [database] is set in initialize().
+    private val gardenSyncManager: GardenSyncManager by lazy {
+        GardenSyncManager(database.gardenDao(), com.ncert7.aitutorandlab.repository.FirebaseRepository())
+    }
+
+    /** Completed when the in-flight login restore finishes (or immediately if none is running). */
+    @Volatile
+    private var gardenRestoreGate: CompletableDeferred<Unit> =
+        CompletableDeferred<Unit>().also { it.complete(Unit) }
+
+    /** Blocks until [onUserAuthenticated]'s garden restore completes — avoids clobbering remote data. */
+    suspend fun awaitGardenRestore() {
+        if (!isInitialized) return
+        gardenRestoreGate.await()
+    }
 
     /**
      * Initializes the DataSyncService
@@ -177,6 +199,9 @@ object DataSyncService {
                         }
                     }
                     syncSimulationInteractionsInternal()
+                    sharedPref.getUserId()?.takeIf { it.isNotBlank() }?.let { uid ->
+                        gardenSyncManager.pushGarden(uid)
+                    }
                 } else {
                     DebugLogger.debugLog(TAG, " Device offline, scheduling background sync")
                     scheduleBackgroundSync()
@@ -255,8 +280,10 @@ object DataSyncService {
                 )
                 .build()
 
+            // Stable unique name so ExistingWorkPolicy.KEEP actually dedupes (a timestamped
+            // name would defeat KEEP and let workers pile up).
             WorkManager.getInstance(applicationContext).enqueueUniqueWork(
-                "DATA_SYNC_WORK_${System.currentTimeMillis()}",
+                BACKGROUND_SYNC_WORK,
                 ExistingWorkPolicy.KEEP,
                 syncRequest
             )
@@ -264,6 +291,30 @@ object DataSyncService {
             DebugLogger.debugLog(TAG, " Background sync scheduled with WorkManager")
         } catch (e: Exception) {
             DebugLogger.errorLog(TAG, " Failed to schedule background sync: ${e.message}")
+        }
+    }
+
+    /**
+     * Coalesced, deferred upload of the outbox. Schedules a SINGLE delayed worker for the
+     * debounce window; rapid dirty events collapse into one batched flush via
+     * [ExistingWorkPolicy.KEEP]. Use this from hot paths instead of [triggerFullSync].
+     */
+    fun scheduleDeferredUpload() {
+        if (!isInitialized) return
+        try {
+            val request = OneTimeWorkRequestBuilder<DataSyncWorker>()
+                .setInitialDelay(DEFERRED_UPLOAD_DELAY_MIN, TimeUnit.MINUTES)
+                .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 1, TimeUnit.MINUTES)
+                .build()
+
+            WorkManager.getInstance(applicationContext).enqueueUniqueWork(
+                DEFERRED_UPLOAD_WORK,
+                ExistingWorkPolicy.KEEP,
+                request
+            )
+            DebugLogger.debugLog(TAG, "Deferred upload scheduled (coalesced, ${DEFERRED_UPLOAD_DELAY_MIN}m window)")
+        } catch (e: Exception) {
+            DebugLogger.errorLog(TAG, "Failed to schedule deferred upload: ${e.message}")
         }
     }
 
@@ -289,16 +340,21 @@ object DataSyncService {
      * Call after sign-in: backfill pre-login analytics/sessions, then sync everything.
      */
     fun onUserAuthenticated(studentId: String) {
+        val restoreGate = CompletableDeferred<Unit>()
+        gardenRestoreGate = restoreGate
         scope.launch {
             try {
                 database.appAnalyticsDao().backfillEmptyStudentId(studentId)
                 database.sessionDao().backfillEmptyStudentId(studentId)
                 updateStudentId(studentId)
+                gardenSyncManager.restoreGarden(studentId)
                 triggerFullSync()
                 DebugLogger.debugLog(TAG, "User authenticated — funnel + session backfill synced for $studentId")
             } catch (e: Exception) {
                 DebugLogger.errorLog(TAG, "onUserAuthenticated failed: ${e.message}")
                 updateStudentId(studentId)
+            } finally {
+                restoreGate.complete(Unit)
             }
         }
     }

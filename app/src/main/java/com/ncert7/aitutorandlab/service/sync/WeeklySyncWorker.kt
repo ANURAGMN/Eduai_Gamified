@@ -7,9 +7,8 @@ import androidx.work.WorkerParameters
 import com.ncert7.aitutorandlab.data.local.SharedPreferenceUtils
 import com.ncert7.aitutorandlab.data.local.database.EduAiDatabase
 import com.ncert7.aitutorandlab.debug.DebugLogger
-import com.google.firebase.Timestamp
-import com.google.firebase.firestore.FirebaseFirestore
-import kotlinx.coroutines.tasks.await
+import com.ncert7.aitutorandlab.di.TutorConfigEntryPoint
+import dagger.hilt.android.EntryPointAccessors
 import kotlin.math.pow
 
 /**
@@ -72,23 +71,21 @@ class WeeklySyncWorker(
                 SyncManager.syncUserProgress(studentId)
                 SyncManager.syncUserStreak(studentId)
                 SyncManager.syncChapterAgentProgress(studentId)
+
+                val tutorRepo =
+                    EntryPointAccessors
+                        .fromApplication(applicationContext, TutorConfigEntryPoint::class.java)
+                        .tutorConfigRepository()
+                tutorRepo.syncPendingToRemote()
+                tutorRepo.ensureLoaded(applicationContext, studentId)
+
+                GardenSyncManager(
+                    database.gardenDao(),
+                    com.ncert7.aitutorandlab.repository.FirebaseRepository(),
+                ).pushGarden(studentId)
             }
 
-            // 4. Log worker execution for debugging
-            val now = Timestamp.now()
-            FirebaseFirestore.getInstance()
-                .collection("worker_test")
-                .add(
-                    mapOf(
-                        "time" to now,
-                        "device" to Build.MODEL,
-                        "studentId" to (studentId ?: "guest"),
-                        "status" to "success"
-                    )
-                )
-                .await()
-
-            DebugLogger.debugLog("WeeklySync", "Worker executed successfully at $now")
+            DebugLogger.debugLog("WeeklySync", "Worker executed successfully")
             return Result.success()
         } catch (e: Exception) {
             DebugLogger.errorLog("WeeklySyncWorker", "Sync Error: ${e.message}")

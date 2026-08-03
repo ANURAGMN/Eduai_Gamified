@@ -37,6 +37,10 @@ class FirebaseSyncManager(
         private const val STREAK_COLLECTION = "streak"
         private const val CHAPTER_PROGRESS_COLLECTION = "chapterprogress"
         private const val TAG = "FirebaseSyncManager"
+
+        // Skip the full Concept catalog read if content exists and we pulled within this window.
+        // (Empty DB / first install always pulls; bounds staleness without a backend version doc.)
+        private const val CONTENT_REFRESH_TTL_MS = 3L * 24 * 60 * 60 * 1000
     }
 
     /**
@@ -45,6 +49,18 @@ class FirebaseSyncManager(
      */
     suspend fun syncAllContent(): SyncResult {
         return try {
+            val prefs = context?.let { com.ncert7.aitutorandlab.data.local.SharedPreferenceUtils(it) }
+            val now = System.currentTimeMillis()
+            val localCount = conceptDao.getConceptCount()
+            val lastPull = prefs?.getContentLastPull() ?: 0L
+
+            // Content-refresh gate: skip the whole catalog read if we already have concepts and
+            // pulled recently. This removes the daily full `Concept.get()` for returning users.
+            if (SyncPolicy.shouldSkipCatalogPull(localCount, lastPull, now, CONTENT_REFRESH_TTL_MS)) {
+                DebugLogger.debugLog(TAG, "Content fresh ($localCount concepts) — skipping full catalog pull")
+                return SyncResult(success = true, message = "Content fresh — skipped catalog pull")
+            }
+
             DebugLogger.debugLog(TAG, "Starting content sync from Firestore...")
 
             val snapshot = firestore.collection(CONCEPTS_COLLECTION).get().await()
@@ -137,6 +153,7 @@ class FirebaseSyncManager(
             }
 
             DebugLogger.debugLog(TAG, message)
+            prefs?.setContentLastPull(now)
             SyncResult(success = true, message = message)
         } catch (e: Exception) {
             val errorMsg = "Content sync failed: ${e.message}"
@@ -154,41 +171,58 @@ class FirebaseSyncManager(
             if (progressDao == null) return SyncResult(true, "ProgressDao not available")
 
             val studentAppDocId = FirestoreSyncUtils.studentAppDocId(userId)
-            DebugLogger.debugLog(TAG, "Syncing user progress for: $studentAppDocId")
+            val prefs = context?.let { com.ncert7.aitutorandlab.data.local.SharedPreferenceUtils(it) }
+            val appName = com.ncert7.aitutorandlab.config.AppConfig.APP_NAME
+            val storedLastSync = prefs?.getProgressLastSync(userId) ?: 0L
 
+            // Self-heal: if we hold a cursor but have no local rows (progress was wiped — logout
+            // change, app-data clear, DB migration), ignore the cursor and do a full re-pull so the
+            // device can't be stranded empty.
+            val localCount = progressDao.getProgressCount(userId, appName)
+            val lastSync = SyncPolicy.effectiveDeltaCursor(storedLastSync, localCount)
+            DebugLogger.debugLog(TAG, "Syncing user progress for: $studentAppDocId (delta since $lastSync, local=$localCount)")
+
+            // Delta restore: only records changed since our last successful pull. On first login
+            // (lastSync = 0) this fetches everything; afterwards just the changes.
             val snapshot = firestore.collection(PROGRESS_COLLECTION)
                 .document(studentAppDocId)
                 .collection("records")
+                .whereGreaterThan("updatedAt", lastSync)
                 .get()
                 .await()
 
             val now = System.currentTimeMillis()
-            val progressList = snapshot.documents.mapNotNull {
-                try {
-                    FirebaseProgressMapper.map(it, userId)
-                } catch (e: Exception) {
-                    null
-                }
-            }.filter { progress ->
-                FirestoreSyncUtils.shouldRestoreProgressRecord(
-                    lastAccessedAt = progress.lastAccessedAt,
-                    completedAt = progress.completedAt,
-                    updatedAt = progress.updatedAt,
-                    now = now
-                )
+            var maxUpdatedAt = lastSync
+            val toApply = mutableListOf<com.ncert7.aitutorandlab.data.local.entities.ProgressEntity>()
+
+            for (doc in snapshot.documents) {
+                val progress =
+                    try { FirebaseProgressMapper.map(doc, userId) } catch (e: Exception) { null } ?: continue
+                if (progress.updatedAt > maxUpdatedAt) maxUpdatedAt = progress.updatedAt
+
+                // Keep the existing restore-window filter.
+                if (!FirestoreSyncUtils.shouldRestoreProgressRecord(
+                        lastAccessedAt = progress.lastAccessedAt,
+                        completedAt = progress.completedAt,
+                        updatedAt = progress.updatedAt,
+                        now = now,
+                    )
+                ) continue
+
+                // Last-write-wins: never overwrite a newer (possibly unsynced) local change.
+                val local =
+                    progressDao.getProgress(userId, progress.itemType, progress.itemId, progress.language, appName)
+                if (!SyncPolicy.shouldApplyIncoming(progress.updatedAt, local?.updatedAt)) continue
+
+                toApply += progress
             }
 
-            if (progressList.isNotEmpty()) {
-                progressDao.insertProgressList(progressList)
-            }
+            if (toApply.isNotEmpty()) progressDao.insertProgressList(toApply)
+            // Advance the delta cursor even if all fetched rows were filtered out, so we don't
+            // re-fetch the same window next time.
+            if (maxUpdatedAt > lastSync) prefs?.setProgressLastSync(userId, maxUpdatedAt)
 
-            val skipped = snapshot.size() - progressList.size
-            val message = if (skipped > 0) {
-                "Synced ${progressList.size} progress entries (skipped $skipped older than restore window)"
-            } else {
-                "Synced ${progressList.size} progress entries"
-            }
-            SyncResult(true, message)
+            SyncResult(true, "Synced ${toApply.size} progress entries (delta of ${snapshot.size()})")
         } catch (e: Exception) {
             SyncResult(false, "Progress sync failed: ${e.message}")
         }
@@ -229,24 +263,43 @@ class FirebaseSyncManager(
             if (chapterProgressDao == null) return SyncResult(true, "ChapterProgressDao not available")
 
             val studentAppDocId = FirestoreSyncUtils.studentAppDocId(userId)
+            val prefs = context?.let { com.ncert7.aitutorandlab.data.local.SharedPreferenceUtils(it) }
+            val appName = com.ncert7.aitutorandlab.config.AppConfig.APP_NAME
+            val storedLastSync = prefs?.getChapterProgressLastSync(userId) ?: 0L
+
+            // Self-heal: cursor set but no local rows (wipe) → ignore cursor, full re-pull.
+            val localCount = chapterProgressDao.getChapterProgressCount(userId, appName)
+            val lastSync = SyncPolicy.effectiveDeltaCursor(storedLastSync, localCount)
+
+            // Delta restore — only records changed since our last pull.
             val snapshot = firestore.collection(CHAPTER_PROGRESS_COLLECTION)
                 .document(studentAppDocId)
                 .collection("records")
+                .whereGreaterThan("updatedAt", lastSync)
                 .get()
                 .await()
 
-            DebugLogger.debugLog(TAG, "Retrieved ${snapshot.size()} chapter progress records from Firestore for: $studentAppDocId")
+            DebugLogger.debugLog(TAG, "Chapter progress delta since $lastSync: ${snapshot.size()} records (local=$localCount)")
 
-            val list = snapshot.documents.mapNotNull { 
-                try { FirebaseChapterProgressMapper.map(it, userId) } catch (e: Exception) { null }
+            var maxUpdatedAt = lastSync
+            val toApply = mutableListOf<com.ncert7.aitutorandlab.data.local.entities.ChapterAgentProgressEntity>()
+            for (doc in snapshot.documents) {
+                val cp =
+                    try { FirebaseChapterProgressMapper.map(doc, userId) } catch (e: Exception) { null } ?: continue
+                if (cp.updatedAt > maxUpdatedAt) maxUpdatedAt = cp.updatedAt
+                // Last-write-wins: don't clobber a newer local row.
+                val local = chapterProgressDao.getChapterProgress(userId, cp.chapterId, cp.language, appName)
+                if (!SyncPolicy.shouldApplyIncoming(cp.updatedAt, local?.updatedAt)) continue
+                toApply += cp
             }
 
-            if (list.isNotEmpty()) {
-                chapterProgressDao.insertAll(list)
-                DebugLogger.debugLog(TAG, "Restored ${list.size} chapter progress records to local database")
+            if (toApply.isNotEmpty()) {
+                chapterProgressDao.insertAll(toApply)
+                DebugLogger.debugLog(TAG, "Restored ${toApply.size} chapter progress records to local database")
             }
+            if (maxUpdatedAt > lastSync) prefs?.setChapterProgressLastSync(userId, maxUpdatedAt)
 
-            SyncResult(true, "Synced ${list.size} chapter progress entries")
+            SyncResult(true, "Synced ${toApply.size} chapter progress entries (delta of ${snapshot.size()})")
         } catch (e: Exception) {
             SyncResult(false, "Chapter progress sync failed: ${e.message}")
         }

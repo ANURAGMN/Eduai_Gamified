@@ -1,0 +1,27 @@
+{
+  "simId": "science_2_5",
+  "lang": "en",
+  "title": "Turmeric Indicator",
+  "steps": [
+    {
+      "text": "Turmeric paper is yellow. Let's find out which substances it can detect."
+    },
+    {
+      "text": "Test a base — tap “Soap” (or baking soda).",
+      "target": "Soap"
+    },
+    {
+      "text": "The yellow turmeric turns RED/BROWN. Turmeric changes colour only for BASES."
+    },
+    {
+      "text": "Now test an acid — tap “Lemon”.",
+      "target": "Lemon"
+    },
+    {
+      "text": "It stays YELLOW. Turmeric can't tell acids from neutral substances — both stay yellow."
+    },
+    {
+      "text": "So turmeric is a partial indicator: it only detects bases. (That's why a curry stain turns red when soap touches it!)"
+    }
+  ]
+}

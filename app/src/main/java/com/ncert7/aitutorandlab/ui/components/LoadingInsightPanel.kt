@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -37,6 +38,7 @@ import com.ncert7.aitutorandlab.ui.theme.LocalDimensions
 import com.ncert7.aitutorandlab.ui.theme.TextPrimary
 import com.ncert7.aitutorandlab.ui.theme.TextSecondary
 import com.ncert7.aitutorandlab.utils.getCurrentLanguageCode
+import kotlinx.coroutines.delay
 
 @Composable
 fun LoadingInsightPanel(
@@ -45,13 +47,24 @@ fun LoadingInsightPanel(
     languageCode: String = getCurrentLanguageCode(),
     centered: Boolean = false,
     showQuote: Boolean = true,
+    rotateThinking: Boolean = false,
 ) {
     val dimens = LocalDimensions.current
-    var quoteSeed by remember { mutableIntStateOf(0) }
-    val quote = remember(quoteSeed, languageCode) { LoadingQuotes.random(languageCode) }
-
-    LaunchedEffect(statusText) {
-        quoteSeed++
+    // Rotate the quote (and the thinking line, when enabled) every 3 seconds so the wait
+    // feels like it's progressing rather than frozen.
+    var tick by remember { mutableIntStateOf(0) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(3000)
+            tick++
+        }
+    }
+    val quote = remember(tick, languageCode) { LoadingQuotes.random(languageCode) }
+    val displayStatus = if (rotateThinking) {
+        val msgs = thinkingMessages(languageCode)
+        msgs[tick % msgs.size]
+    } else {
+        statusText
     }
 
     val horizontalAlignment = if (centered) Alignment.CenterHorizontally else Alignment.Start
@@ -72,13 +85,15 @@ fun LoadingInsightPanel(
                 color = BrandPrimary,
             )
             Spacer(modifier = Modifier.width(dimens.spaceMedium))
-            Text(
-                text = statusText,
-                color = TextSecondary,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium,
-                textAlign = textAlign,
-            )
+            Crossfade(targetState = displayStatus, label = "thinkingStatus") { msg ->
+                Text(
+                    text = msg,
+                    color = TextSecondary,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    textAlign = textAlign,
+                )
+            }
         }
 
         if (showQuote) {
@@ -120,3 +135,21 @@ fun LoadingInsightPanel(
         }
     }
 }
+
+/** Encouraging "thinking" lines that cycle while the tutor prepares a reply. */
+private fun thinkingMessages(languageCode: String): List<String> =
+    if (languageCode.startsWith("kn", ignoreCase = true)) {
+        listOf(
+            "ಒಂದು ಕ್ಷಣ…",
+            "ಉತ್ತರ ಹುಡುಕುತ್ತಿದ್ದೇನೆ…",
+            "ಒಳ್ಳೆಯ ಪ್ರಶ್ನೆ! ಯೋಚಿಸುತ್ತಿದ್ದೇನೆ…",
+            "ಚೆನ್ನಾಗಿ ವಿವರಿಸಲು ಸಿದ್ಧಪಡಿಸುತ್ತಿದ್ದೇನೆ…",
+        )
+    } else {
+        listOf(
+            "One moment…",
+            "Looking that up…",
+            "Good question — thinking…",
+            "Putting together a clear answer…",
+        )
+    }

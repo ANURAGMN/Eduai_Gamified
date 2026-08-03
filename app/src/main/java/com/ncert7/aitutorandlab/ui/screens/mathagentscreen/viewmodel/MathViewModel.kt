@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.ncert7.aitutorandlab.data.local.SharedPreferenceUtils
 import com.ncert7.aitutorandlab.debug.DebugLogger
 import com.ncert7.aitutorandlab.domain.chatbot.usecase.AvatarChangeUseCase
+import com.ncert7.aitutorandlab.domain.examplan.PlanTrialProgressTracker
+import com.ncert7.aitutorandlab.domain.examplan.TrialSessionStore
 import com.ncert7.aitutorandlab.domain.mathagent.usecase.MathIntent
 import com.ncert7.aitutorandlab.domain.mathagent.usecase.MathImageHandlingUseCase
 import com.ncert7.aitutorandlab.domain.mathagent.usecase.MathProblemsUseCase
@@ -34,6 +36,7 @@ class MathViewModel @Inject constructor(
     private val mathImageHandlingUseCase: MathImageHandlingUseCase,
     private val sharedPreferenceUtils: SharedPreferenceUtils,
     private val progressEventTracker: ProgressEventTracker,
+    private val planTrialProgressTracker: PlanTrialProgressTracker,
 
     private val avatarChangeUseCase: AvatarChangeUseCase,
     private val conceptRepository: ConceptRepository
@@ -145,38 +148,48 @@ class MathViewModel @Inject constructor(
      * Checks if there's an existing session and shows dialog if found
      */
     private fun autoStartWithProblem(problemId: String) {
-        val problem = mathProblemsUseCase.findProblemById(_uiState.value.problems, problemId)
-        if (problem != null) {
-            _uiState.update { it.copy(selectedProblem = problem, problemId = problemId) }
+        if (_uiState.value.sessionStarted) {
+            DebugLogger.debugLog("MathViewModel", "autoStartWithProblem skipped — session already started")
+            return
+        }
 
-            // Check for existing session
-            viewModelScope.launch {
-                try {
-                    val hasSession = mathSessionUseCase.hasExistingSession(problemId)
-                    if (hasSession) {
-                        // Show dialog to ask user to continue or start fresh
-                        _uiState.update {
-                            it.copy(
-                                pendingProblemForDialog = problemId,
-                                showSessionDialog = true
-                            )
-                        }
-                        DebugLogger.debugLog("MathViewModel", "Existing session found for problem: $problemId, showing dialog")
-                    } else {
-                        // No existing session, start new one
-                        DebugLogger.debugLog("MathViewModel", "No existing session for problem: $problemId, starting new")
-                        startMathSession(problemId)
+        val problem = mathProblemsUseCase.findProblemById(_uiState.value.problems, problemId)
+        _uiState.update {
+            it.copy(
+                selectedProblem = problem ?: it.selectedProblem,
+                problemId = problemId
+            )
+        }
+
+        if (problem == null) {
+            DebugLogger.warnLog(
+                "MathViewModel",
+                "Problem '$problemId' not in catalog (${_uiState.value.problems.size} loaded) — starting session with nav problemId anyway"
+            )
+        }
+
+        viewModelScope.launch {
+            try {
+                val hasSession = mathSessionUseCase.hasExistingSession(problemId)
+                if (hasSession) {
+                    _uiState.update {
+                        it.copy(
+                            pendingProblemForDialog = problemId,
+                            showSessionDialog = true
+                        )
                     }
-                } catch (e: Exception) {
-                    DebugLogger.errorLog(
-                        "MathViewModel",
-                        "Error checking for existing session: ${e.message}"
-                    )
+                    DebugLogger.debugLog("MathViewModel", "Existing session found for problem: $problemId, showing dialog")
+                } else {
+                    DebugLogger.debugLog("MathViewModel", "No existing session for problem: $problemId, starting new")
                     startMathSession(problemId)
                 }
+            } catch (e: Exception) {
+                DebugLogger.errorLog(
+                    "MathViewModel",
+                    "Error checking for existing session: ${e.message}"
+                )
+                startMathSession(problemId)
             }
-        } else {
-            DebugLogger.debugLog("MathViewModel", "Problem not found: $problemId")
         }
     }
 
@@ -340,6 +353,11 @@ class MathViewModel @Inject constructor(
                 it.copy(errorMessage = "Session thread ID not set. Please start a new session.")
             }
             return
+        }
+
+        // Trial progress: each math turn counts toward completing the Math trial item.
+        TrialSessionStore.activeTrialItemId?.let { trialItemId ->
+            viewModelScope.launch { planTrialProgressTracker.recordIncrement(trialItemId) }
         }
 
         // Backend requires a non-empty user message for every turn.

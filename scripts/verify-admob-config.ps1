@@ -29,6 +29,7 @@ if (-not (Test-Path $localProps)) {
 } else {
     $appId = Read-Prop $localProps "ADMOB_APP_ID"
     $bannerId = Read-Prop $localProps "BANNER_AD_UNIT_ID"
+    $rewardedId = Read-Prop $localProps "REWARDED_AD_UNIT_ID"
     if ($appId -and -not $appId.Contains($samplePublisher)) {
         $ok += "ADMOB_APP_ID set (production publisher)"
     } elseif ($appId) {
@@ -42,6 +43,13 @@ if (-not (Test-Path $localProps)) {
         $issues += "BANNER_AD_UNIT_ID uses Google sample ID"
     } else {
         $issues += "BANNER_AD_UNIT_ID missing in local.properties"
+    }
+    if ($rewardedId -and -not $rewardedId.Contains($samplePublisher)) {
+        $ok += "REWARDED_AD_UNIT_ID set (production unit: REWARDED_AD_1)"
+    } elseif ($rewardedId) {
+        $issues += "REWARDED_AD_UNIT_ID uses Google sample ID"
+    } else {
+        $issues += "REWARDED_AD_UNIT_ID missing in local.properties (release AAB falls back to test ID)"
     }
 }
 
@@ -85,7 +93,7 @@ Write-Host ""
 Write-Host "Console steps (manual):"
 Write-Host "  1. Link AdMob app to Firebase eduai-e090e (Firebase Integrations or AdMob App settings)"
 Write-Host "  2. AdMob Payments: payee profile, tax, bank account"
-Write-Host "  3. Confirm banner unit ID matches local.properties"
+Write-Host "  3. Confirm banner + rewarded unit IDs match local.properties"
 Write-Host "  Full checklist: scripts/admob-firebase-setup.md"
 Write-Host ""
 

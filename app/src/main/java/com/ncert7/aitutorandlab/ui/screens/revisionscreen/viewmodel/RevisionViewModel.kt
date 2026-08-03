@@ -9,6 +9,8 @@ import com.ncert7.aitutorandlab.domain.chatbot.controller.TypingAnimationControl
 import com.ncert7.aitutorandlab.domain.chatbot.usecase.AvatarChangeUseCase
 import com.ncert7.aitutorandlab.domain.revisionagent.usecase.RevisionUseCase
 import com.ncert7.aitutorandlab.domain.chatbot.usecase.TranslationUseCase
+import com.ncert7.aitutorandlab.domain.examplan.PlanTrialProgressTracker
+import com.ncert7.aitutorandlab.domain.examplan.TrialSessionStore
 import com.ncert7.aitutorandlab.domain.progress.ProgressEventTracker
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.dataclass.ChatBotSettingsState
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.dataclass.ChatMessageModel
@@ -35,6 +37,7 @@ class RevisionViewModel @Inject constructor(
     private val translationUseCase: TranslationUseCase,
     private val avatarChangeUseCase: AvatarChangeUseCase,
     private val progressEventTracker: ProgressEventTracker,
+    private val planTrialProgressTracker: PlanTrialProgressTracker,
     private val chapterDao: ChapterDao,
     private val conceptDao: ConceptDao
 ) : ViewModel() {
@@ -348,6 +351,9 @@ class RevisionViewModel @Inject constructor(
                         progressEventTracker.markRevisionCompleted(userId, concept.conceptId, lang)
                     }
                     DebugLogger.debugLog("RevisionViewModel", "Revision END reached: marked ${conceptsToMark.size} concepts as revision-completed (STUDY=${studyConcepts.size}, MATH=${mathConcepts.size})")
+                    TrialSessionStore.activeTrialItemId?.let { trialItemId ->
+                        planTrialProgressTracker.recordGeReached(trialItemId)
+                    }
                 } catch (e: Exception) {
                     DebugLogger.errorLog("RevisionViewModel", "Error marking revision complete on END: ${e.message}")
                 }
@@ -379,6 +385,14 @@ class RevisionViewModel @Inject constructor(
      */
     fun updateInputText(text: String) {
         _uiState.update { it.copy(inputText = text) }
+    }
+
+    /** Time-based proceed: mark the current trial item complete before leaving revision. */
+    fun recordTrialProceed() {
+        val trialItemId = TrialSessionStore.activeTrialItemId ?: return
+        viewModelScope.launch {
+            planTrialProgressTracker.recordGeReached(trialItemId)
+        }
     }
 
     /**

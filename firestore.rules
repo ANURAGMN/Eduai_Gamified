@@ -1,14 +1,17 @@
 rules_version = '2';
 
-// EduAI client sync rules (eduai-e090e).
+// EduAI — child-data Firestore rules (eduai-e090e).
 //
-// NOTE: The app uses Google Sign-In + local JWT for the backend API, but does NOT
-// sign in to Firebase Auth yet. Rules below scope writes by doc path + appName field.
-// For stronger security later, add FirebaseAuth.signInWithCredential(Google) and
-// switch to request.auth.token.email checks.
+// Requires Firebase Auth on the client (see FirebaseAuthBridge.kt).
+// auth_index/{firebaseUid} maps the authenticated uid → app studentId (Google subject id
+// or @padaams.in email). All student-scoped paths use that studentId, not the Firebase uid.
 
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
 
     function isEduAiAppDoc(docId) {
       return docId.matches('eduai_app_.+');
@@ -22,10 +25,39 @@ service cloud.firestore {
       return request.resource.data.appName == 'eduai_app';
     }
 
+    function studentIdForAuth() {
+      return get(/databases/$(database)/documents/auth_index/$(request.auth.uid)).data.studentId;
+    }
+
+    function ownsStudent(studentId) {
+      return isSignedIn()
+        && studentId is string
+        && studentId.size() > 0
+        && studentIdForAuth() == studentId;
+    }
+
     function studentIdMatchesParent(parentDocId) {
       return isEduAiWrite()
         && request.resource.data.keys().hasAll(['studentId'])
-        && parentDocId == eduAiStudentDocId(request.resource.data.studentId);
+        && parentDocId == eduAiStudentDocId(request.resource.data.studentId)
+        && ownsStudent(request.resource.data.studentId);
+    }
+
+    function canReadStudentParent(parentDocId) {
+      return isEduAiAppDoc(parentDocId)
+        && parentDocId == eduAiStudentDocId(studentIdForAuth());
+    }
+
+    // Maps Firebase Auth uid → app studentId (no PII).
+    match /auth_index/{firebaseUid} {
+      allow read: if isSignedIn() && request.auth.uid == firebaseUid;
+      allow create, update: if isSignedIn()
+        && request.auth.uid == firebaseUid
+        && request.resource.data.appName == 'eduai_app'
+        && request.resource.data.keys().hasAll(['studentId'])
+        && request.resource.data.studentId is string
+        && request.resource.data.studentId.size() > 0;
+      allow delete: if false;
     }
 
     // NCERT syllabus content — read-only from clients
@@ -34,49 +66,72 @@ service cloud.firestore {
       allow write: if false;
     }
 
-    // User profile documents
-    match /users/{userId} {
+    // Curated YouTube lessons — public read; admin writes via Firebase console / scripts
+    match /youtube_videos/{videoId} {
       allow read: if true;
-      allow create, update: if request.resource.data.appName == 'eduai_app';
+      allow write: if false;
+    }
+
+    // User profile — owner only (email, name, school, phone, class, progress metadata)
+    match /users/{userId} {
+      allow read: if isSignedIn()
+        && resource.data.appName == 'eduai_app'
+        && (
+          ownsStudent(userId)
+          || resource.data.email == request.auth.token.email
+        );
+      allow create, update: if isSignedIn()
+        && request.resource.data.appName == 'eduai_app'
+        && (
+          ownsStudent(userId)
+          || request.resource.data.email == request.auth.token.email
+        );
       allow delete: if false;
     }
 
-    // Progress: progress/eduai_app_{studentId}/records/{recordId}
     match /progress/{parentDoc}/records/{recordId} {
-      allow read: if isEduAiAppDoc(parentDoc);
-      allow create, update: if isEduAiAppDoc(parentDoc) && studentIdMatchesParent(parentDoc);
+      allow read: if canReadStudentParent(parentDoc);
+      allow create, update: if studentIdMatchesParent(parentDoc);
       allow delete: if false;
     }
 
-    // Analytics: analytics/eduai_app_{studentId}/events/{eventId}
     match /analytics/{parentDoc}/events/{eventId} {
-      allow read: if isEduAiAppDoc(parentDoc);
-      allow create, update: if isEduAiAppDoc(parentDoc) && studentIdMatchesParent(parentDoc);
+      allow read: if canReadStudentParent(parentDoc);
+      allow create, update: if studentIdMatchesParent(parentDoc);
       allow delete: if false;
     }
 
-    // Sessions: sessions/eduai_app_{studentId}/records/{sessionId}
     match /sessions/{parentDoc}/records/{sessionId} {
-      allow read: if isEduAiAppDoc(parentDoc);
-      allow create, update: if isEduAiAppDoc(parentDoc) && studentIdMatchesParent(parentDoc);
+      allow read: if canReadStudentParent(parentDoc);
+      allow create, update: if studentIdMatchesParent(parentDoc);
       allow delete: if false;
     }
 
-    // Streak: streak/eduai_app_{studentId}/data/{docId}
     match /streak/{parentDoc}/data/{docId} {
-      allow read: if isEduAiAppDoc(parentDoc);
-      allow create, update: if isEduAiAppDoc(parentDoc) && studentIdMatchesParent(parentDoc);
+      allow read: if canReadStudentParent(parentDoc);
+      allow create, update: if studentIdMatchesParent(parentDoc);
       allow delete: if false;
     }
 
-    // Chapter agent progress: chapterprogress/eduai_app_{studentId}/records/{recordId}
+    // Garden/space reward state — owner only (theme/route/steps + planted items; no PII).
+    match /garden/{parentDoc}/state/{docId} {
+      allow read: if canReadStudentParent(parentDoc);
+      allow create, update: if studentIdMatchesParent(parentDoc);
+      allow delete: if false;
+    }
+
+    match /garden/{parentDoc}/items/{itemId} {
+      allow read: if canReadStudentParent(parentDoc);
+      allow create, update: if studentIdMatchesParent(parentDoc);
+      allow delete: if false;
+    }
+
     match /chapterprogress/{parentDoc}/records/{recordId} {
-      allow read: if isEduAiAppDoc(parentDoc);
-      allow create, update: if isEduAiAppDoc(parentDoc) && studentIdMatchesParent(parentDoc);
+      allow read: if canReadStudentParent(parentDoc);
+      allow create, update: if studentIdMatchesParent(parentDoc);
       allow delete: if false;
     }
 
-    // Client error logs: errors/eduai_app/logs/{logId}
     match /errors/{appName}/logs/{logId} {
       allow read: if false;
       allow create: if appName == 'eduai_app'
@@ -84,12 +139,43 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
-    // Simulation HTML interactions: simulation_interactions/{studentId}/daily/{date}
+    // Simulation interaction aggregates — owner only (contains studentId + answers)
     match /simulation_interactions/{studentId}/daily/{date} {
-      allow read: if true;
-      allow create, update: if isEduAiWrite()
-        && request.resource.data.keys().hasAll(['studentId'])
+      allow read: if ownsStudent(studentId);
+      allow create, update: if ownsStudent(studentId) && isEduAiWrite()
         && request.resource.data.studentId == studentId;
+      allow delete: if false;
+    }
+
+    // Friend codes — authenticated lookup only; NO displayName/email (PII-free map)
+    match /friend_codes/{code} {
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn()
+        && isEduAiWrite()
+        && ownsStudent(request.resource.data.studentId)
+        && !request.resource.data.keys().hasAny(['displayName', 'email', 'phoneNumber']);
+      allow delete: if false;
+    }
+
+    match /friends/{parentDoc}/connections/{friendStudentId} {
+      allow read: if canReadStudentParent(parentDoc);
+      allow create, update: if isEduAiAppDoc(parentDoc)
+        && isEduAiWrite()
+        && ownsStudent(request.resource.data.studentId)
+        && request.resource.data.keys().hasAll(['studentId', 'friendStudentId'])
+        && parentDoc == eduAiStudentDocId(request.resource.data.studentId)
+        && request.resource.data.friendStudentId == friendStudentId;
+      allow delete: if false;
+    }
+
+    match /friends/{parentDoc}/feed/{eventKey} {
+      allow read: if canReadStudentParent(parentDoc);
+      allow create, update: if isEduAiAppDoc(parentDoc)
+        && isEduAiWrite()
+        && ownsStudent(request.resource.data.ownerStudentId)
+        && request.resource.data.keys().hasAll(['ownerStudentId', 'eventKey'])
+        && parentDoc == eduAiStudentDocId(request.resource.data.ownerStudentId)
+        && request.resource.data.eventKey == eventKey;
       allow delete: if false;
     }
 

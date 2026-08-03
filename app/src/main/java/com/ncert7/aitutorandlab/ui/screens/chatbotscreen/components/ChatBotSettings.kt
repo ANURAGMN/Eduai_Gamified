@@ -2,7 +2,9 @@ package com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
@@ -10,7 +12,9 @@ import com.ncert7.aitutorandlab.R
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import com.ncert7.aitutorandlab.ui.components.DropDownMenu
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.dataclass.ChatBotSettingsState
 import com.ncert7.aitutorandlab.ui.theme.BrandPrimary
@@ -29,7 +33,17 @@ fun ChatBotSettings(
     onConceptChange: (String) -> Unit,
     onLevelChange: (String) -> Unit,
     onSpeedChange: (String) -> Unit,
-    isRevisionMode: Boolean = false
+    isRevisionMode: Boolean = false,
+    useNativeTutorAvatar: Boolean = false,
+    handsFreeMode: Boolean = true,
+    onHandsFreeChange: (Boolean) -> Unit = {},
+    handsFreeLabel: String = "Hands-free voice",
+    showInputModeSetting: Boolean = false,
+    voiceFirst: Boolean = true,
+    onInputModeChange: (Boolean) -> Unit = {},
+    defaultInputLabel: String = "Default input",
+    voiceFirstLabel: String = "Voice first",
+    textFirstLabel: String = "Text first",
 ) {
     val dimens = LocalDimensions.current
 
@@ -70,7 +84,58 @@ fun ChatBotSettings(
 
             Spacer(Modifier.height(dimens.spaceMedium))
 
-            // Avatar
+            // Hands-free voice toggle — when on, the mic auto-opens after the tutor speaks.
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = dimens.spaceSmall),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = handsFreeLabel,
+                    color = TextPrimary,
+                    style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.weight(1f)
+                )
+                Switch(
+                    checked = handsFreeMode,
+                    onCheckedChange = onHandsFreeChange
+                )
+            }
+
+            Spacer(Modifier.height(dimens.spaceMedium))
+
+            // Default input mode — which surface the chat opens in.
+            if (showInputModeSetting) {
+                Text(
+                    text = defaultInputLabel,
+                    color = TextPrimary,
+                    style = MaterialTheme.typography.titleSmall
+                )
+                Spacer(Modifier.height(dimens.spaceSmall))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(dimens.spaceSmall)
+                ) {
+                    InputModeChip(
+                        label = voiceFirstLabel,
+                        selected = voiceFirst,
+                        onClick = { onInputModeChange(true) },
+                        modifier = Modifier.weight(1f)
+                    )
+                    InputModeChip(
+                        label = textFirstLabel,
+                        selected = !voiceFirst,
+                        onClick = { onInputModeChange(false) },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                Spacer(Modifier.height(dimens.spaceMedium))
+            }
+
+            if (!useNativeTutorAvatar) {
+            // Avatar (legacy WebView boy/girl — hidden when native tutor is enabled)
             Text(
                 text = stringResource(R.string.select_avatar),
                 color = TextPrimary,
@@ -90,6 +155,7 @@ fun ChatBotSettings(
             )
 
             Spacer(Modifier.height(dimens.spaceMedium))
+            }
 
             // Voice
             Text(
@@ -222,5 +288,33 @@ fun ChatBotSettings(
                 onValueSelected = onSpeedChange
             )
         }
+    }
+}
+
+@Composable
+internal fun InputModeChip(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(if (selected) BrandPrimary.copy(alpha = 0.12f) else White)
+            .border(
+                width = if (selected) 1.5.dp else 0.5.dp,
+                color = if (selected) BrandPrimary else BrandPrimary.copy(alpha = 0.35f),
+                shape = RoundedCornerShape(8.dp),
+            )
+            .clickable { onClick() }
+            .padding(vertical = 9.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = label,
+            color = if (selected) BrandPrimary else TextPrimary,
+            style = MaterialTheme.typography.titleSmall,
+        )
     }
 }

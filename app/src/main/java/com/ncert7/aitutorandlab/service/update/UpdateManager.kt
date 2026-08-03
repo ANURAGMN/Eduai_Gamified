@@ -26,6 +26,11 @@ interface UpdateManager {
     fun completeUpdate(activity: Activity)
 
     /**
+     * On resume, detect a downloaded flexible update or continue an immediate update.
+     */
+    suspend fun checkResumeState(activity: Activity)
+
+    /**
      * Set a callback for update state changes
      */
     fun setUpdateCallback(callback: UpdateCallback?)

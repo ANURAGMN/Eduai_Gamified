@@ -169,10 +169,19 @@ object SessionManager {
                     durationMillis = 0,
                     conceptId = conceptId?.takeIf { it.isNotBlank() && it != "empty" },
                     appName = com.ncert7.aitutorandlab.config.AppConfig.APP_NAME,
-                    isSynced = false
+                    // High-frequency: keep local, mirror to Firestore only if the flag is on.
+                    isSynced = !AnalyticsFirestoreMirror.ENABLED
                 )
             )
-            DataSyncService.syncAnalyticsUpdate(analyticsId)
+            // Screen metric goes to GA4 (not Firestore) — same insight, zero Firestore cost.
+            FirebaseAnalyticsHelper.logEvent(
+                eventName = "screen_view",
+                screen = screenName,
+                params = mapOf("concept_id" to conceptId?.takeIf { it.isNotBlank() && it != "empty" }),
+            )
+            if (AnalyticsFirestoreMirror.ENABLED) {
+                DataSyncService.syncAnalyticsUpdate(analyticsId)
+            }
             DebugLogger.debugLog("SessionManager", "Entry: ${screenName.displayName}")
 
         } catch (e: Exception) {
@@ -206,7 +215,15 @@ object SessionManager {
                     durationMillis = duration
                 )
 
-                DataSyncService.syncAnalyticsUpdate(activeAnalytics.analyticsId)
+                // Duration metric → GA4; Firestore only if the mirror is on.
+                FirebaseAnalyticsHelper.logEvent(
+                    eventName = "screen_time",
+                    screen = screenName,
+                    params = mapOf("duration_ms" to duration),
+                )
+                if (AnalyticsFirestoreMirror.ENABLED) {
+                    DataSyncService.syncAnalyticsUpdate(activeAnalytics.analyticsId)
+                }
 
                 DebugLogger.debugLog(
                     "SessionManager","Exit: ${screenName.displayName}, Duration: ${duration / 1000}s"
@@ -229,6 +246,27 @@ object SessionManager {
     fun trackScreenExitImmediate(screenName: ScreenName) {
         scope.launch {
             trackScreenExit(screenName)
+        }
+    }
+
+    /**
+     * Ensures a session row exists before persisting click/ad analytics.
+     */
+    suspend fun ensureActiveSession() {
+        if (getCurrentSessionId() == null) {
+            startSession()
+        }
+    }
+
+    /**
+     * Re-track screen entry when the app returns to foreground (new session may have started).
+     */
+    fun trackScreenEntryImmediate(screenName: ScreenName, conceptId: String? = null) {
+        scope.launch {
+            if (getCurrentSessionId() == null) {
+                startSession()
+            }
+            trackScreenEntry(screenName, conceptId)
         }
     }
 

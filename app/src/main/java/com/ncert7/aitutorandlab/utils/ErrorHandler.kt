@@ -29,6 +29,24 @@ object ErrorHandler {
         }
     }
 
+    /** User-facing copy for study-agent session API failures. */
+    fun getStudyAgentErrorMessage(context: Context, statusCode: Int?): String {
+        return when (statusCode) {
+            401 -> context.getString(R.string.error_please_sign_in_again)
+            429, 503 -> context.getString(R.string.error_service_busy_try_again_shortly)
+            500 -> context.getString(R.string.error_server_error)
+            in 502..599 -> context.getString(R.string.error_server_error)
+            null, 0 -> context.getString(R.string.sorry_i_couldn_t_process_that_please_try_again)
+            else -> getErrorMessage(context, statusCode)
+        }
+    }
+
+    fun httpStatusFrom(error: Throwable?): Int? {
+        val message = error?.message.orEmpty()
+        if (message.isBlank()) return null
+        return extractStatusCode(message).takeIf { it in 100..599 }
+    }
+
     fun extractStatusCode(errorMessage: String): Int {
         return try {
             val patterns = listOf(
@@ -65,6 +83,7 @@ object ErrorHandler {
             exception is IOException -> {
                 val statusCode = extractStatusCode(exception.message ?: "")
                 when {
+                    statusCode == 500 -> false // Firestore/quota 500 won't self-heal on immediate retry
                     statusCode in 500..599 -> true
                     statusCode in 400..499 -> false
                     statusCode == 0 -> true

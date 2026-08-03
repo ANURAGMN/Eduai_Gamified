@@ -10,14 +10,21 @@ import com.ncert7.aitutorandlab.data.local.dao.StudentDao
 import com.ncert7.aitutorandlab.data.local.entities.StudentEntity
 import com.ncert7.aitutorandlab.debug.DebugLogger
 import com.ncert7.aitutorandlab.repository.FirebaseRepository
+import com.ncert7.aitutorandlab.repository.NetworkException
+import com.ncert7.aitutorandlab.repository.QuestRepository
+import com.ncert7.aitutorandlab.notification.NotificationOrchestrator
+import com.ncert7.aitutorandlab.notification.NotificationType
 import com.ncert7.aitutorandlab.utils.LanguageHelper
 import com.ncert7.aitutorandlab.utils.TokenManager
+import com.ncert7.aitutorandlab.utils.getCurrentLanguageCode
+import com.ncert7.aitutorandlab.utils.normalizeLanguageCode
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 import javax.inject.Inject
 
 sealed class UpdateProfileState {
@@ -38,6 +45,8 @@ class SettingViewModel @Inject constructor(
     private val sharedPref: SharedPreferenceUtils,
     private val repository: FirebaseRepository,
     private val studentDao: StudentDao,
+    private val questRepository: QuestRepository,
+    private val notificationOrchestrator: NotificationOrchestrator,
     @ApplicationContext private val context: Context,
     val userId: String
 ) : ViewModel() {
@@ -49,8 +58,7 @@ class SettingViewModel @Inject constructor(
     val updateState: StateFlow<UpdateProfileState> = _updateState.asStateFlow()
 
     private val _selectedLanguage = MutableStateFlow(
-        // Load saved language on initialization, default to "en" if null
-        sharedPref.getLanguagePreference() ?: "en"
+        normalizeLanguageCode(getCurrentLanguageCode()),
     )
     val selectedLanguage: StateFlow<String> = _selectedLanguage.asStateFlow()
 
@@ -67,19 +75,50 @@ class SettingViewModel @Inject constructor(
         viewModelScope.launch {
             val result = studentDao.getStudentSync(userId)
             _student.value = result
+            _selectedLanguage.value = normalizeLanguageCode(getCurrentLanguageCode())
         }
     }
 
     fun setLanguage(langCode: String) {
         viewModelScope.launch {
-            // Update UI state immediately
-            _selectedLanguage.value = langCode
+            val normalized = normalizeLanguageCode(langCode)
+            _selectedLanguage.value = normalized
+            sharedPref.setLanguagePreference(normalized)
+            LanguageHelper.setLanguage(normalized)
 
-            // Save to SharedPreferences
-            sharedPref.setLanguagePreference(langCode)
+            studentDao.getStudentSync(userId)?.let { existing ->
+                val updated = existing.copy(language = normalized, isSynced = false)
+                studentDao.updateStudent(updated)
+                _student.value = updated
+            }
+        }
+    }
 
-            // Apply language change to app
-            LanguageHelper.setLanguage(langCode)
+    fun debugPrepareQuestAdTest(onDone: () -> Unit = {}) {
+        viewModelScope.launch {
+            val language = normalizeLanguageCode(sharedPref.getLanguagePreference() ?: "en")
+            questRepository.debugPrepareAdClaimTest(userId, language)
+            onDone()
+        }
+    }
+
+    fun debugFireTestNotification(
+        type: NotificationType,
+        onResult: (String) -> Unit = {},
+    ) {
+        viewModelScope.launch {
+            val message =
+                when (val result = notificationOrchestrator.fireDebugTest(type)) {
+                    is NotificationOrchestrator.DebugFireResult.Fired ->
+                        "Test notification fired: ${result.typeId}"
+                    NotificationOrchestrator.DebugFireResult.NoPermission ->
+                        "Enable notifications in system settings first."
+                    NotificationOrchestrator.DebugFireResult.NotLoggedIn ->
+                        "Log in to test notifications."
+                    NotificationOrchestrator.DebugFireResult.NotDebugBuild ->
+                        "Debug builds only."
+                }
+            onResult(message)
         }
     }
 
@@ -92,39 +131,72 @@ class SettingViewModel @Inject constructor(
         viewModelScope.launch {
             _updateState.value = UpdateProfileState.Loading
 
-            val existing = studentDao.getStudentSync(userId)
-            if (existing == null) {
-                _updateState.value = UpdateProfileState.Error("User not found")
-                return@launch
-            }
+            try {
+                val existing = studentDao.getStudentSync(userId)
+                if (existing == null) {
+                    _updateState.value = UpdateProfileState.Error("User not found")
+                    return@launch
+                }
 
-            val updatedStudent =
-                existing.copy(
+                val updatedStudent = existing.copy(
                     studentName = updatedName,
                     phoneNumber = updatedPhone,
+                    studentSchool = updatedSchool,
                     classLevel = updatedClass,
                     updatedAt = System.currentTimeMillis(),
                     isSynced = false
                 )
 
-            val firebaseSuccess =
-                repository.updateUserProfile(
-                    userId = existing.studentId,
-                    name = updatedName,
-                    phone = updatedPhone,
-                    school = updatedSchool,
-                    studentClass = updatedClass,
-                    updatedAt = updatedStudent.updatedAt
-                )
+                val firebaseSuccess = withTimeout(15_000) {
+                    repository.updateUserProfile(
+                        userId = existing.studentId,
+                        name = updatedName,
+                        phone = updatedPhone,
+                        school = updatedSchool,
+                        studentClass = updatedClass,
+                        updatedAt = updatedStudent.updatedAt
+                    )
+                }
 
-            if (firebaseSuccess) {
-                studentDao.updateStudent(updatedStudent.copy(isSynced = true))
-                _updateState.value = UpdateProfileState.Success
-                // Reload student data
-                loadStudent()
-            } else {
-                studentDao.updateStudent(updatedStudent)
-                _updateState.value = UpdateProfileState.Error("Failed to sync with server")
+                if (firebaseSuccess) {
+                    studentDao.updateStudent(updatedStudent.copy(isSynced = true))
+                    _student.value = updatedStudent.copy(isSynced = true)
+                    _updateState.value = UpdateProfileState.Success
+                } else {
+                    studentDao.updateStudent(updatedStudent)
+                    _student.value = updatedStudent
+                    _updateState.value = UpdateProfileState.Error("Failed to sync with server")
+                }
+            } catch (e: NetworkException) {
+                _updateState.value = UpdateProfileState.Error(
+                    e.message ?: "Network error. Please check your connection and try again."
+                )
+            } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
+                _updateState.value = UpdateProfileState.Error(
+                    "Connection timed out. Please check your internet and try again."
+                )
+            } catch (e: Exception) {
+                DebugLogger.errorLog("SettingViewModel", "Profile update failed: ${e.message}")
+                _updateState.value = UpdateProfileState.Error(
+                    e.message ?: "Failed to save profile. Please try again."
+                )
+            }
+        }
+    }
+
+    fun updateProfilePhoto(photoUri: String) {
+        viewModelScope.launch {
+            try {
+                val existing = studentDao.getStudentSync(userId) ?: return@launch
+                val updated = existing.copy(
+                    profilePhotoUrl = photoUri,
+                    updatedAt = System.currentTimeMillis(),
+                    isSynced = false
+                )
+                studentDao.updateStudent(updated)
+                _student.value = updated
+            } catch (e: Exception) {
+                DebugLogger.errorLog("SettingViewModel", "Profile photo update failed: ${e.message}")
             }
         }
     }

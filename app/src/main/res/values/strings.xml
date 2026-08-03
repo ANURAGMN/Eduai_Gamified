@@ -12,6 +12,13 @@
     <string name="create_account">Create Account</string>
     <string name="forget_password">Forgot Password?</string>
     <string name="policy_msg">By signing up, you agree to our Terms of Service and Privacy Policy</string>
+    <string name="policy_msg_prefix">By signing up, you agree to our </string>
+    <string name="policy_msg_suffix"> and </string>
+    <string name="terms_of_service_label">Terms of Service</string>
+    <string name="privacy_policy_label">Privacy Policy</string>
+    <string name="terms_of_service_url">https://anuragmn.github.io/terms-of-service.html</string>
+    <string name="privacy_policy_url">https://anuragmn.github.io/privacy-policy.html</string>
+    <string name="legal_section_title">Legal</string>
     <string name="continue_with_google">Continue with Gmail</string>
     <string name="padaams_sign_in">Institutional sign in</string>
     <string name="padaams_sign_in_subtitle">For @padaams.in accounts only. Use Continue with Gmail for personal Google accounts.</string>
@@ -64,8 +71,8 @@
     <string name="language_number">2 Languages</string>
     <string name="ai_title">AI-Powered</string>
     <string name="smart_learning">Smart Learning</string>
-    <string name="student_count">1M+ Students</string>
-    <string name="trusted_globally">Trusted Globally</string>
+    <string name="login_footer_labs_title">Interactive Labs</string>
+    <string name="login_footer_labs_subtitle">Math &amp; Science</string>
     <string name="lets_go_to_know_you_message">Let\'s get to know you better to personalize your learning experience</string>
     <string name="full_name_label">Full Name</string>
     <string name="phone_number_label">Phone Number</string>
@@ -187,9 +194,11 @@
     </plurals>
 
     <!--    Contact Details-->
-    <string name="contact_email">anurag@gmail.com</string>
+    <string name="contact_email">mail2anuragmn@gmail.com</string>
     <string name="contact_number">+91 94495 31117</string>
-    <string name="contact_website">paadams.in</string>
+    <string name="contact_website">https://padaams.in/</string>
+    <string name="error_open_link">Unable to open link. Please install a browser and try again.</string>
+    <string name="error_no_email_app">No email app found on this device.</string>
     <string name="send_us_mail_msg">Send us an email</string>
     <string name="we_would_love_msg">We\'d love to hear from you</string>
     <string name="open_email_app_msg">Open Email App</string>
@@ -300,6 +309,7 @@
     <string name="account">Account</string>
     <string name="edit_profile">Edit Profile</string>
     <string name="notifications">Notifications</string>
+    <string name="notification_action_cancel">Cancel</string>
     <string name="support">Support</string>
     <string name="contact_us">Contact Us</string>
 
@@ -358,6 +368,9 @@
     <string name="error_connection_timeout">Connection timed out. Please check your internet connection.</string>
     <string name="error_unable_to_reach_server">Unable to reach server. Please check your internet connection.</string>
     <string name="error_server_try_later">Server error. Please try again later.</string>
+    <string name="error_please_sign_in_again">Please sign in again.</string>
+    <string name="error_service_busy_try_again_shortly">Service busy, try again shortly.</string>
+    <string name="error_server_error">Server error.</string>
     <string name="error_request_error">Request error. Please try again.</string>
     <string name="error_network_error_with_code">Network error (%1$d). Please try again.</string>
     <string name="error_connection_error">Connection error. Please check your internet and try again.</string>

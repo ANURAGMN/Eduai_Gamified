@@ -9,4 +9,10 @@
     <color name="white">#FFFFFFFF</color>
     <color name="ic_launcher_background">#01194C</color>
 
+    <!-- Notification channel accent tints -->
+    <color name="notification_streaks">#FFF59E0B</color>
+    <color name="notification_quests">#FF22C55E</color>
+    <color name="notification_reminders">#FF6366F1</color>
+    <color name="notification_avatar">#FF9326F9</color>
+
 </resources>

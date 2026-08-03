@@ -3,10 +3,20 @@ package com.ncert7.aitutorandlab.di
 import android.content.Context
 import com.ncert7.aitutorandlab.data.local.database.EduAiDatabase
 import com.ncert7.aitutorandlab.data.local.SharedPreferenceUtils
+import com.ncert7.aitutorandlab.data.local.dao.ExamPlanDao
+import com.ncert7.aitutorandlab.data.local.dao.GardenDao
+import com.ncert7.aitutorandlab.data.local.dao.NotificationBudgetDao
+import com.ncert7.aitutorandlab.data.local.dao.NotificationLogDao
+import com.ncert7.aitutorandlab.data.local.dao.PlanTrialItemDao
+import com.ncert7.aitutorandlab.data.local.dao.FriendDao
+import com.ncert7.aitutorandlab.data.local.dao.GamificationDao
+import com.ncert7.aitutorandlab.data.local.dao.LeagueDao
 import com.ncert7.aitutorandlab.data.local.dao.ChapterAgentProgressDao
 import com.ncert7.aitutorandlab.data.local.dao.ChapterDao
 import com.ncert7.aitutorandlab.data.local.dao.ConceptDao
 import com.ncert7.aitutorandlab.data.local.dao.ProgressDao
+import com.ncert7.aitutorandlab.data.local.dao.QuestDailyDao
+import com.ncert7.aitutorandlab.data.local.dao.SessionDao
 import com.ncert7.aitutorandlab.data.local.dao.StreakDao
 import com.ncert7.aitutorandlab.data.local.dao.SimulationInteractionDao
 import com.ncert7.aitutorandlab.data.local.dao.StudentDao
@@ -89,6 +99,68 @@ object DatabaseModule {
 
     @Provides
     @Singleton
+    fun provideExamPlanDao(database: EduAiDatabase): ExamPlanDao {
+        return database.examPlanDao()
+    }
+
+    @Provides
+    @Singleton
+    fun providePlanTrialItemDao(database: EduAiDatabase): PlanTrialItemDao {
+        return database.planTrialItemDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideGamificationDao(database: EduAiDatabase): GamificationDao {
+        return database.gamificationDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideQuestDailyDao(database: EduAiDatabase): QuestDailyDao {
+        return database.questDailyDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideSessionDao(database: EduAiDatabase): SessionDao {
+        return database.sessionDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideLeagueDao(database: EduAiDatabase): LeagueDao {
+        return database.leagueDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideFriendDao(database: EduAiDatabase): FriendDao {
+        return database.friendDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideTutorConfigDao(database: EduAiDatabase): com.ncert7.aitutorandlab.data.local.dao.TutorConfigDao {
+        return database.tutorConfigDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideNotificationLogDao(database: EduAiDatabase): NotificationLogDao =
+        database.notificationLogDao()
+
+    @Provides
+    @Singleton
+    fun provideNotificationBudgetDao(database: EduAiDatabase): NotificationBudgetDao =
+        database.notificationBudgetDao()
+
+    @Provides
+    @Singleton
+    fun provideGardenDao(database: EduAiDatabase): GardenDao = database.gardenDao()
+
+    @Provides
+    @Singleton
     fun provideStreakManager(
         @ApplicationContext context: Context,
         streakRepository: StreakRepository,
@@ -104,6 +176,6 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideUserId(sharedPreferenceUtils: SharedPreferenceUtils): String {
-        return sharedPreferenceUtils.getUserId().toString()
+        return sharedPreferenceUtils.getUserId()?.takeIf { it.isNotBlank() } ?: ""
     }
 }

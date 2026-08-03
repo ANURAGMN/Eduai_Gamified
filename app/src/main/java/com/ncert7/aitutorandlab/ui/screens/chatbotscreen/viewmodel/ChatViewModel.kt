@@ -10,6 +10,7 @@ import com.ncert7.aitutorandlab.domain.chatbot.controller.IdleTimerController
 import com.ncert7.aitutorandlab.domain.chatbot.controller.ResourceController
 import com.ncert7.aitutorandlab.domain.chatbot.controller.TypingAnimationController
 import com.ncert7.aitutorandlab.domain.chatbot.model.ResourceDecision
+import com.ncert7.aitutorandlab.domain.chatbot.model.SessionResult
 import com.ncert7.aitutorandlab.domain.chatbot.usecase.AutoSuggestionUseCase
 import com.ncert7.aitutorandlab.domain.chatbot.usecase.AvatarChangeUseCase
 import com.ncert7.aitutorandlab.domain.chatbot.usecase.ChatIntent
@@ -20,15 +21,21 @@ import com.ncert7.aitutorandlab.domain.chatbot.usecase.ResourceDecisionUseCase
 import com.ncert7.aitutorandlab.domain.chatbot.usecase.SendMessageUseCase
 import com.ncert7.aitutorandlab.domain.chatbot.usecase.SessionUseCase
 import com.ncert7.aitutorandlab.domain.chatbot.usecase.TranslationUseCase
+import com.ncert7.aitutorandlab.domain.examplan.PlanTrialProgressTracker
+import com.ncert7.aitutorandlab.domain.examplan.TrialSessionStore
 import com.ncert7.aitutorandlab.domain.progress.ProgressEventTracker
+import com.ncert7.aitutorandlab.service.analytics.GamificationAnalyticsTracker
 import com.ncert7.aitutorandlab.repository.ConceptRepository
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.dataclass.ChatBotSettingsState
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.dataclass.ChatUiState
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.dataclass.ResourceCardUiState
 import com.ncert7.aitutorandlab.ui.viewModel.TextToSpeech
+import com.ncert7.aitutorandlab.utils.ErrorHandler
 import com.ncert7.aitutorandlab.utils.getCurrentLanguageCode
 import com.ncert7.aitutorandlab.utils.isKannada
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -53,6 +60,7 @@ class ChatViewModel @Inject constructor(
     private val conceptProgressUseCase: ConceptProgressUseCase,
     private val avatarChangeUseCase: AvatarChangeUseCase,
     private val progressEventTracker: ProgressEventTracker,
+    private val planTrialProgressTracker: PlanTrialProgressTracker,
     @ApplicationContext private val context: android.content.Context,
 
     ) : ViewModel() {
@@ -62,6 +70,8 @@ class ChatViewModel @Inject constructor(
 
     private var userId = ""
     private var initialized = false
+    /** Tracks in-flight auto-start / concept selection so sends wait for the active thread. */
+    private var sessionSetupJob: Job? = null
 
     /**
      * Syncs the ViewModel's isKannada flag with the current app locale.
@@ -114,9 +124,41 @@ class ChatViewModel @Inject constructor(
     }
 
     /**
-     * Checks if there's an existing session for the given concept
+     * Checks if there's an existing session for the given concept (English session key).
      */
     fun hasExistingSession(concept: String) = sessionUseCase.hasExistingSession(concept)
+
+    /** Time-based proceed: mark the current trial study item complete before leaving. */
+    fun recordTrialProceed() {
+        val trialItemId = TrialSessionStore.activeTrialItemId ?: return
+        viewModelScope.launch {
+            planTrialProgressTracker.recordGeReached(trialItemId)
+        }
+    }
+
+    /** Session API keys are always the English concept title stored at start time. */
+    private suspend fun resolveSessionConceptKey(concept: String): String {
+        conceptRepository.getAllConcepts().find {
+            it.conceptName == concept ||
+                it.conceptNameKannada == concept ||
+                it.conceptId == concept
+        }?.conceptName?.let { return it }
+        return concept
+    }
+
+    private fun launchSessionSetup(block: suspend () -> Unit): Job {
+        sessionSetupJob?.cancel()
+        return viewModelScope.launch {
+            try {
+                block()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                DebugLogger.errorLog("ChatViewModel", "Session setup error: ${e.message}")
+                appendSessionError(ErrorHandler.httpStatusFrom(e))
+            }
+        }.also { sessionSetupJob = it }
+    }
 
     /**
      * Initializes the ViewModel with the user ID and loads the list of available concepts.
@@ -147,21 +189,29 @@ class ChatViewModel @Inject constructor(
      * Fetches the concept name from the database using conceptId and delegates to selectConcept.
      * Uses only English concept name for starting the session, not Kannada.
      */
-    private fun autoStartWithConcept(conceptId: String) = viewModelScope.launch {
+    private fun autoStartWithConcept(conceptId: String) = launchSessionSetup {
         try {
             DebugLogger.debugLog("ChatViewModel", "autoStartWithConcept called with conceptId: $conceptId, userId: $userId")
 
-            // Fetch concept from repository and use English name only
             val conceptEntity = conceptRepository.getConcept(conceptId)
             if (conceptEntity == null) {
                 DebugLogger.errorLog("ChatViewModel", "Concept not found for ID: $conceptId")
-                return@launch
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        messages = it.messages + sendMessageUseCase.createAIMessage(
+                            ErrorHandler.getStudyAgentErrorMessage(context, null)
+                        ),
+                    )
+                }
+                return@launchSessionSetup
             }
 
             DebugLogger.debugLog("ChatViewModel", "Auto-starting with concept: ${conceptEntity.conceptName}")
-            selectConcept(conceptEntity.conceptName)
+            selectConceptInternal(conceptEntity.conceptName)
         } catch (e: Exception) {
             DebugLogger.errorLog("ChatViewModel", "Error auto-starting concept: ${e.message}")
+            appendSessionError(ErrorHandler.httpStatusFrom(e))
         }
     }
 
@@ -171,7 +221,6 @@ class ChatViewModel @Inject constructor(
      * Uses Kannada concept names if Kannada mode is enabled.
      */
     private fun refreshConcepts() = viewModelScope.launch {
-        _uiState.update { it.copy(isLoading = true) }
         try {
             // Fetch all concepts from the database
             val conceptEntities = conceptRepository.getAllConcepts()
@@ -198,7 +247,6 @@ class ChatViewModel @Inject constructor(
         } catch (e: Exception) {
             DebugLogger.errorLog("ChatViewModel", "Error loading concepts from DB: ${e.message}")
         }
-        _uiState.update { it.copy(isLoading = false) }
     }
 
     /**
@@ -263,21 +311,23 @@ class ChatViewModel @Inject constructor(
      * It checks if there's an existing session for the selected concept.
      * If from ConceptScreen and session exists, shows dialog. Otherwise proceeds directly.
      */
-    private fun selectConcept(concept: String, showDialogIfExists: Boolean = false) = viewModelScope.launch {
-        // Sync language state with current locale before selecting concept
+    private fun selectConcept(concept: String, showDialogIfExists: Boolean = false) =
+        launchSessionSetup {
+            val sessionKey = resolveSessionConceptKey(concept)
+            selectConceptInternal(sessionKey, showDialogIfExists)
+        }
+
+    private suspend fun selectConceptInternal(concept: String, showDialogIfExists: Boolean = false) {
         syncLanguageState()
 
         DebugLogger.debugLog("ChatViewModel", "selectConcept called with concept: $concept, showDialog: $showDialogIfExists")
 
-        // Check if session exists
         val mapping = sessionUseCase.loadThreadMapping(concept)
 
         if (showDialogIfExists && mapping != null) {
-            // Show dialog for user to choose resume or start new
             DebugLogger.debugLog("ChatViewModel", "Session exists, showing dialog for concept: $concept")
             _uiState.update { it.copy(pendingConceptForDialog = concept) }
         } else {
-            // Proceed with session (resume if exists, start new if not)
             resetUiForConcept(concept)
             if (mapping != null) {
                 DebugLogger.debugLog("ChatViewModel", "Found existing session, resuming: threadId=${mapping.first}, sessionId=${mapping.second}")
@@ -350,7 +400,7 @@ class ChatViewModel @Inject constructor(
      * Starts a new session for the given concept by calling the SessionUseCase.
      * Translates autosuggestions if Kannada mode is enabled.
      */
-    private suspend fun startSession(concept: String) {
+    private suspend fun startSession(concept: String): SessionResult {
         // Sync language state with current locale before starting session
         syncLanguageState()
 
@@ -358,8 +408,12 @@ class ChatViewModel @Inject constructor(
         val result = sessionUseCase.startSession(concept, userId, _uiState.value.isKannada, _uiState.value.studentLevel)
 
         if (!result.success) {
-            DebugLogger.errorLog("ChatViewModel", "Failed to start session for concept: $concept")
-            return _uiState.update { it.copy(isLoading = false) }
+            DebugLogger.errorLog(
+                "ChatViewModel",
+                "Failed to start session for concept: $concept (HTTP ${result.httpStatusCode})"
+            )
+            appendSessionError(result.httpStatusCode)
+            return result
         }
 
         DebugLogger.debugLog("ChatViewModel", "Session started successfully for concept: $concept")
@@ -397,7 +451,14 @@ class ChatViewModel @Inject constructor(
         val progress = conceptProgressUseCase.calculateProgressPercentage(result.currentState, result.metadata)
         _uiState.update { it.copy(currentProgressPercentage = progress) }
 
-        result.agentResponse?.let { handleAgentMessage(it, result.metadata) }
+        val openingMessage = result.agentResponse?.trim().orEmpty()
+        if (openingMessage.isNotEmpty()) {
+            handleAgentMessage(openingMessage, result.metadata)
+        } else {
+            DebugLogger.errorLog("ChatViewModel", "Session started but opening agent message was empty")
+            appendSessionError(500)
+        }
+        return result
     }
 
     /**
@@ -410,6 +471,34 @@ class ChatViewModel @Inject constructor(
         syncLanguageState()
 
         val result = sessionUseCase.resumeSession(threadId, sessionId)
+
+        if (!result.success) {
+            DebugLogger.errorLog(
+                "ChatViewModel",
+                "resumeSession failed for thread=$threadId (HTTP ${result.httpStatusCode}), starting fresh"
+            )
+            val concept = _uiState.value.selectedConcept
+            if (!concept.isNullOrBlank()) {
+                sessionUseCase.deleteSessionMapping(concept)
+                startSession(concept)
+            } else {
+                appendSessionError(result.httpStatusCode)
+                _uiState.update { it.copy(isSessionStarted = false) }
+            }
+            return
+        }
+
+        if (result.messages.isEmpty()) {
+            DebugLogger.warnLog("ChatViewModel", "resumeSession returned empty history for thread=$threadId, starting fresh")
+            val concept = _uiState.value.selectedConcept
+            if (!concept.isNullOrBlank()) {
+                sessionUseCase.deleteSessionMapping(concept)
+                startSession(concept)
+            } else {
+                _uiState.update { it.copy(isLoading = false, isSessionStarted = false) }
+            }
+            return
+        }
 
         val currentIsKannada = _uiState.value.isKannada
         DebugLogger.debugLog("ChatViewModel", "resumeSession - isKannada=$currentIsKannada, messages count=${result.messages.size}")
@@ -473,18 +562,19 @@ class ChatViewModel @Inject constructor(
     /**
      * Starts a fresh session for the given concept by deleting any existing session mapping and then starting a new session.
      */
-    private fun startFreshSession(concept: String) = viewModelScope.launch {
-        sessionUseCase.deleteSessionMapping(concept)
+    private fun startFreshSession(concept: String) = launchSessionSetup {
+        val sessionKey = resolveSessionConceptKey(concept)
+        sessionUseCase.deleteSessionMapping(sessionKey)
         _uiState.update {
             ChatUiState(
-                selectedConcept = concept,
+                selectedConcept = sessionKey,
                 availableConcepts = it.availableConcepts,
                 currentLanguage = it.currentLanguage,
                 studentLevel = it.studentLevel,
                 isKannada = it.isKannada
             )
         }
-        selectConcept(concept)
+        selectConceptInternal(sessionKey)
     }
 
     /**
@@ -505,8 +595,30 @@ class ChatViewModel @Inject constructor(
                 messages = it.messages + sendMessageUseCase.createUserMessage(message),
                 isLoading = true)
             }
-            if (!_uiState.value.isSessionStarted)
-                _uiState.value.selectedConcept?.let { startSession(it) }
+
+            if (!fromSuggestion) {
+                TrialSessionStore.activeTrialItemId?.let { trialItemId ->
+                    planTrialProgressTracker.recordIncrement(trialItemId)
+                    _uiState.value.selectedConcept?.let { conceptId ->
+                        val turnIndex =
+                            _uiState.value.messages.count { it.sender == "user" } + 1
+                        GamificationAnalyticsTracker.studyTurn(conceptId, turnIndex)
+                    }
+                }
+            }
+
+            // Wait for navigation auto-start / concept switch before continuing the thread.
+            sessionSetupJob?.join()
+
+            if (!_uiState.value.isSessionStarted) {
+                val concept = _uiState.value.selectedConcept
+                if (concept.isNullOrBlank()) {
+                    return@launch appendSessionError(null)
+                }
+                if (!startSession(concept).success) {
+                    return@launch
+                }
+            }
 
             val currentIsKannada = _uiState.value.isKannada
             val response = sessionUseCase.continueSession(
@@ -516,7 +628,7 @@ class ChatViewModel @Inject constructor(
                 currentIsKannada
             )
 
-            if (!response.success) return@launch appendError()
+            if (!response.success) return@launch appendSessionError(response.httpStatusCode)
 
             // Smart translate autosuggestions based on current app language
             val translatedSuggestions = if (response.autosuggestions.isNotEmpty()) {
@@ -603,12 +715,13 @@ class ChatViewModel @Inject constructor(
     /**
      * Appends an error message to the chat when something goes wrong with sending a message or processing the agent's response.
      */
-    private fun appendError() = _uiState.update {
+    private fun appendSessionError(httpStatusCode: Int? = null) = _uiState.update {
         it.copy(
             messages = it.messages + sendMessageUseCase.createAIMessage(
-                context.getString(com.ncert7.aitutorandlab.R.string.sorry_i_couldn_t_process_that_please_try_again)
+                ErrorHandler.getStudyAgentErrorMessage(context, httpStatusCode)
             ),
-            isLoading = false)
+            isLoading = false,
+        )
     }
     /**
      * Processes the agent's response text,

@@ -36,7 +36,10 @@ class AppLifecycleObserver : DefaultLifecycleObserver {
             InteractionTracker.endSession()
             delay(300)
             SessionManager.endSession()
-            DataSyncService.syncSimulationInteractions()
+            // Background is the natural once-per-session flush point. triggerFullSync() pushes the
+            // whole outbox (progress, streak, sessions, chapter, simulation interactions, garden)
+            // in one batch — run AFTER endSession() so the final screen-exit row is included.
+            DataSyncService.triggerFullSync()
             DebugLogger.debugLog("AppLifecycleObserver", "Session ended")
         }
     }

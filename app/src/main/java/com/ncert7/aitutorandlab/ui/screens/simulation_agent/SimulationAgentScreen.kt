@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import com.ncert7.aitutorandlab.domain.examplan.TrialSessionStore
+import com.ncert7.aitutorandlab.ui.components.AgentSessionTimeGate
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -22,21 +24,33 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.ncert7.aitutorandlab.config.GamificationFeatureFlags
 import com.ncert7.aitutorandlab.service.analytics.ScreenName
 import com.ncert7.aitutorandlab.service.analytics.TrackScreenEvent
+import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.AutoListenAfterAgentTurn
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.ChatBotSettings
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.ChatHeaderIcons
+import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.VoiceInputBar
+import com.ncert7.aitutorandlab.data.local.SharedPreferenceUtils
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.InputSection
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.AppDialog
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.dataclass.ChatBotSettingsState
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.dataclass.ChatUiState
 import com.ncert7.aitutorandlab.ui.screens.simulation_agent.components.SimulationConversationView
+import com.ncert7.aitutorandlab.ui.screens.simulation_agent.components.rememberSimulationKeyConceptTts
+import com.ncert7.aitutorandlab.ui.screens.simulation_agent.components.speakFromApiInsight
+import com.ncert7.aitutorandlab.ui.screens.simulation_agent.components.speakSimulationIntro
+import com.ncert7.aitutorandlab.ui.screens.simulation_agent.components.speakSimulationFooter
+import com.ncert7.aitutorandlab.ui.screens.simulation_agent.components.speakTitleFallback
 import com.ncert7.aitutorandlab.ui.theme.LocalDimensions
 import com.ncert7.aitutorandlab.ui.screens.simulation_agent.viewmodel.SimAgentUiState
 import com.ncert7.aitutorandlab.ui.screens.simulation_agent.viewmodel.SimulationAgentViewModel
 import com.ncert7.aitutorandlab.domain.simulation.usecase.SimulationIntent
 import com.ncert7.aitutorandlab.ui.viewModel.SpeechToText
 import com.ncert7.aitutorandlab.ui.viewModel.TextToSpeech
+import com.ncert7.aitutorandlab.utils.getCurrentLanguageCode
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import com.ncert7.aitutorandlab.utils.normalizeLanguageCode
 
 /**
@@ -57,6 +71,7 @@ fun SimulationAgentScreen(
 ) {
     val dimens = LocalDimensions.current
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val density = LocalDensity.current
     val viewModel: SimulationAgentViewModel = hiltViewModel()
     TrackScreenEvent(ScreenName.SIMULATIONAGENT)
@@ -79,12 +94,34 @@ fun SimulationAgentScreen(
     // TTS/STT states
     val ttsState by ttsController.state.collectAsState()
     val sttState by sttController.state.collectAsState()
+    val wordBoundaryIndex by ttsController.currentWordIndex.collectAsState()
+    val useNativeAvatar = GamificationFeatureFlags.isNativeTutorAvatarEnabled(context)
+
+    LaunchedEffect(useNativeAvatar) {
+        ttsController.setNativeLipSyncEnabled(useNativeAvatar)
+    }
 
     // Settings state (local UI-only state)
     var showSettingsMenu by remember { mutableStateOf(false) }
     var settingsState by remember { mutableStateOf(ChatBotSettingsState()) }
     var permissionGranted by remember { mutableStateOf(false) }
     var lastProcessedSpeechText by remember { mutableStateOf("") }
+
+    val normalizedLang = normalizeLanguageCode(currentLanguage.ifEmpty { getCurrentLanguageCode() })
+    val (keyConceptTts, _) = rememberSimulationKeyConceptTts(
+        languageCode = normalizedLang,
+        avatarCode = settingsState.selectedAvatar,
+        ttsController = ttsController,
+    )
+
+    // Hands-free voice: persisted toggle (default on). Mic auto-opens after the tutor speaks.
+    val sharedPrefs = remember { SharedPreferenceUtils(context) }
+    var handsFreeMode by remember { mutableStateOf(sharedPrefs.getHandsFreeMode()) }
+    val handsFreeLabel = if (currentLanguage.startsWith("kn", ignoreCase = true)) "ಧ್ವನಿ ಸಂಭಾಷಣೆ" else "Hands-free voice"
+
+    // Input mode: voice dock vs. text keyboard (persisted default).
+    var inputMode by remember { mutableStateOf(if (sharedPrefs.getVoiceFirst()) "voice" else "text") }
+    var focusTextField by remember { mutableStateOf(false) }
 
     // Initialize avatar display name only once when string resources are available
     val boyDisplayName = stringResource(R.string.boy)
@@ -141,6 +178,7 @@ fun SimulationAgentScreen(
      * ViewModel internally checks if session is already started for this ID
      */
     LaunchedEffect(simulationId) {
+        keyConceptTts.resetDedupe()
         viewModel.setConceptId(conceptId)
         viewModel.startNewSession(simulationId)
     }
@@ -165,6 +203,18 @@ fun SimulationAgentScreen(
     }
 
     /**
+     * LANGUAGE SYNC
+     * Lock the TTS voice + engine language to the selected app language so a Kannada
+     * session is read aloud in Kannada (not the en-IN default). Re-runs once device
+     * voices load and whenever the language or avatar changes.
+     */
+    LaunchedEffect(currentLanguage, ttsState.voicesFullyLoaded, settingsState.selectedAvatar) {
+        if (currentLanguage.isNotEmpty()) {
+            ttsController.setAppLanguage(settingsState.selectedAvatar, currentLanguage)
+        }
+    }
+
+    /**
      * TTS PLAYBACK CONTROL
      * CRITICAL: Uses shouldTriggerTts flag from ViewModel to prevent re-triggering on config changes
      * Only triggers when ViewModel explicitly sets shouldTriggerTts to true (on new message)
@@ -181,12 +231,21 @@ fun SimulationAgentScreen(
      * Processes speech-to-text results and updates input
      */
     LaunchedEffect(sttState.resultText, sttState.isListening) {
-        if (sttState.resultText.isNotEmpty() &&
+        val spoken = sttState.resultText.trim()
+        if (spoken.isNotEmpty() &&
             !sttState.isListening &&
-            sttState.resultText != lastProcessedSpeechText
+            spoken != lastProcessedSpeechText
         ) {
-            lastProcessedSpeechText = sttState.resultText
-            viewModel.onUserInputChanged(sttState.resultText)
+            lastProcessedSpeechText = spoken
+            // Auto-send captured voice (speak → it sends) when the agent is ready;
+            // otherwise stage it in the input box.
+            if (isInputEnabled) {
+                ttsController.stop()
+                viewModel.handleIntent(SimulationIntent.SendUserResponse(spoken))
+                viewModel.onUserInputChanged("")
+            } else {
+                viewModel.onUserInputChanged(spoken)
+            }
         }
     }
 
@@ -212,14 +271,27 @@ fun SimulationAgentScreen(
     /**
      * Voice options (derived state)
      */
-    val voiceOptions = remember(ttsState.availableVoices, settingsState.selectedAvatar) {
-        ttsController.getFilteredVoiceOptions("en", settingsState.selectedAvatar)
+    val voiceOptions = remember(ttsState.availableVoices, currentLanguage, settingsState.selectedAvatar) {
+        ttsController.getFilteredVoiceOptions(currentLanguage.ifEmpty { "en" }, settingsState.selectedAvatar)
     }
 
-    val displayedVoiceName = remember(ttsState.selectedVoice, settingsState.selectedAvatar) {
+    val displayedVoiceName = remember(ttsState.selectedVoice, currentLanguage, settingsState.selectedAvatar) {
         ttsState.selectedVoice?.let { ttsController.formatVoiceName(it) }
-            ?: ttsController.getDefaultVoiceName("en", settingsState.selectedAvatar)
+            ?: ttsController.getDefaultVoiceName(currentLanguage.ifEmpty { "en" }, settingsState.selectedAvatar)
     }
+
+    // Hands-free loop: auto-open the mic once the tutor's turn completes (voice mode only).
+    AutoListenAfterAgentTurn(
+        enabled = inputMode == "voice" && handsFreeMode && !showSettingsMenu,
+        turnComplete = !ttsState.isSpeaking &&
+                isInputEnabled &&
+                currentTeacherMessage.isNotEmpty(),
+        isListening = sttState.isListening,
+        canListen = permissionGranted && sttState.isInitialized,
+        onStartListening = {
+            sttController.startListening(currentLanguage)
+        }
+    )
 
     Box(modifier = Modifier.fillMaxSize().background(White)) {
         Column(modifier = Modifier.fillMaxSize().imePadding()) {
@@ -291,7 +363,7 @@ fun SimulationAgentScreen(
                                 "1.0x" -> 1.0f
                                 "1.25x" -> 1.25f
                                 "1.5x" -> 1.5f
-                                else -> 0.75f
+                                else -> 1.0f
                             }
                             ttsController.setSpeechRate(speed)
                             if (ttsState.isSpeaking) {
@@ -299,7 +371,25 @@ fun SimulationAgentScreen(
                                 ttsController.speak(currentTeacherMessage)
                             }
                             viewModel.onSpeedChanged()
-                        }
+                        },
+                        useNativeTutorAvatar = useNativeAvatar,
+                        handsFreeMode = handsFreeMode,
+                        onHandsFreeChange = {
+                            handsFreeMode = it
+                            sharedPrefs.setHandsFreeMode(it)
+                        },
+                        handsFreeLabel = handsFreeLabel,
+                        showInputModeSetting = true,
+                        voiceFirst = inputMode == "voice",
+                        onInputModeChange = { voiceFirst ->
+                            sharedPrefs.setVoiceFirst(voiceFirst)
+                            if (!voiceFirst) sttController.stopListening()
+                            focusTextField = false
+                            inputMode = if (voiceFirst) "voice" else "text"
+                        },
+                        defaultInputLabel = if (currentLanguage.startsWith("kn", ignoreCase = true)) "ಡೀಫಾಲ್ಟ್ ಇನ್‌ಪುಟ್" else "Default input",
+                        voiceFirstLabel = if (currentLanguage.startsWith("kn", ignoreCase = true)) "ಧ್ವನಿ ಮೊದಲು" else "Voice first",
+                        textFirstLabel = if (currentLanguage.startsWith("kn", ignoreCase = true)) "ಪಠ್ಯ ಮೊದಲು" else "Text first",
                     )
                 }
             )
@@ -359,41 +449,125 @@ fun SimulationAgentScreen(
                 ttsController = ttsController,
                 onParamsChanged = { viewModel.handleIntent(SimulationIntent.ParametersChanged(it)) },
                 simulationUrl = sessionData?.simulation?.htmlUrl?.takeIf { it.isNotBlank() },
-                onPageFinished = { viewModel.onSimulationUrlLoaded(simulationId) },
+                onPageFinished = {
+                    viewModel.onSimulationUrlLoaded(simulationId)
+                    scope.launch {
+                        delay(3_000)
+                        if (
+                            keyConceptTts.hasSpokenForSimulation(simulationId) ||
+                            keyConceptTts.hasPendingForSimulation(simulationId)
+                        ) return@launch
+                        sessionData?.concepts?.currentConcept?.keyInsight
+                            ?.trim()
+                            ?.takeIf { it.isNotEmpty() }
+                            ?.let { insight ->
+                                keyConceptTts.speakFromApiInsight(
+                                    keyInsight = insight,
+                                    simulationKey = simulationId,
+                                    conceptIndex = sessionData?.concepts?.currentIndex ?: 0,
+                                )
+                            }
+                            ?: sessionData?.simulation?.title?.trim()?.takeIf { it.isNotEmpty() }?.let { title ->
+                                keyConceptTts.speakTitleFallback(
+                                    title = title,
+                                    simulationKey = simulationId,
+                                )
+                            }
+                    }
+                },
+                onSimulationIntroReported = { htmlText ->
+                    htmlText.trim().takeIf { it.isNotEmpty() }?.let { text ->
+                        keyConceptTts.speakSimulationIntro(
+                            text = text,
+                            simulationKey = simulationId,
+                        )
+                    }
+                },
+                onSimulationFooterReported = { htmlText ->
+                    htmlText.trim().takeIf { it.isNotEmpty() }?.let { text ->
+                        keyConceptTts.speakSimulationFooter(
+                            text = text,
+                            simulationKey = simulationId,
+                        )
+                    }
+                },
                 languageCode = normalizeLanguageCode(currentLanguage),
+                useNativeAvatar = useNativeAvatar,
+                ttsState = ttsState,
+                wordBoundaryIndex = wordBoundaryIndex,
+                isListening = sttState.isListening,
                 modifier = Modifier.weight(1f).background(White),
             )
 
             /**
-             * User Input section
+             * User Input section — voice dock or text keyboard.
              */
-            InputSection(
-                chatState = ChatUiState(
-                    inputText = userInput,
-                    isLoading = !isInputEnabled
-                ),
-                sttState = sttState,
-                onTextChange = { viewModel.handleIntent(SimulationIntent.UpdateInput(it)) },
-                onSendClick = {
-                    ttsController.stop()
-                    viewModel.handleIntent(SimulationIntent.SendUserResponse(userInput))
-                },
-                onSpeakClick = {
-                    if (ttsState.isSpeaking) {
+            if (inputMode == "voice") {
+                VoiceInputBar(
+                    isKannada = currentLanguage.startsWith("kn", ignoreCase = true),
+                    isListening = sttState.isListening,
+                    isSpeaking = ttsState.isSpeaking,
+                    isThinking = uiState is SimAgentUiState.Loading,
+                    transcript = sttState.resultText,
+                    statusMessage = sttState.statusMessage,
+                    amplitude = sttState.audioAmplitude,
+                    onMicTap = {
+                        if (ttsState.isSpeaking) ttsController.stop()
+                        if (permissionGranted && sttState.isInitialized) {
+                            sttController.startListening(currentLanguage)
+                        } else if (!permissionGranted) {
+                            permissionLauncher.launch(RECORD_AUDIO)
+                        }
+                    },
+                    onStopListening = { sttController.stopListening() },
+                    onSwitchToType = {
+                        sttController.stopListening()
+                        inputMode = "text"
+                        focusTextField = true
+                    },
+                )
+            } else {
+                InputSection(
+                    chatState = ChatUiState(
+                        inputText = userInput,
+                        isLoading = !isInputEnabled
+                    ),
+                    sttState = sttState,
+                    onTextChange = { viewModel.handleIntent(SimulationIntent.UpdateInput(it)) },
+                    onSendClick = {
                         ttsController.stop()
-                    }
-                    if (permissionGranted && sttState.isInitialized) {
-                        sttController.startListening(currentLanguage)
-                    } else if (!permissionGranted) {
-                        permissionLauncher.launch(RECORD_AUDIO)
-                    }
-                },
-                onStopListening = { sttController.stopListening() },
-                onSuggestionClick = { /* Not used */ },
-                shouldDisableSend = !isInputEnabled,
-                showImageIcon = false
-            )
+                        viewModel.handleIntent(SimulationIntent.SendUserResponse(userInput))
+                    },
+                    onSpeakClick = {
+                        // Text-mode mic → switch to the voice dock and start listening.
+                        focusTextField = false
+                        inputMode = "voice"
+                        if (ttsState.isSpeaking) ttsController.stop()
+                        if (permissionGranted && sttState.isInitialized) {
+                            sttController.startListening(currentLanguage)
+                        } else if (!permissionGranted) {
+                            permissionLauncher.launch(RECORD_AUDIO)
+                        }
+                    },
+                    onStopListening = { sttController.stopListening() },
+                    onSuggestionClick = { /* Not used */ },
+                    shouldDisableSend = !isInputEnabled,
+                    showImageIcon = false,
+                    kannadaKeyboard = currentLanguage.startsWith("kn", ignoreCase = true),
+                    autoFocus = focusTextField
+                )
+            }
         }
+
+        AgentSessionTimeGate(
+            languageCode = currentLanguage,
+            inTrialMode = TrialSessionStore.activeTrialItemId != null,
+            onProceed = {
+                viewModel.recordTrialProceed()
+                onNavigateBack()
+            },
+            modifier = Modifier.align(Alignment.BottomCenter),
+        )
     }
 
     // Session Resume Dialog - Ask to continue or start fresh

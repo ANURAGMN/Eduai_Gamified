@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="theme-color" content="#8e44ad" />
+<title>Olfactory Indicators – Guided</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0; font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: #f4f2fb; color: #2c2c3a; padding-bottom: 120px;
+  }
+  .hero {
+    background: linear-gradient(135deg, #8e44ad, #6c5ce7); color: #fff;
+    padding: 20px 16px; text-align: center;
+  }
+  .hero h1 { margin: 0; font-size: 22px; }
+  .hero p { margin: 6px 0 0; opacity: .9; font-size: 13px; }
+  .wrap { max-width: 520px; margin: 0 auto; padding: 16px; }
+  .card { background: #fff; border-radius: 16px; padding: 16px; box-shadow: 0 4px 16px rgba(108,92,231,.08); }
+  .sub { font-weight: 600; color: #3a2f5b; margin: 4px 0 12px; }
+  .stage { display: flex; align-items: center; justify-content: center; gap: 14px; margin: 10px 0; }
+  .beaker { text-align: center; }
+  .beaker .emoji { font-size: 46px; }
+  .beaker .lbl { font-size: 11px; color: #777; margin-top: 4px; }
+  .plus { font-size: 26px; color: #8e44ad; }
+  .mixbar {
+    height: 60px; border-radius: 10px; margin: 12px 0;
+    background: repeating-linear-gradient(45deg,#efeaf7,#efeaf7 10px,#e7e0f3 10px,#e7e0f3 20px);
+    display: flex; align-items: center; justify-content: flex-end; padding: 8px;
+  }
+  #btn-mix {
+    background: linear-gradient(135deg,#8e44ad,#6c5ce7); color: #fff; border: none;
+    border-radius: 22px; padding: 10px 18px; font-size: 14px; font-weight: 600; cursor: pointer;
+  }
+  .result { background: #faf8fe; border-radius: 12px; padding: 12px; margin-top: 10px; font-size: 13px; }
+  .result .row { display: flex; justify-content: space-between; padding: 3px 0; }
+  .result .k { color: #777; } .result .v { font-weight: 600; }
+  .acid { color: #e67e22; } .base { color: #16a085; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+  .sol {
+    background: #fff; border: 1.5px solid #eee; border-radius: 12px; padding: 12px;
+    text-align: center; cursor: pointer; transition: transform .1s;
+  }
+  .sol:active { transform: scale(.97); }
+  .sol.sel { border-color: #8e44ad; background: #f6f1fb; }
+  .sol .emoji { font-size: 26px; } .sol .nm { font-size: 13px; font-weight: 600; margin-top: 4px; }
+  .sol .tp { font-size: 11px; margin-top: 2px; }
+
+  /* Guided coach highlight — vibrant red glow + blink */
+  .edu-hl { outline: 4px solid #ff1e1e !important; outline-offset: 3px; border-radius: 12px;
+            animation: eduPulse .85s ease-in-out infinite; }
+  @keyframes eduPulse {
+    0%,100% { outline-color:#ff1e1e; box-shadow:0 0 0 0 rgba(255,30,30,.9), 0 0 12px 3px rgba(255,45,45,.65); }
+    50%     { outline-color:#ff5a5a; box-shadow:0 0 0 12px rgba(255,30,30,0), 0 0 34px 14px rgba(255,45,45,.95); }
+  }
+
+  /* Coach bar */
+  #coach {
+    position: fixed; left: 0; right: 0; bottom: 0; background: #fff;
+    box-shadow: 0 -4px 20px rgba(108,92,231,.12); border-top: 1px solid #eee;
+    padding: 12px 14px; max-width: 520px; margin: 0 auto;
+  }
+  #coach .top { display: flex; gap: 10px; align-items: flex-start; }
+  #coach .av { width: 34px; height: 34px; border-radius: 50%; background: #f0e9fb;
+               display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+  #coach .sn { font-size: 11px; color: #999; }
+  #coach .in { font-size: 14px; color: #2c2c3a; margin-top: 2px; font-weight: 500; }
+  #coach .x { margin-left: auto; color: #aaa; cursor: pointer; font-size: 20px; line-height: 1; }
+  #coach .bottom { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+  #dots { display: flex; gap: 4px; flex: 1; }
+  #dots i { width: 16px; height: 4px; border-radius: 2px; background: #e5e0f0; }
+  #dots i.on { background: #8e44ad; }
+  .hint { color: #8e44ad; font-size: 12.5px; font-weight: 500; flex: 1; }
+  .skip { color: #999; font-size: 11px; cursor: pointer; padding: 4px 8px; }
+  #nextBtn { background: #8e44ad; color: #fff; border: none; border-radius: 20px;
+             padding: 8px 18px; font-size: 13px; font-weight: 600; cursor: pointer; }
+</style>
+</head>
+<body>
+  <div class="hero">
+    <h1>👃 Olfactory Indicators</h1>
+    <p>Using smell to identify acids and bases!</p>
+  </div>
+
+  <div class="wrap">
+    <div class="card">
+      <div class="sub">Mix onion with different solutions</div>
+      <div class="stage">
+        <div class="beaker"><div class="emoji">🧅</div><div class="lbl">Chopped Onion</div></div>
+        <div class="plus">+</div>
+        <div class="beaker"><div class="emoji" id="sel-emoji">🥛</div><div class="lbl" id="sel-name">Select a solution</div></div>
+      </div>
+      <div class="mixbar"><button id="btn-mix">👆 Mix Together</button></div>
+      <div class="result">
+        <div class="row"><span class="k">Solution:</span><span class="v" id="r-sol">—</span></div>
+        <div class="row"><span class="k">Type:</span><span class="v" id="r-type">—</span></div>
+        <div class="row"><span class="k">Onion Smell:</span><span class="v" id="r-smell">—</span></div>
+        <div class="row"><span class="k">Conclusion:</span><span class="v" id="r-conc">—</span></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <div class="sub">Select a solution to test:</div>
+      <div class="grid">
+        <div class="sol" id="sol-tamarind" data-nm="Tamarind Water" data-type="acid" data-em="🥤">
+          <div class="emoji">🥤</div><div class="nm">Tamarind Water</div><div class="tp acid">(Acid)</div></div>
+        <div class="sol" id="sol-baking" data-nm="Baking Soda" data-type="base" data-em="🧂">
+          <div class="emoji">🧂</div><div class="nm">Baking Soda</div><div class="tp base">(Base)</div></div>
+        <div class="sol" id="sol-vinegar" data-nm="Vinegar" data-type="acid" data-em="🧴">
+          <div class="emoji">🧴</div><div class="nm">Vinegar</div><div class="tp acid">(Acid)</div></div>
+        <div class="sol" id="sol-soap" data-nm="Soap Solution" data-type="base" data-em="🫧">
+          <div class="emoji">🫧</div><div class="nm">Soap Solution</div><div class="tp base">(Base)</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="coach">
+    <div class="top">
+      <div class="av">🧑‍🏫</div>
+      <div style="flex:1">
+        <div class="sn" id="sn">Step 1 of 8</div>
+        <div class="in" id="in">Onions smell strong! We'll use that smell to tell acids from bases.</div>
+      </div>
+      <div class="x" id="closeCoach">×</div>
+    </div>
+    <div class="bottom" id="bottom"></div>
+  </div>
+
+<script>
+(function(){
+  // ---- Simulation logic ----
+  var selected = null;
+  function selectSolution(el){
+    document.querySelectorAll('.sol').forEach(function(s){ s.classList.remove('sel'); });
+    el.classList.add('sel');
+    selected = { id: el.id, nm: el.dataset.nm, type: el.dataset.type, em: el.dataset.em };
+    document.getElementById('sel-emoji').textContent = el.dataset.em;
+    document.getElementById('sel-name').textContent = el.dataset.nm;
+  }
+  document.querySelectorAll('.sol').forEach(function(s){
+    s.addEventListener('click', function(){ selectSolution(s); });
+  });
+  document.getElementById('btn-mix').addEventListener('click', function(){
+    if(!selected){ return; }
+    var isAcid = selected.type === 'acid';
+    document.getElementById('r-sol').textContent = selected.nm;
+    var t = document.getElementById('r-type');
+    t.textContent = isAcid ? 'Acidic' : 'Basic';
+    t.className = 'v ' + (isAcid ? 'acid' : 'base');
+    document.getElementById('r-smell').textContent = isAcid ? 'Strong 😤 (stays)' : 'Gone 😊 (faded)';
+    document.getElementById('r-conc').textContent = isAcid ? 'ACID — smell remains' : 'BASE — smell neutralised';
+  });
+
+  // ---- Guided coach ----
+  var steps = [
+    { text: "Onions smell strong! We'll use that smell to tell acids from bases.", target: null },
+    { text: "Let's start with an acid — tap “Tamarind Water”.", target: "sol-tamarind" },
+    { text: "Now tap “Mix Together” to mix it with the chopped onion.", target: "btn-mix" },
+    { text: "Take a sniff 👃 — the strong onion smell stays. Acids keep the smell!", target: null },
+    { text: "Now let's try a base — tap “Baking Soda”.", target: "sol-baking" },
+    { text: "Tap “Mix Together” again.", target: "btn-mix" },
+    { text: "This time the smell fades away — bases neutralise it.", target: null },
+    { text: "That's the trick — acids keep the onion smell, bases remove it. Great work! While these are just examples, I'd recommend exploring more on your own — try the other options and see what happens!", target: null }
+  ];
+  var i = 0;
+  var snEl = document.getElementById('sn');
+  var inEl = document.getElementById('in');
+  var bottom = document.getElementById('bottom');
+
+  // progress dots
+  var dots = document.createElement('div'); dots.id = 'dots';
+  steps.forEach(function(){ dots.appendChild(document.createElement('i')); });
+
+  function clearHi(){ var p = document.querySelector('.edu-hl'); if(p) p.classList.remove('edu-hl'); }
+  function highlight(id){
+    clearHi();
+    if(!id) return;
+    var el = document.getElementById(id);
+    if(el){ el.classList.add('edu-hl'); el.scrollIntoView({behavior:'smooth', block:'center'}); }
+  }
+
+  function render(){
+    var s = steps[i];
+    snEl.textContent = (i >= steps.length-1) ? 'All done! 🎉' : ('Step ' + (i+1) + ' of ' + steps.length);
+    inEl.textContent = s.text;
+    highlight(s.target);
+    [].forEach.call(dots.children, function(d, idx){ d.className = idx <= i ? 'on' : ''; });
+
+    bottom.innerHTML = '';
+    bottom.appendChild(dots);
+    if (s.target) {
+      // action step: must tap the highlighted control; tiny skip
+      var hint = document.createElement('div'); hint.className = 'hint';
+      hint.textContent = '👆 Tap the glowing control to continue';
+      var skip = document.createElement('div'); skip.className = 'skip'; skip.textContent = 'Skip';
+      skip.addEventListener('click', next);
+      bottom.appendChild(hint); bottom.appendChild(skip);
+    } else {
+      var btn = document.createElement('button'); btn.id = 'nextBtn';
+      btn.textContent = (i >= steps.length-1) ? 'Done' : 'Next ›';
+      btn.addEventListener('click', next);
+      bottom.appendChild(btn);
+    }
+  }
+
+  function next(){
+    if (i < steps.length-1) { i++; render(); }
+    else { document.getElementById('coach').style.display = 'none'; clearHi(); }
+  }
+
+  // auto-advance when the learner actually taps the highlighted target
+  document.body.addEventListener('click', function(e){
+    var s = steps[i];
+    if (!s || !s.target) return;
+    var tgt = document.getElementById(s.target);
+    if (tgt && (e.target === tgt || tgt.contains(e.target))) {
+      setTimeout(next, 250);
+    }
+  }, true);
+
+  document.getElementById('closeCoach').addEventListener('click', function(){
+    document.getElementById('coach').style.display = 'none'; clearHi();
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>

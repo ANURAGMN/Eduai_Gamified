@@ -1,0 +1,27 @@
+{
+  "simId": "science_2_4",
+  "lang": "en",
+  "title": "Red Rose Indicator",
+  "steps": [
+    {
+      "text": "Rose petal extract is a natural indicator. It's PINK to start with — let's see how acids and bases change it."
+    },
+    {
+      "text": "Test an acid — tap “Lemon” (or vinegar).",
+      "target": "Lemon"
+    },
+    {
+      "text": "The pink extract turns RED. Rose extract turns red in acids."
+    },
+    {
+      "text": "Now test a base — tap “Soap”.",
+      "target": "Soap"
+    },
+    {
+      "text": "This time it turns GREEN. Rose extract turns green in bases, and stays pink in neutral solutions."
+    },
+    {
+      "text": "So rose extract is a complete natural indicator — red for acids, green for bases, pink for neutral."
+    }
+  ]
+}

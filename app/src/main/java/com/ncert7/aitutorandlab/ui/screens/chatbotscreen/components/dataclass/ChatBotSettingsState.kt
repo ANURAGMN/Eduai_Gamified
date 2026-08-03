@@ -3,7 +3,7 @@ package com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.dataclass
 data class ChatBotSettingsState(
     val selectedAvatar: String = "disable",
     val selectedAvatarDisplayName: String = "", // Localized display name for avatar
-    val selectedSpeed: String = "0.75x",
+    val selectedSpeed: String = "1.0x",
     val selectedStudentLevel: String = "medium",
     val voiceOptions: List<String> = emptyList(),
     val displayedVoiceName: String = "",

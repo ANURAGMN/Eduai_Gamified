@@ -27,26 +27,25 @@ fun CenterPopupCard(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit
 ) {
-    if (!visible) return
     val dimensions = LocalDimensions.current
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Black.copy(alpha = 0.8f))
-            .clickable { onDismiss() },   // tap outside to dismiss
-        contentAlignment = Alignment.Center
+    AnimatedVisibility(
+        visible = visible,
+        enter = slideInVertically { it / 2 } + fadeIn(),
+        exit = slideOutVertically { it / 2 } + fadeOut()
     ) {
-        AnimatedVisibility(
-            visible = true,
-            enter = slideInVertically { it / 2 } + fadeIn(),
-            exit = slideOutVertically { it / 2 } + fadeOut()
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Black.copy(alpha = 0.8f))
+                .clickable { onDismiss() },
+            contentAlignment = Alignment.Center
         ) {
             Card(
                 modifier = modifier
                     .fillMaxWidth(0.95f)
                     .wrapContentHeight()
-                    .clickable(enabled = false) {}, // prevents dismiss when tapping card
+                    .clickable(enabled = false) {},
                 shape = RoundedCornerShape(dimensions.cornerRadiusRound),
                 elevation = CardDefaults.cardElevation(dimensions.cardElevation)
             ) {

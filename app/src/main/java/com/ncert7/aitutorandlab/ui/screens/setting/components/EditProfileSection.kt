@@ -1,11 +1,14 @@
 package com.ncert7.aitutorandlab.ui.screens.setting.components
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -38,13 +41,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewModelScope
 import com.ncert7.aitutorandlab.R
 import com.ncert7.aitutorandlab.data.local.entities.StudentEntity
 import com.ncert7.aitutorandlab.debug.DebugLogger
@@ -66,8 +69,10 @@ import com.ncert7.aitutorandlab.ui.theme.TextPrimary
 import com.ncert7.aitutorandlab.ui.theme.White
 import com.ncert7.aitutorandlab.ui.screens.setting.viewmodel.SettingViewModel
 import com.ncert7.aitutorandlab.ui.screens.setting.viewmodel.UpdateProfileState
-import kotlinx.coroutines.launch
+import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
+import com.bumptech.glide.integration.compose.GlideImage
 
+@OptIn(ExperimentalGlideComposeApi::class)
 @Composable
 fun EditProfileScreen(
     userId: String,
@@ -102,28 +107,48 @@ fun EditProfileScreen(
             student?.phoneNumber.orEmpty()
         )
     }
+    var profilePhotoUri by remember {
+        mutableStateOf(student?.profilePhotoUrl)
+    }
 
-    val classOptions = (1..10).map { "Class $it" }
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri?.toString()?.let { selected ->
+            profilePhotoUri = selected
+            userViewModel.updateProfilePhoto(selected)
+        }
+    }
+
+    LaunchedEffect(student) {
+        student?.let {
+            userName = it.studentName
+            classValue = it.classLevel
+            school = it.studentSchool
+            phoneNumber = it.phoneNumber
+            profilePhotoUri = it.profilePhotoUrl
+        }
+    }
 
     var nameError by remember { mutableStateOf<String?>(null) }
     var phoneError by remember { mutableStateOf<String?>(null) }
     var schoolError by remember { mutableStateOf<String?>(null) }
+    var saveError by remember { mutableStateOf<String?>(null) }
 
-    // object of UpdateUserViewModel
+    val classOptions = (1..10).map { "Class $it" }
     val updateState by userViewModel.updateState.collectAsState()
 
     LaunchedEffect(updateState) {
         when (updateState) {
             UpdateProfileState.Success -> {
                 DebugLogger.debugLog("EditProfilePopUp", "Update success")
+                saveError = null
                 onClose()
                 userViewModel.resetState()
             }
             is UpdateProfileState.Error -> {
-                DebugLogger.errorLog(
-                    "EditProfilePopUp",
-                    (updateState as UpdateProfileState.Error).message
-                )
+                saveError = (updateState as UpdateProfileState.Error).message
+                DebugLogger.errorLog("EditProfilePopUp", saveError ?: "Update failed")
                 userViewModel.resetState()
             }
             else -> Unit
@@ -155,18 +180,28 @@ fun EditProfileScreen(
                 ),
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                imageVector = Icons.Default.Person, // You'll need to add this icon
-                contentDescription = stringResource(R.string.profile_photo),
-                modifier = Modifier.size(dimensions.avatarSizeLarge),
-                tint = AccentBlue
-            )
+            if (profilePhotoUri != null) {
+                GlideImage(
+                    model = profilePhotoUri,
+                    contentDescription = stringResource(R.string.profile_photo),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(CircleShape),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Default.Person,
+                    contentDescription = stringResource(R.string.profile_photo),
+                    modifier = Modifier.size(dimensions.avatarSizeLarge),
+                    tint = AccentBlue
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(dimensions.spaceMedium))
-        // Change Photo Button
         OutlinedButton(
-            onClick = { /* Handle photo change */},
+            onClick = { photoPickerLauncher.launch("image/*") },
             modifier = Modifier.height(dimensions.buttonHeightSmall),
             colors =
                 ButtonDefaults.outlinedButtonColors(
@@ -329,18 +364,27 @@ fun EditProfileScreen(
         )
         Spacer(modifier = Modifier.height(dimensions.spaceLarge))
 
-        // Save Changes Button
+        if (saveError != null) {
+            Text(
+                text = saveError!!,
+                color = ColorError,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(dimensions.spaceSmall))
+        }
+
         Button(
             onClick = {
-                userViewModel.viewModelScope.launch {
-                    // TODO: move it to viewmodel
-                    userViewModel.updateProfile(
-                        updatedName = userName,
-                        updatedPhone = phoneNumber,
-                        updatedClass = classValue,
-                        updatedSchool = school
-                    )
-                } },
+                saveError = null
+                if (nameError != null || phoneError != null || schoolError != null) return@Button
+                userViewModel.updateProfile(
+                    updatedName = userName,
+                    updatedPhone = phoneNumber,
+                    updatedClass = classValue,
+                    updatedSchool = school
+                )
+            },
             enabled = updateState !is UpdateProfileState.Loading,
             modifier = Modifier.fillMaxWidth().height(dimensions.buttonHeight),
             colors = ButtonDefaults.buttonColors(

@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.ncert7.aitutorandlab.ui.components.DropDownMenu
+import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.InputModeChip
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.dataclass.ChatBotSettingsState
 import com.ncert7.aitutorandlab.ui.theme.BrandPrimary
 import com.ncert7.aitutorandlab.ui.theme.IconPrimary
@@ -29,7 +30,17 @@ fun MathBotSettings(
     onProblemChange: (String) -> Unit,
     onLevelChange: (String) -> Unit,
     onSpeedChange: (String) -> Unit,
-    isRevisionMode: Boolean = false
+    isRevisionMode: Boolean = false,
+    useNativeTutorAvatar: Boolean = false,
+    handsFreeMode: Boolean = true,
+    onHandsFreeChange: (Boolean) -> Unit = {},
+    handsFreeLabel: String = "Hands-free voice",
+    showInputModeSetting: Boolean = false,
+    voiceFirst: Boolean = true,
+    onInputModeChange: (Boolean) -> Unit = {},
+    defaultInputLabel: String = "Default input",
+    voiceFirstLabel: String = "Voice first",
+    textFirstLabel: String = "Text first",
 ) {
     val dimens = LocalDimensions.current
     val levelLow = stringResource(R.string.level_low)
@@ -73,7 +84,56 @@ fun MathBotSettings(
 
             Spacer(Modifier.height(dimens.spaceMedium))
 
-            // Avatar
+            // Hands-free voice toggle — when on, the mic auto-opens after the tutor speaks.
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = dimens.spaceSmall),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = handsFreeLabel,
+                    color = TextPrimary,
+                    style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.weight(1f)
+                )
+                Switch(
+                    checked = handsFreeMode,
+                    onCheckedChange = onHandsFreeChange
+                )
+            }
+
+            Spacer(Modifier.height(dimens.spaceMedium))
+
+            if (showInputModeSetting) {
+                Text(
+                    text = defaultInputLabel,
+                    color = TextPrimary,
+                    style = MaterialTheme.typography.titleSmall
+                )
+                Spacer(Modifier.height(dimens.spaceSmall))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(dimens.spaceSmall)
+                ) {
+                    InputModeChip(
+                        label = voiceFirstLabel,
+                        selected = voiceFirst,
+                        onClick = { onInputModeChange(true) },
+                        modifier = Modifier.weight(1f)
+                    )
+                    InputModeChip(
+                        label = textFirstLabel,
+                        selected = !voiceFirst,
+                        onClick = { onInputModeChange(false) },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                Spacer(Modifier.height(dimens.spaceMedium))
+            }
+
+            if (!useNativeTutorAvatar) {
             Text(
                 text = stringResource(R.string.select_avatar),
                 color = TextPrimary,
@@ -93,6 +153,7 @@ fun MathBotSettings(
             )
 
             Spacer(Modifier.height(dimens.spaceMedium))
+            }
 
             // Voice
             Text(

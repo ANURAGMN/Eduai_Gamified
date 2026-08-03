@@ -8,6 +8,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
 import okhttp3.Response
 import java.util.concurrent.atomic.AtomicBoolean
@@ -47,25 +48,32 @@ class ProactiveTokenInterceptor(private val context: Context) : Interceptor {
         DebugLogger.debugLog(TAG, "───────────────────────────────────────")
         DebugLogger.debugLog(TAG, "⟳ Intercepting request: ${chain.request().url}")
 
-        // Step 1: Check and potentially refresh expiring token (non-blocking)
+        // Step 1: Proactive refresh for tokens expiring soon (non-blocking)
         triggerBackgroundRefreshIfNeeded()
 
-        // Step 2: Get current token and attach to request
-        val token = TokenManager.getIdToken(context)
-
+        // Step 2: If already expired, refresh synchronously so we don't send a doomed request
+        var token = TokenManager.getIdToken(context)
         if (token.isNullOrEmpty()) {
             DebugLogger.errorLog(TAG, "✗ CRITICAL: No token found in storage!")
             return chain.proceed(chain.request())
         }
 
-        // Validate token is not expired BEFORE sending request
-        val isTokenExpired = JwtDecoder.isTokenExpired(token)
+        if (JwtDecoder.isTokenExpired(token)) {
+            DebugLogger.warnLog(TAG, "Token expired — refreshing synchronously before request")
+            refreshTokenBlocking()
+            token = TokenManager.getIdToken(context)
+            if (token.isNullOrEmpty()) {
+                DebugLogger.errorLog(TAG, "✗ No token after refresh")
+                return chain.proceed(chain.request())
+            }
+        }
+
         val isTokenExpiringWithinBuffer = JwtDecoder.isTokenExpiringWithinBuffer(token, TOKEN_BUFFER_SECONDS)
         val secondsRemaining = JwtDecoder.getSecondsUntilExpiry(token) ?: 0
 
         when {
-            isTokenExpired -> {
-                DebugLogger.errorLog(TAG, "✗ Token is EXPIRED! Will attempt to attach anyway (will get 401)")
+            JwtDecoder.isTokenExpired(token) -> {
+                DebugLogger.errorLog(TAG, "✗ Token still expired after refresh attempt")
             }
             isTokenExpiringWithinBuffer -> {
                 DebugLogger.warnLog(TAG, "⚠ Token expiring in ${secondsRemaining}s (buffer: ${TOKEN_BUFFER_SECONDS}s)")
@@ -152,6 +160,24 @@ class ProactiveTokenInterceptor(private val context: Context) : Interceptor {
             } finally {
                 isRefreshing.set(false)
             }
+        }
+    }
+
+    /** Blocks the OkHttp thread briefly to obtain a fresh token before a doomed 401. */
+    private fun refreshTokenBlocking() {
+        if (!isRefreshing.compareAndSet(false, true)) {
+            // Another refresh in flight — wait briefly for it to finish
+            Thread.sleep(400)
+            return
+        }
+        try {
+            runBlocking(Dispatchers.IO) {
+                TokenManager.refreshTokenSilently(context)
+            }
+        } catch (e: Exception) {
+            DebugLogger.errorLog(TAG, "Synchronous refresh failed: ${e.message}")
+        } finally {
+            isRefreshing.set(false)
         }
     }
 

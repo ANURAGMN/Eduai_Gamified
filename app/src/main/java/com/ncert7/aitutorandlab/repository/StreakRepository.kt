@@ -1,5 +1,9 @@
 package com.ncert7.aitutorandlab.repository
 
+import com.ncert7.aitutorandlab.domain.gamification.FriendFeedService
+import com.ncert7.aitutorandlab.domain.gamification.StreakFreezeService
+import com.ncert7.aitutorandlab.service.analytics.GamificationAnalyticsTracker
+import com.ncert7.aitutorandlab.service.analytics.StreakMilestone
 import com.ncert7.aitutorandlab.config.AppConfig
 import com.ncert7.aitutorandlab.data.local.dao.StreakDao
 import com.ncert7.aitutorandlab.data.local.entities.StreakEntity
@@ -14,7 +18,9 @@ import java.util.Calendar
  */
 class StreakRepository(
     private val streakDao: StreakDao,
-    private val firebaseRepository: FirebaseRepository
+    private val firebaseRepository: FirebaseRepository,
+    private val friendFeedService: FriendFeedService,
+    private val streakFreezeService: StreakFreezeService,
 ) {
 
     /**
@@ -87,18 +93,12 @@ class StreakRepository(
             streakDao.insertStreak(streakEntity)
             DebugLogger.debugLog("StreakRepository", "Streak updated locally: $newStreakCount")
 
-            // Trigger real-time sync
-            com.ncert7.aitutorandlab.service.sync.DataSyncService.triggerFullSync()
+            // Defer the Firestore push. The row is already marked isSynced=false; the coalesced
+            // outbox flush (debounced / on background) syncs streak via syncUnsyncedStreak().
+            // Replaces the old eager trio: triggerFullSync + direct updateStreak + markSynced.
+            com.ncert7.aitutorandlab.service.sync.DataSyncService.scheduleDeferredUpload()
 
-            // Try to sync with Firestore
-            val syncSuccess = firebaseRepository.updateStreak(userId, newStreakCount, lastStreakDate)
-            if (syncSuccess) {
-                streakDao.markStreakAsSynced(userId)
-                DebugLogger.debugLog("StreakRepository", "Streak synced with Firestore")
-            } else {
-                DebugLogger.debugLog("StreakRepository", "Streak sync pending - will retry on next sync")
-            }
-
+            friendFeedService.onStreakUpdated(userId, newStreakCount)
             newStreakCount
         } catch (e: Exception) {
             DebugLogger.errorLog("StreakRepository", "Error updating streak: ${e.message}")
@@ -139,16 +139,42 @@ class StreakRepository(
                     newCount
                 }
 
-                // Days were skipped → reset streak
+                // Days were skipped → use a weekly freeze or reset streak
                 else -> {
-                    DebugLogger.debugLog("StreakRepository", "Day(s) skipped for $userId - streak reset to 1 (was ${currentStreak.streakCount})")
-                    1
+                    val frozenCount =
+                        streakFreezeService.resolveStreakAfterMissedDay(
+                            userId = userId,
+                            currentStreak = currentStreak,
+                            now = now,
+                        )
+                    if (frozenCount != null) {
+                        DebugLogger.debugLog(
+                            "StreakRepository",
+                            "Streak freeze used for $userId — continuing at $frozenCount",
+                        )
+                        frozenCount
+                    } else {
+                        DebugLogger.debugLog(
+                            "StreakRepository",
+                            "Day(s) skipped for $userId - streak reset to 1 (was ${currentStreak.streakCount})",
+                        )
+                        if (currentStreak.streakCount > 1) {
+                            GamificationAnalyticsTracker.streakBreak(currentStreak.streakCount)
+                        }
+                        1
+                    }
                 }
             }
 
             // Update database and sync
-            updateStreak(userId, newStreakCount, today)
-            newStreakCount
+            val result = updateStreak(userId, newStreakCount, today)
+            if (newStreakCount > 1 || currentStreak == null) {
+                GamificationAnalyticsTracker.streakExtended(newStreakCount)
+            }
+            StreakMilestone.entries.firstOrNull { it.value == newStreakCount }?.let { milestone ->
+                GamificationAnalyticsTracker.streakMilestone(milestone)
+            }
+            result
         } catch (e: Exception) {
             DebugLogger.errorLog("StreakRepository", "Error recording activity for streak: ${e.message}")
             0

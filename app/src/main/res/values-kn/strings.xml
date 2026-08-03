@@ -58,8 +58,8 @@
     <string name="language_number">2 ಭಾಷೆಗಳು</string>
     <string name="ai_title">AI ಆಧಾರಿತ</string>
     <string name="smart_learning">ಸ್ಮಾರ್ಟ್ ಕಲಿಕೆ</string>
-    <string name="student_count">1M+ ವಿದ್ಯಾರ್ಥಿಗಳು</string>
-    <string name="trusted_globally">ಜಗತ್ತಿನಾದ್ಯಂತ ನಂಬಿಕೆ</string>
+    <string name="login_footer_labs_title">ಸಿಮ್ಯುಲೇಶನ್ ಲ್ಯಾಬ್ಸ್</string>
+    <string name="login_footer_labs_subtitle">ಗಣಿತ ಮತ್ತು ವಿಜ್ಞಾನ</string>
     <string name="lets_go_to_know_you_message">ನಿಮ್ಮ ಕಲಿಕೆ ಅನುಭವವನ್ನು ವೈಯಕ್ತಿಕಗೊಳಿಸಲು ನಿಮ್ಮ ಬಗ್ಗೆ ಸ್ವಲ್ಪ ತಿಳಿದುಕೊಳ್ಳೋಣ</string>
     <string name="full_name_label">ಪೂರ್ಣ ಹೆಸರು</string>
     <string name="phone_number_label">ಫೋನ್ ಸಂಖ್ಯೆ</string>
@@ -180,9 +180,11 @@
     </plurals>
 
     <!--    Contact Details-->
-    <string name="contact_email">anurag@gmail.com</string>
+    <string name="contact_email">mail2anuragmn@gmail.com</string>
     <string name="contact_number">+91 94495 31117</string>
-    <string name="contact_website">paadams.in</string>
+    <string name="contact_website">https://padaams.in/</string>
+    <string name="error_open_link">ಲಿಂಕ್ ತೆರೆಯಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಬ್ರೌಸರ್ ಅನ್ನು ಪ್ರಯತ್ನಿಸಿ.</string>
+    <string name="error_no_email_app">ಈ ಸಾಧನದಲ್ಲಿ ಇಮೇಲ್ ಅಪ್ಲಿಕೇಶನ್ ಕಂಡುಬಂದಿಲ್ಲ.</string>
     <string name="send_us_mail_msg">ನಮಗೆ ಇಮೇಲ್ ಕಳುಹಿಸಿ</string>
     <string name="we_would_love_msg">ನಿಮ್ಮಿಂದ ಕೇಳಲು ನಾವು ಸಂತೋಷಪಡುತ್ತೇವೆ</string>
     <string name="open_email_app_msg">ಇಮೇಲ್ ಆ್ಯಪ್ ತೆರೆಯಿರಿ</string>
@@ -350,6 +352,9 @@
     <string name="error_connection_timeout">ಸಂಪರ್ಕ ಕಾಲಮಿತಿ ಮೀರಿದೆ. ದಯವಿಟ್ಟು ನಿಮ್ಮ ಇಂಟರ್ನೆಟ್ ಸಂಪರ್ಕವನ್ನು ಪರಿಶೀಲಿಸಿ.</string>
     <string name="error_unable_to_reach_server">ಸರ್ವರ್ ತಲುಪಲು ಸಾಧ್ಯವಾಗುತ್ತಿಲ್ಲ. ದಯವಿಟ್ಟು ನಿಮ್ಮ ಇಂಟರ್ನೆಟ್ ಸಂಪರ್ಕವನ್ನು ಪರಿಶೀಲಿಸಿ.</string>
     <string name="error_server_try_later">ಸರ್ವರ್ ದೋಷ. ದಯವಿಟ್ಟು ಸ್ವಲ್ಪ ಸಮಯದ ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.</string>
+    <string name="error_please_sign_in_again">ದಯವಿಟ್ಟು ಮತ್ತೆ ಸೈನ್ ಇನ್ ಮಾಡಿ.</string>
+    <string name="error_service_busy_try_again_shortly">ಸೇವೆ ಕಾರ್ಯನಿರತವಾಗಿದೆ, ಸ್ವಲ್ಪ ಸಮಯದ ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.</string>
+    <string name="error_server_error">ಸರ್ವರ್ ದೋಷ.</string>
     <string name="error_request_error">ವಿನಂತಿ ದೋಷ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.</string>
     <string name="error_network_error_with_code">ನೆಟ್‌ವರ್ಕ್ ದೋಷ (%1$d). ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.</string>
     <string name="error_connection_error">ಸಂಪರ್ಕ ದೋಷ. ದಯವಿಟ್ಟು ನಿಮ್ಮ ಇಂಟರ್ನೆಟ್ ಪರಿಶೀಲಿಸಿ ಮತ್ತು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.</string>

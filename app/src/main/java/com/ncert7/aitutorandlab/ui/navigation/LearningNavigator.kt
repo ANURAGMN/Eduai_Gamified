@@ -3,7 +3,9 @@ package com.ncert7.aitutorandlab.ui.navigation
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.navigation.NavHostController
+import kotlinx.coroutines.launch
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -20,6 +22,8 @@ import com.ncert7.aitutorandlab.ui.screens.conceptscreen.ConceptScreen
 import com.ncert7.aitutorandlab.ui.screens.conceptscreen.components.ConceptSimulationViewer
 import com.ncert7.aitutorandlab.ui.screens.home.HomeScreen
 import com.ncert7.aitutorandlab.ui.screens.mathagentscreen.MathAgentScreen
+import com.ncert7.aitutorandlab.ui.screens.plan.PlanTrialNavigation
+import com.ncert7.aitutorandlab.ui.screens.plan.PlanTrialScreen
 import com.ncert7.aitutorandlab.ui.screens.revisionscreen.RevisionScreen
 import com.ncert7.aitutorandlab.ui.screens.simulation_agent.SimulationAgentScreen
 import com.ncert7.aitutorandlab.ui.screens.subjectscreen.SubjectScreen
@@ -123,30 +127,38 @@ fun LearningNavigator(
                 ChapterScreen(
                     subjectId = subjectId,
                     onBackClick = { navController.popBackStack() },
+                    onOpenChapterTrial = { chapterId ->
+                        gated.run(
+                            trackClick = { ContentClickNavigation.trackChapterListClick(chapterId, "TRIAL") },
+                            navigate = { navController.navigate("chapter_trial/$chapterId") }
+                        )
+                    },
                     onStudyClick = { chapterId, type ->
                         gated.run(
                             trackClick = { ContentClickNavigation.trackChapterListClick(chapterId, type) },
                             navigate = { navController.navigate("concepts/$chapterId/$type") }
                         )
                     },
-                    onSimulationClick = { chapterId, type ->
-                        gated.run(
-                            trackClick = { ContentClickNavigation.trackChapterListClick(chapterId, type) },
-                            navigate = { navController.navigate("concepts/$chapterId/$type") }
-                        )
+                )
+            }
+            composable(
+                route = "chapter_trial/{chapterId}",
+                arguments = listOf(navArgument("chapterId") { type = NavType.StringType }),
+            ) {
+                val scope = rememberCoroutineScope()
+                PlanTrialScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onItemClick = { item ->
+                        scope.launch {
+                            ContentClickNavigation.trackPlanTrialItemClick(
+                                itemId = item.conceptId.ifBlank { item.sourceId },
+                                kind = item.kind,
+                            )
+                        }
+                        PlanTrialNavigation.buildDestination(item)?.let { route ->
+                            navController.navigate(route)
+                        }
                     },
-                    onRevisionClick = { chapterId ->
-                        gated.run(
-                            trackClick = { ContentClickNavigation.trackRevisionClick(chapterId) },
-                            navigate = {
-                                DebugLogger.debugLog("LearningNavigator", "Navigating to revision with chapterId: $chapterId")
-                                navController.navigate("revision/$chapterId")
-                            }
-                        )
-                    },
-                    onGoHome = onGoHome,
-                    onGoSetting = onGoSetting,
-                    onProgressClick = onGoProgress
                 )
             }
 

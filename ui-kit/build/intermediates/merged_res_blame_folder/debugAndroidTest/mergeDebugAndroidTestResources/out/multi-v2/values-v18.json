@@ -1,0 +1,38 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.anurag.eduai.uikit.test.ui-kit-mergeDebugAndroidTestResources-47:/values-v18/values-v18.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\anurag.mn\\.gradle\\caches\\8.13\\transforms\\8d4b9c4940d015e1afcd472a31c4b032\\transformed\\appcompat-1.6.1\\res\\values-v18\\values-v18.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "48",
+                        "endOffsets": "99"
+                    }
+                },
+                {
+                    "source": "C:\\Users\\anurag.mn\\.gradle\\caches\\8.13\\transforms\\c6c50f3941e9cc8f554eefd545735e59\\transformed\\core-1.6.1\\res\\values-v18\\values.xml",
+                    "from": {
+                        "startLines": "4,12",
+                        "startColumns": "0,0",
+                        "startOffsets": "146,562",
+                        "endLines": "11,19",
+                        "endColumns": "8,8",
+                        "endOffsets": "561,975"
+                    },
+                    "to": {
+                        "startLines": "3,11",
+                        "startColumns": "4,4",
+                        "startOffsets": "104,524",
+                        "endLines": "10,18",
+                        "endColumns": "8,8",
+                        "endOffsets": "519,937"
+                    }
+                }
+            ]
+        }
+    ]
+}

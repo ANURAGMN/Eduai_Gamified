@@ -1,0 +1,24 @@
+EduAI — Release notes (1.0.8)
+
+Short (Play Console — What's new, ~500 chars max)
+---
+• Updated login screen with cleaner branding
+• Store listing graphics aligned with Google Play policy
+• General stability improvements
+
+Full (internal / optional)
+---
+Version: 1.0.8 (10)
+Track: Production
+
+Changes:
+- Login screen: replaced wide promo banner with square app logo
+- Login footer: removed social-proof wording; now shows Interactive Labs / Math & Science
+- Store metadata: new compliant feature graphic (1024×500)
+- Screenshots should be refreshed from this build for listing resubmit
+
+Upload checklist:
+[ ] Upload app-release.aab (or Desktop copy: EduAI-1.0.8-release.aab)
+[ ] Paste short release notes above
+[ ] Confirm feature graphic + phone screenshots updated
+[ ] Send listing + release for review

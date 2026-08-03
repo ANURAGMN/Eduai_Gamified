@@ -52,6 +52,8 @@ class InAppUpdateViewModel @Inject constructor() : ViewModel(), UpdateCallback {
     // Real Google Play update manager (no fake implementation)
     private val updateManager: GooglePlayUpdateManager = GooglePlayUpdateManager()
 
+    private var updateFlowStarted = false
+
     // UI State - exposed as read-only StateFlow
     private val _updateState = MutableStateFlow(UpdateState())
     val updateState: StateFlow<UpdateState> = _updateState.asStateFlow()
@@ -81,6 +83,16 @@ class InAppUpdateViewModel @Inject constructor() : ViewModel(), UpdateCallback {
         }
     }
 
+    fun checkResumeState(activity: Activity) {
+        viewModelScope.launch {
+            try {
+                updateManager.checkResumeState(activity)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error checking resume update state: ${e.message}", e)
+            }
+        }
+    }
+
     /**
      * Start the in-app update flow
      * This shows Google's native UI for the user to confirm the update
@@ -89,13 +101,16 @@ class InAppUpdateViewModel @Inject constructor() : ViewModel(), UpdateCallback {
         activity: Activity,
         updateType: UpdateType = UpdateType.FLEXIBLE
     ) {
+        if (updateFlowStarted) return
         viewModelScope.launch {
             try {
                 Log.d(TAG, "Starting in-app update with type: $updateType")
+                updateFlowStarted = true
                 _updateState.value = _updateState.value.copy(isDownloading = true)
                 updateManager.startUpdate(activity, updateType)
             } catch (e: Exception) {
                 Log.e(TAG, "Error starting update: ${e.message}", e)
+                updateFlowStarted = false
                 _updateState.value = _updateState.value.copy(
                     error = e.message ?: "Unknown error occurred",
                     isDownloading = false
@@ -122,6 +137,7 @@ class InAppUpdateViewModel @Inject constructor() : ViewModel(), UpdateCallback {
      */
     fun dismissUpdate() {
         Log.d(TAG, "Update dismissed by user")
+        updateFlowStarted = false
         _updateState.value = UpdateState()
     }
 

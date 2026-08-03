@@ -1,0 +1,36 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.anurag.eduai.uikit.ui-kit-mergeReleaseResources-42:/values-hdpi-v4/values-hdpi-v4.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\anurag.mn\\.gradle\\caches\\8.13\\transforms\\8d4b9c4940d015e1afcd472a31c4b032\\transformed\\appcompat-1.6.1\\res\\values-hdpi-v4\\values-hdpi-v4.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endLines": "6",
+                        "endColumns": "13",
+                        "endOffsets": "327"
+                    }
+                }
+            ]
+        },
+        {
+            "outputFile": "com.anurag.eduai.uikit.ui-kit-release-44:/values-hdpi-v4/values-hdpi-v4.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\anurag.mn\\.gradle\\caches\\8.13\\transforms\\8d4b9c4940d015e1afcd472a31c4b032\\transformed\\appcompat-1.6.1\\res\\values-hdpi-v4\\values-hdpi-v4.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endLines": "6",
+                        "endColumns": "13",
+                        "endOffsets": "327"
+                    }
+                }
+            ]
+        }
+    ]
+}

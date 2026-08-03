@@ -1,0 +1,62 @@
+[
+    {
+        "merged": "com.anurag.eduai.uikit.ui-kit-release-44:/color/switch_thumb_material_dark.xml",
+        "source": "com.anurag.eduai.uikit.ui-kit-appcompat-1.6.1-18:/color/switch_thumb_material_dark.xml"
+    },
+    {
+        "merged": "com.anurag.eduai.uikit.ui-kit-release-44:/color/abc_hint_foreground_material_light.xml",
+        "source": "com.anurag.eduai.uikit.ui-kit-appcompat-1.6.1-18:/color/abc_hint_foreground_material_light.xml"
+    },
+    {
+        "merged": "com.anurag.eduai.uikit.ui-kit-release-44:/color/abc_primary_text_disable_only_material_light.xml",
+        "source": "com.anurag.eduai.uikit.ui-kit-appcompat-1.6.1-18:/color/abc_primary_text_disable_only_material_light.xml"
+    },
+    {
+        "merged": "com.anurag.eduai.uikit.ui-kit-release-44:/color/abc_primary_text_disable_only_material_dark.xml",
+        "source": "com.anurag.eduai.uikit.ui-kit-appcompat-1.6.1-18:/color/abc_primary_text_disable_only_material_dark.xml"
+    },
+    {
+        "merged": "com.anurag.eduai.uikit.ui-kit-release-44:/color/abc_primary_text_material_dark.xml",
+        "source": "com.anurag.eduai.uikit.ui-kit-appcompat-1.6.1-18:/color/abc_primary_text_material_dark.xml"
+    },
+    {
+        "merged": "com.anurag.eduai.uikit.ui-kit-release-44:/color/abc_background_cache_hint_selector_material_dark.xml",
+        "source": "com.anurag.eduai.uikit.ui-kit-appcompat-1.6.1-18:/color/abc_background_cache_hint_selector_material_dark.xml"
+    },
+    {
+        "merged": "com.anurag.eduai.uikit.ui-kit-release-44:/color/abc_secondary_text_material_light.xml",
+        "source": "com.anurag.eduai.uikit.ui-kit-appcompat-1.6.1-18:/color/abc_secondary_text_material_light.xml"
+    },
+    {
+        "merged": "com.anurag.eduai.uikit.ui-kit-release-44:/color/abc_hint_foreground_material_dark.xml",
+        "source": "com.anurag.eduai.uikit.ui-kit-appcompat-1.6.1-18:/color/abc_hint_foreground_material_dark.xml"
+    },
+    {
+        "merged": "com.anurag.eduai.uikit.ui-kit-release-44:/color/abc_background_cache_hint_selector_material_light.xml",
+        "source": "com.anurag.eduai.uikit.ui-kit-appcompat-1.6.1-18:/color/abc_background_cache_hint_selector_material_light.xml"
+    },
+    {
+        "merged": "com.anurag.eduai.uikit.ui-kit-release-44:/color/abc_primary_text_material_light.xml",
+        "source": "com.anurag.eduai.uikit.ui-kit-appcompat-1.6.1-18:/color/abc_primary_text_material_light.xml"
+    },
+    {
+        "merged": "com.anurag.eduai.uikit.ui-kit-release-44:/color/switch_thumb_material_light.xml",
+        "source": "com.anurag.eduai.uikit.ui-kit-appcompat-1.6.1-18:/color/switch_thumb_material_light.xml"
+    },
+    {
+        "merged": "com.anurag.eduai.uikit.ui-kit-release-44:/color/vector_tint_color.xml",
+        "source": "com.anurag.eduai.uikit.ui-kit-ui-22:/color/vector_tint_color.xml"
+    },
+    {
+        "merged": "com.anurag.eduai.uikit.ui-kit-release-44:/color/abc_search_url_text.xml",
+        "source": "com.anurag.eduai.uikit.ui-kit-appcompat-1.6.1-18:/color/abc_search_url_text.xml"
+    },
+    {
+        "merged": "com.anurag.eduai.uikit.ui-kit-release-44:/color/vector_tint_theme_color.xml",
+        "source": "com.anurag.eduai.uikit.ui-kit-ui-22:/color/vector_tint_theme_color.xml"
+    },
+    {
+        "merged": "com.anurag.eduai.uikit.ui-kit-release-44:/color/abc_secondary_text_material_dark.xml",
+        "source": "com.anurag.eduai.uikit.ui-kit-appcompat-1.6.1-18:/color/abc_secondary_text_material_dark.xml"
+    }
+]

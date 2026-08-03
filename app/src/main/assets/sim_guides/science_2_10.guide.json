@@ -1,0 +1,24 @@
+{
+  "simId": "science_2_10",
+  "lang": "en",
+  "title": "Industrial Waste Treatment",
+  "steps": [
+    {
+      "text": "Factory waste is often acidic and can harm fish and rivers. Let's make it safe before release."
+    },
+    {
+      "text": "Tap to release the acidic waste and see its low pH.",
+      "target": "Waste"
+    },
+    {
+      "text": "Now tap “Add Base” to neutralise the acid.",
+      "target": "Base"
+    },
+    {
+      "text": "Watch the pH climb toward 7 — the water becomes SAFE for aquatic life."
+    },
+    {
+      "text": "Neutralising acidic waste before it reaches rivers protects the whole ecosystem."
+    }
+  ]
+}

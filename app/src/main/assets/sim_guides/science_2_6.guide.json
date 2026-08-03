@@ -1,0 +1,15 @@
+{
+  "simId": "science_2_6",
+  "lang": "en",
+  "title": "Olfactory Indicators",
+  "steps": [
+    { "text": "Onions smell strong! We'll use that smell to tell acids from bases." },
+    { "text": "Let's start with an acid — tap \"Tamarind Water\".", "target": "Tamarind Water" },
+    { "text": "Now tap \"Mix Together\" to mix it with the chopped onion.", "target": "Mix Together" },
+    { "text": "Take a sniff 👃 — the strong onion smell stays. Acids keep the smell!" },
+    { "text": "Now let's try a base — tap \"Baking Soda\".", "target": "Baking Soda" },
+    { "text": "Tap \"Mix Together\" again.", "target": "Mix Together" },
+    { "text": "This time the smell fades away — bases neutralise it." },
+    { "text": "That's the trick: acids keep the onion smell, bases remove it. You did it! 🎉" }
+  ]
+}

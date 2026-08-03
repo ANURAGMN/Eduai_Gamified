@@ -58,6 +58,10 @@ class DataSyncWorker(
 
             if (result.success) {
                 DebugLogger.debugLog(TAG, "Successfully synced data:\n${result.message}")
+                GardenSyncManager(
+                    database.gardenDao(),
+                    com.ncert7.aitutorandlab.repository.FirebaseRepository(),
+                ).pushGarden(studentId)
                 return Result.success()
             } else {
                 DebugLogger.errorLog(TAG, "Sync failed: ${result.message}")

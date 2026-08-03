@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
@@ -38,6 +39,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
@@ -50,14 +53,14 @@ import com.ncert7.aitutorandlab.ui.screens.login.components.EmailSignInForm
 import com.ncert7.aitutorandlab.ui.screens.login.components.FooterCard
 import com.ncert7.aitutorandlab.ui.screens.login.components.GoogleLoginButton
 import com.ncert7.aitutorandlab.ui.screens.login.components.LanguageSelector
-import com.ncert7.aitutorandlab.ui.screens.login.viewmodel.InAppUpdateViewModel
+import com.ncert7.aitutorandlab.ui.components.PolicyConsentText
+import com.ncert7.aitutorandlab.ui.screens.login.viewmodel.UserViewModel
 import com.ncert7.aitutorandlab.ui.theme.BackgroundPrimary
 import com.ncert7.aitutorandlab.ui.theme.BackgroundSecondary
 import com.ncert7.aitutorandlab.ui.theme.BrandPrimary
 import com.ncert7.aitutorandlab.ui.theme.LocalDimensions
 import com.ncert7.aitutorandlab.ui.theme.TextPrimary
 import com.ncert7.aitutorandlab.ui.theme.TextSecondary
-import com.ncert7.aitutorandlab.ui.screens.login.viewmodel.UserViewModel
 
 @Composable
 fun LoginScreen(
@@ -66,7 +69,6 @@ fun LoginScreen(
 ) {
     val dimens = LocalDimensions.current
     val snackbarHostState = remember { SnackbarHostState() }
-    val updateViewModel: InAppUpdateViewModel = hiltViewModel()
     val selectedLanguage by userViewModel.selectedLanguage.collectAsState()
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
@@ -76,16 +78,6 @@ fun LoginScreen(
     LaunchedEffect(Unit) {
         FunnelAnalyticsTracker.track(FunnelStep.LOGIN_VIEW)
     }
-
-    // Check for in-app updates when LoginScreen is displayed
-    // Google's native in-app update UI will appear automatically if update is available
-    LaunchedEffect(Unit) {
-        val activity = navController.context as? androidx.activity.ComponentActivity
-        activity?.let {
-            updateViewModel.checkForUpdate(it)
-        }
-    }
-
 
     // Show snackbar when error message is set
     LaunchedEffect(errorMessage) {
@@ -133,8 +125,9 @@ fun LoginScreen(
                             painter = painterResource(id = R.drawable.logo),
                             contentDescription = stringResource(R.string.app_logo_desc),
                             modifier = Modifier
-                                .height(dimens.containerMinHeight - dimens.buttonHeight)
-                                .clip(RoundedCornerShape(dimens.cornerRadiusMedium))
+                                .size(128.dp)
+                                .clip(RoundedCornerShape(dimens.cornerRadiusMedium)),
+                            contentScale = ContentScale.Fit
                         )
                     }
 
@@ -204,12 +197,8 @@ fun LoginScreen(
                             Spacer(modifier = Modifier.height(dimens.spaceMedium))
 
                             // Terms and Privacy
-                            Text(
-                                text = stringResource(R.string.policy_msg),
-                                fontSize = 11.sp,
-                                color = TextSecondary,
+                            PolicyConsentText(
                                 modifier = Modifier.padding(top = dimens.spaceSmall + dimens.spaceExtraSmall),
-                                lineHeight = 16.sp
                             )
                         }
                     }

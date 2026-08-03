@@ -20,18 +20,24 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.ncert7.aitutorandlab.domain.examplan.TrialSessionStore
+import com.ncert7.aitutorandlab.ui.components.AgentSessionTimeGate
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ncert7.aitutorandlab.R
+import com.ncert7.aitutorandlab.config.GamificationFeatureFlags
 import com.ncert7.aitutorandlab.data.local.SharedPreferenceUtils
 import com.ncert7.aitutorandlab.debug.DebugLogger
 import com.ncert7.aitutorandlab.service.analytics.ScreenName
 import com.ncert7.aitutorandlab.service.analytics.TrackScreenEvent
+import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.AutoListenAfterAgentTurn
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.ChatBotSettings
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.ChatHeaderIcons
+import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.VoiceInputBar
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.ConversationView
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.InitialAvatarView
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.InputSection
@@ -67,6 +73,12 @@ fun RevisionScreen(
     val chatState by revisionViewModel.uiState.collectAsState()
     val sttState by sttController.state.collectAsState()
     val ttsState by ttsController.state.collectAsState()
+    val wordBoundaryIndex by ttsController.currentWordIndex.collectAsState()
+    val useNativeAvatar = GamificationFeatureFlags.isNativeTutorAvatarEnabled(context)
+
+    LaunchedEffect(useNativeAvatar) {
+        ttsController.setNativeLipSyncEnabled(useNativeAvatar)
+    }
 
     // Local UI state
     var permissionGranted by remember { mutableStateOf(false) }
@@ -74,6 +86,16 @@ fun RevisionScreen(
     var showSettingsMenu by remember { mutableStateOf(false) }
     var settingsState by remember { mutableStateOf(ChatBotSettingsState()) }
     var showSessionResumeDialog by remember { mutableStateOf(false) }
+
+    // Hands-free voice: persisted toggle (default on). Mic auto-opens after the tutor speaks.
+    var handsFreeMode by remember { mutableStateOf(sharedPrefs.getHandsFreeMode()) }
+    val handsFreeLabel = if (chatState.isKannada) "ಧ್ವನಿ ಸಂಭಾಷಣೆ" else "Hands-free voice"
+
+    // Input mode: voice dock vs. text keyboard (persisted default).
+    var inputMode by remember { mutableStateOf(if (sharedPrefs.getVoiceFirst()) "voice" else "text") }
+    var focusTextField by remember { mutableStateOf(false) }
+    val agentThinking = (chatState.isLoading || chatState.isTyping || chatState.waitingForTTSToComplete) &&
+            !ttsState.isSpeaking
 
     val lastAIMessage = chatState.lastAiMessage
     val isConversationStarted = chatState.isConversationStarted
@@ -140,11 +162,27 @@ fun RevisionScreen(
         showSessionResumeDialog = chatState.showSessionResumeDialog
     }
 
-    // Handle speech recognition - populate input field, DON'T auto-send
+    // Keep the TTS voice + language locked to the app-selected language so a Kannada
+    // session isn't read aloud in English. Re-runs once device voices load / language
+    // or avatar changes.
+    LaunchedEffect(chatState.isKannada, ttsState.voicesFullyLoaded, settingsState.selectedAvatar) {
+        val langCode = if (chatState.isKannada) "kn-IN" else "en-IN"
+        ttsController.setAppLanguage(settingsState.selectedAvatar, langCode)
+    }
+
+    // Handle speech recognition — auto-send when the agent is free (speak → it sends),
+    // otherwise stage the transcript in the input box.
     LaunchedEffect(sttState.isListening) {
-        if (!sttState.isListening && sttState.resultText.isNotEmpty() && sttState.resultText != lastProcessedSpeechText) {
-            revisionViewModel.updateInputText(sttState.resultText)
-            lastProcessedSpeechText = sttState.resultText
+        val spoken = sttState.resultText.trim()
+        if (!sttState.isListening && spoken.isNotEmpty() && spoken != lastProcessedSpeechText) {
+            lastProcessedSpeechText = spoken
+            val busy = chatState.isTyping || chatState.isLoading || ttsState.isSpeaking
+            if (busy) {
+                revisionViewModel.updateInputText(spoken)
+            } else {
+                revisionViewModel.sendMessage(spoken)
+                revisionViewModel.updateInputText("")
+            }
         }
     }
 
@@ -181,6 +219,21 @@ fun RevisionScreen(
         chatState.isTyping || chatState.isLoading || ttsState.isSpeaking
     }
 
+    // Hands-free loop: auto-open the mic once the tutor's turn completes (voice mode only).
+    AutoListenAfterAgentTurn(
+        enabled = inputMode == "voice" && handsFreeMode && !showSettingsMenu,
+        turnComplete = !ttsState.isSpeaking &&
+                !chatState.isLoading &&
+                !chatState.isTyping &&
+                !chatState.waitingForTTSToComplete &&
+                lastAIMessage != null,
+        isListening = sttState.isListening,
+        canListen = permissionGranted && sttState.isInitialized,
+        onStartListening = {
+            sttController.startListening(if (chatState.isKannada) "kn-IN" else "en-IN")
+        }
+    )
+
     // Background
     Box(
         modifier = Modifier
@@ -192,29 +245,59 @@ fun RevisionScreen(
             containerColor = White,
             contentColor = White,
             bottomBar = {
-                InputSection(
-                    chatState = chatState,
-                    sttState = sttState,
-                    onTextChange = { revisionViewModel.updateInputText(it) },
-                    onSendClick = {
-                        if (chatState.inputText.isNotBlank()) {
-                            revisionViewModel.sendMessage(chatState.inputText)
-                        }
-                    },
-                    onSpeakClick = {
-                        if (permissionGranted && sttState.isInitialized) {
-                            val language = if (chatState.isKannada) "kn-IN" else "en-IN"
-                            sttController.startListening(language)
-                        } else if (!permissionGranted) {
-                            permissionLauncher.launch(RECORD_AUDIO)
-                        }
-                    },
-                    onStopListening = { sttController.stopListening() },
-                    onSuggestionClick = { },
-                    shouldDisableSend = shouldDisableSend,
-                    showImageIcon = false,
-                    modifier = Modifier.imePadding()
-                )
+                if (inputMode == "voice") {
+                    VoiceInputBar(
+                        isKannada = chatState.isKannada,
+                        isListening = sttState.isListening,
+                        isSpeaking = ttsState.isSpeaking,
+                        isThinking = agentThinking,
+                        transcript = sttState.resultText,
+                        statusMessage = sttState.statusMessage,
+                        amplitude = sttState.audioAmplitude,
+                        onMicTap = {
+                            if (permissionGranted && sttState.isInitialized) {
+                                sttController.startListening(if (chatState.isKannada) "kn-IN" else "en-IN")
+                            } else if (!permissionGranted) {
+                                permissionLauncher.launch(RECORD_AUDIO)
+                            }
+                        },
+                        onStopListening = { sttController.stopListening() },
+                        onSwitchToType = {
+                            sttController.stopListening()
+                            inputMode = "text"
+                            focusTextField = true
+                        },
+                        modifier = Modifier.imePadding()
+                    )
+                } else {
+                    InputSection(
+                        chatState = chatState,
+                        sttState = sttState,
+                        onTextChange = { revisionViewModel.updateInputText(it) },
+                        onSendClick = {
+                            if (chatState.inputText.isNotBlank()) {
+                                revisionViewModel.sendMessage(chatState.inputText)
+                            }
+                        },
+                        onSpeakClick = {
+                            // Text-mode mic → switch to the voice dock and start listening.
+                            focusTextField = false
+                            inputMode = "voice"
+                            if (permissionGranted && sttState.isInitialized) {
+                                sttController.startListening(if (chatState.isKannada) "kn-IN" else "en-IN")
+                            } else if (!permissionGranted) {
+                                permissionLauncher.launch(RECORD_AUDIO)
+                            }
+                        },
+                        onStopListening = { sttController.stopListening() },
+                        onSuggestionClick = { },
+                        shouldDisableSend = shouldDisableSend,
+                        showImageIcon = false,
+                        kannadaKeyboard = chatState.isKannada,
+                        autoFocus = focusTextField,
+                        modifier = Modifier.imePadding()
+                    )
+                }
             }
         ) { innerPadding ->
             Column(
@@ -278,14 +361,32 @@ fun RevisionScreen(
                                     "1.0x" -> 1.0f
                                     "1.25x" -> 1.25f
                                     "1.5x" -> 1.5f
-                                    else -> 0.75f
+                                    else -> 1.0f
                                 }
                                 ttsController.setSpeechRate(speedValue)
                                 if (aiMessageOutput.isNotEmpty() && !ttsState.isSpeaking) {
                                     ttsController.speak(aiMessageOutput)
                                 }
                             },
-                            isRevisionMode = true
+                            isRevisionMode = true,
+                            useNativeTutorAvatar = useNativeAvatar,
+                            handsFreeMode = handsFreeMode,
+                            onHandsFreeChange = {
+                                handsFreeMode = it
+                                sharedPrefs.setHandsFreeMode(it)
+                            },
+                            handsFreeLabel = handsFreeLabel,
+                            showInputModeSetting = true,
+                            voiceFirst = inputMode == "voice",
+                            onInputModeChange = { voiceFirst ->
+                                sharedPrefs.setVoiceFirst(voiceFirst)
+                                if (!voiceFirst) sttController.stopListening()
+                                focusTextField = false
+                                inputMode = if (voiceFirst) "voice" else "text"
+                            },
+                            defaultInputLabel = if (chatState.isKannada) "ಡೀಫಾಲ್ಟ್ ಇನ್‌ಪುಟ್" else "Default input",
+                            voiceFirstLabel = if (chatState.isKannada) "ಧ್ವನಿ ಮೊದಲು" else "Voice first",
+                            textFirstLabel = if (chatState.isKannada) "ಪಠ್ಯ ಮೊದಲು" else "Text first",
                         )
                     }
                 )
@@ -296,7 +397,11 @@ fun RevisionScreen(
                         chatState = chatState,
                         lastAIMessage = lastAIMessage,
                         ttsController = ttsController,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        useNativeAvatar = useNativeAvatar,
+                        ttsState = ttsState,
+                        wordBoundaryIndex = wordBoundaryIndex,
+                        isListening = sttState.isListening,
                     )
                 } else {
                     InitialAvatarView(
@@ -304,11 +409,25 @@ fun RevisionScreen(
                         ttsController = ttsController,
                         isLoading = chatState.isLoading,
                         languageCode = chatState.currentLanguage,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        useNativeAvatar = useNativeAvatar,
+                        ttsState = ttsState,
+                        wordBoundaryIndex = wordBoundaryIndex,
+                        isListening = sttState.isListening,
                     )
                 }
             }
         }
+
+        AgentSessionTimeGate(
+            languageCode = chatState.currentLanguage,
+            inTrialMode = TrialSessionStore.activeTrialItemId != null,
+            onProceed = {
+                revisionViewModel.recordTrialProceed()
+                onBackClick()
+            },
+            modifier = Modifier.align(Alignment.BottomCenter),
+        )
     }
 
     // Session resume dialog

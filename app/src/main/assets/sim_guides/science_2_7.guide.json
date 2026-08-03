@@ -1,0 +1,23 @@
+{
+  "simId": "science_2_7",
+  "lang": "en",
+  "title": "Neutralisation Reaction",
+  "steps": [
+    {
+      "text": "When an acid meets a base, they cancel each other out. Let's watch it happen: Acid + Base → Salt + Water + Heat."
+    },
+    {
+      "text": "Tap “Mix” to combine the acid and the base.",
+      "target": "Mix"
+    },
+    {
+      "text": "Watch the results: salt and water form, a little heat is released, and the pH moves toward 7."
+    },
+    {
+      "text": "At the right proportions the solution becomes NEUTRAL (pH 7) — that's complete neutralisation."
+    },
+    {
+      "text": "This is how antacids work: a base neutralises excess stomach acid to relieve acidity."
+    }
+  ]
+}

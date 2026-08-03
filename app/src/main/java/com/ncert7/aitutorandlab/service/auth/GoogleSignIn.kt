@@ -55,12 +55,15 @@ class GoogleSignIn {
                             if (result.credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
                                 val googleIdTokenCredential =
                                     GoogleIdTokenCredential.createFrom(result.credential.data)
-                                completeSignIn(
-                                    context = context,
-                                    user = GoogleInfoExtractor.extractAndLogUserInfo(googleIdTokenCredential),
-                                    idToken = googleIdTokenCredential.idToken,
-                                    onLoginSuccess = onLoginSuccess
-                                )
+                                scope.launch {
+                                    completeSignIn(
+                                        context = context,
+                                        user = GoogleInfoExtractor.extractAndLogUserInfo(googleIdTokenCredential),
+                                        idToken = googleIdTokenCredential.idToken,
+                                        onLoginSuccess = onLoginSuccess,
+                                        onLoginFailed = onLoginFailed,
+                                    )
+                                }
                             } else {
                                 onLoginFailed(
                                     IllegalStateException("Unexpected credential type: ${result.credential.type}")
@@ -106,6 +109,7 @@ class GoogleSignIn {
 
         fun handleSignInActivityResult(
             context: Context,
+            scope: CoroutineScope,
             resultCode: Int,
             data: Intent?,
             onLoginSuccess: (user: User) -> Unit,
@@ -124,12 +128,15 @@ class GoogleSignIn {
                     onLoginFailed(IllegalStateException("Google sign-in returned no ID token"))
                     return
                 }
-                completeSignIn(
-                    context = context,
-                    user = userFromGoogleAccount(account),
-                    idToken = idToken,
-                    onLoginSuccess = onLoginSuccess
-                )
+                scope.launch {
+                    completeSignIn(
+                        context = context,
+                        user = userFromGoogleAccount(account),
+                        idToken = idToken,
+                        onLoginSuccess = onLoginSuccess,
+                        onLoginFailed = onLoginFailed,
+                    )
+                }
             } catch (e: ApiException) {
                 when (e.statusCode) {
                     GoogleSignInStatusCodes.SIGN_IN_CANCELLED ->
@@ -160,20 +167,30 @@ class GoogleSignIn {
                 .setServerClientId(BuildConfig.AUTH_KEY)
                 .build()
 
-        private fun completeSignIn(
+        private suspend fun completeSignIn(
             context: Context,
             user: User,
             idToken: String,
-            onLoginSuccess: (User) -> Unit
+            onLoginSuccess: (User) -> Unit,
+            onLoginFailed: (Throwable) -> Unit,
         ) {
-            TokenManager.saveIdToken(context, idToken)
-            onLoginSuccess(user)
+            try {
+                val firebaseUser = FirebaseAuthBridge.signInWithGoogleIdToken(idToken)
+                TokenManager.saveIdToken(context, idToken)
+                val resolvedEmail = firebaseUser.email?.trim().orEmpty()
+                onLoginSuccess(
+                    user.copy(email = resolvedEmail.ifBlank { user.email }),
+                )
+            } catch (e: Exception) {
+                DebugLogger.errorLog(TAG, "Firebase Auth sign-in failed: ${e.message}")
+                onLoginFailed(e)
+            }
         }
 
         private fun userFromGoogleAccount(account: GoogleSignInAccount): User {
             val email = account.email.orEmpty()
             return User(
-                id = email.ifBlank { account.id.orEmpty() },
+                id = account.id.orEmpty().ifBlank { email },
                 email = email,
                 displayName = account.displayName,
                 profilePictureUri = account.photoUrl?.toString(),

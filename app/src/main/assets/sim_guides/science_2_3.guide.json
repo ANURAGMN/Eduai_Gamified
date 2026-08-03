@@ -1,0 +1,25 @@
+{
+  "simId": "science_2_3",
+  "lang": "en",
+  "title": "Properties of Acids & Bases",
+  "steps": [
+    {
+      "text": "Acids and bases have opposite properties. Let's identify substances by tapping them in the game below."
+    },
+    {
+      "text": "Tap “Lemon” — an acid. Notice it's sour and turns blue litmus red.",
+      "target": "Lemon"
+    },
+    {
+      "text": "Now tap “Soap” — a base. It feels slippery and turns red litmus blue.",
+      "target": "Soap"
+    },
+    {
+      "text": "Tap “Water” — it's neutral, so litmus doesn't change at all.",
+      "target": "Water"
+    },
+    {
+      "text": "Compare the results in the table: acids are sour and turn litmus red; bases feel soapy and turn litmus blue. Never taste substances to test them — always use an indicator!"
+    }
+  ]
+}

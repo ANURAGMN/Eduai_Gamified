@@ -152,6 +152,39 @@ class GooglePlayUpdateManager : UpdateManager {
         }
     }
 
+    override suspend fun checkResumeState(activity: Activity) = suspendCancellableCoroutine { continuation ->
+        try {
+            if (appUpdateManager == null) {
+                appUpdateManager = AppUpdateManagerFactory.create(activity)
+            }
+            appUpdateManager?.appUpdateInfo?.addOnSuccessListener { info ->
+                when (info.installStatus()) {
+                    InstallStatus.DOWNLOADED -> updateCallback?.onUpdateInstalled()
+                    InstallStatus.FAILED, InstallStatus.CANCELED ->
+                        updateCallback?.onUpdateFailed(
+                            IllegalStateException("Update install status=${info.installStatus()}"),
+                        )
+                }
+                if (info.updateAvailability() == UpdateAvailability.DEVELOPER_TRIGGERED_UPDATE_IN_PROGRESS) {
+                    appUpdateManager?.registerListener(installListener)
+                    appUpdateManager?.startUpdateFlowForResult(
+                        info,
+                        AppUpdateType.IMMEDIATE,
+                        activity,
+                        REQUEST_CODE_UPDATE,
+                    )
+                }
+                continuation.resume(Unit)
+            }?.addOnFailureListener { exception ->
+                updateCallback?.onUpdateFailed(exception)
+                continuation.resume(Unit)
+            }
+        } catch (e: Exception) {
+            updateCallback?.onUpdateFailed(e)
+            continuation.resume(Unit)
+        }
+    }
+
     override fun setUpdateCallback(callback: UpdateCallback?) {
         this.updateCallback = callback
     }

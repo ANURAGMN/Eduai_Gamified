@@ -1,0 +1,31 @@
+{
+  "simId": "science_2_2",
+  "lang": "en",
+  "title": "Litmus Paper Test",
+  "steps": [
+    {
+      "text": "Litmus is the classic acid–base indicator. Let's test different solutions and watch the paper change colour."
+    },
+    {
+      "text": "First test an acidic solution — tap “Lemon” (lemon juice is an acid).",
+      "target": "Lemon"
+    },
+    {
+      "text": "Notice: blue litmus turns RED. A change to red means the solution is an ACID."
+    },
+    {
+      "text": "Now test a base — tap “Soap” (soap solution is basic).",
+      "target": "Soap"
+    },
+    {
+      "text": "This time red litmus turns BLUE — that tells us the solution is a BASE."
+    },
+    {
+      "text": "Finally test “Water”. Neither colour changes, so water is NEUTRAL.",
+      "target": "Water"
+    },
+    {
+      "text": "Because litmus responds to both acids and bases, it's a complete indicator."
+    }
+  ]
+}

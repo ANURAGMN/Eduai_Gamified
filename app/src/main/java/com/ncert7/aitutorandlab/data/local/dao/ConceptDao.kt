@@ -25,10 +25,13 @@ interface ConceptDao {
     @Query("SELECT * FROM concepts ORDER BY chapterId ASC, orderIndex ASC")
     suspend fun getAllConceptsSync(): List<ConceptEntity>
 
+    @Query("SELECT COUNT(*) FROM concepts")
+    suspend fun getConceptCount(): Int
+
     @Query("SELECT * FROM concepts WHERE chapterId = :chapterId ORDER BY orderIndex ASC")
     fun getConceptsForChapter(chapterId: String): Flow<List<ConceptEntity>>
 
-    @Query("SELECT * FROM concepts WHERE chapterId = :chapterId AND type = :type ORDER BY orderIndex ASC")
+    @Query("SELECT * FROM concepts WHERE chapterId = :chapterId AND type = :type COLLATE NOCASE ORDER BY orderIndex ASC")
     suspend fun getConceptsForChapterSync(chapterId: String, type: String): List<ConceptEntity>
 
     @Query("SELECT * FROM concepts WHERE conceptId = :conceptId")
@@ -67,7 +70,7 @@ interface ConceptDao {
     @Query(
         """
     SELECT * FROM concepts
-    WHERE orderIndex = :orderIndex AND type = :type
+    WHERE orderIndex = :orderIndex AND type = :type COLLATE NOCASE
     ORDER BY orderIndex ASC
     LIMIT :limit
     """
@@ -88,9 +91,9 @@ interface ConceptDao {
      */
     @Query(
         """
-        SELECT * FROM concepts 
-        WHERE chapterId = :chapterId 
-        AND type = 'STUDY'
+        SELECT * FROM concepts
+        WHERE chapterId = :chapterId
+        AND type = 'STUDY' COLLATE NOCASE
         ORDER BY orderIndex ASC
         """
     )
@@ -127,9 +130,9 @@ interface ConceptDao {
      */
     @Query(
         """
-        SELECT * FROM concepts 
-        WHERE chapterId = :chapterId 
-        AND type = 'SIMULATION'
+        SELECT * FROM concepts
+        WHERE chapterId = :chapterId
+        AND type = 'SIMULATION' COLLATE NOCASE
         AND (
             CASE 
                 WHEN :language = 'en' THEN
@@ -159,9 +162,9 @@ interface ConceptDao {
      */
     @Query(
         """
-        SELECT COUNT(*) FROM concepts 
-        WHERE chapterId = :chapterId 
-        AND type = 'STUDY'
+        SELECT COUNT(*) FROM concepts
+        WHERE chapterId = :chapterId
+        AND type = 'STUDY' COLLATE NOCASE
         """
     )
     suspend fun getStudyConceptCount(chapterId: String): Int
@@ -188,9 +191,9 @@ interface ConceptDao {
      */
     @Query(
         """
-        SELECT COUNT(*) FROM concepts 
-        WHERE chapterId = :chapterId 
-        AND type = 'SIMULATION'
+        SELECT COUNT(*) FROM concepts
+        WHERE chapterId = :chapterId
+        AND type = 'SIMULATION' COLLATE NOCASE
         AND (
             CASE 
                 WHEN :language = 'en' THEN

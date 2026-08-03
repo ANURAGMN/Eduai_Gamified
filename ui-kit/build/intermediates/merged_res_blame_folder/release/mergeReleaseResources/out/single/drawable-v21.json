@@ -1,0 +1,26 @@
+[
+    {
+        "merged": "com.anurag.eduai.uikit.ui-kit-release-44:/drawable-v21/abc_edit_text_material.xml",
+        "source": "com.anurag.eduai.uikit.ui-kit-appcompat-1.6.1-18:/drawable-v21/abc_edit_text_material.xml"
+    },
+    {
+        "merged": "com.anurag.eduai.uikit.ui-kit-release-44:/drawable-v21/abc_action_bar_item_background_material.xml",
+        "source": "com.anurag.eduai.uikit.ui-kit-appcompat-1.6.1-18:/drawable-v21/abc_action_bar_item_background_material.xml"
+    },
+    {
+        "merged": "com.anurag.eduai.uikit.ui-kit-release-44:/drawable-v21/abc_list_divider_material.xml",
+        "source": "com.anurag.eduai.uikit.ui-kit-appcompat-1.6.1-18:/drawable-v21/abc_list_divider_material.xml"
+    },
+    {
+        "merged": "com.anurag.eduai.uikit.ui-kit-release-44:/drawable-v21/abc_dialog_material_background.xml",
+        "source": "com.anurag.eduai.uikit.ui-kit-appcompat-1.6.1-18:/drawable-v21/abc_dialog_material_background.xml"
+    },
+    {
+        "merged": "com.anurag.eduai.uikit.ui-kit-release-44:/drawable-v21/notification_action_background.xml",
+        "source": "com.anurag.eduai.uikit.ui-kit-core-1.16.0-1:/drawable-v21/notification_action_background.xml"
+    },
+    {
+        "merged": "com.anurag.eduai.uikit.ui-kit-release-44:/drawable-v21/abc_btn_colored_material.xml",
+        "source": "com.anurag.eduai.uikit.ui-kit-appcompat-1.6.1-18:/drawable-v21/abc_btn_colored_material.xml"
+    }
+]

@@ -113,6 +113,19 @@ fun ConceptCard(
                             conceptId = concept.id,
                             onClick = onClick
                         )
+                        // Trial view: if this lesson also has a simulation, offer it right
+                        // here so concepts and their simulations sit together.
+                        val hasSimAgent = concept.simulationId
+                            ?.let { it.isNotBlank() && !it.equals("null", ignoreCase = true) } == true
+                        val hasSimUrl = concept.simulationUrl
+                            ?.let { it.isNotBlank() && !it.equals("null", ignoreCase = true) } == true
+                        if (hasSimAgent || hasSimUrl) {
+                            SimulationConceptButtons(
+                                concept = concept,
+                                onSimulationAgentClick = onSimulationAgentClick,
+                                onSimulationClick = onSimulationClick
+                            )
+                        }
                     }
                     concept.type.equals("MATH PROBLEM", ignoreCase = true) -> {
                         MathProblemButtons(

@@ -38,6 +38,9 @@ interface ProgressDao {
     @Query("SELECT * FROM progress WHERE studentId = :studentId AND appName = :appName")
     fun getAllProgress(studentId: String, appName: String): Flow<List<ProgressEntity>>
 
+    @Query("SELECT COUNT(*) FROM progress WHERE studentId = :studentId AND appName = :appName")
+    suspend fun getProgressCount(studentId: String, appName: String): Int
+
     @Query("SELECT * FROM progress WHERE studentId = :studentId AND itemType = :itemType AND appName = :appName")
     suspend fun getAllProgressSync(studentId: String, itemType: String, appName: String): List<ProgressEntity>
 
@@ -641,6 +644,100 @@ interface ProgressDao {
         endOfDay: Long,
         appName: String,
         completedStatus: String = ProgressStatus.COMPLETED.value
+    ): Int
+
+    @Query(
+        """
+        SELECT COUNT(DISTINCT itemId)
+        FROM progress
+        WHERE studentId = :studentId
+          AND itemType = 'CONCEPT'
+          AND itemId IN (:conceptIds)
+          AND status = :completedStatus
+          AND language IN ('en', 'kn')
+          AND language = :language
+          AND completedAt BETWEEN :startOfDay AND :endOfDay
+          AND appName = :appName
+        """,
+    )
+    suspend fun countTodayCompletedConceptsForIds(
+        studentId: String,
+        conceptIds: List<String>,
+        language: String,
+        startOfDay: Long,
+        endOfDay: Long,
+        appName: String,
+        completedStatus: String = ProgressStatus.COMPLETED.value,
+    ): Int
+
+    @Query(
+        """
+        SELECT COUNT(DISTINCT itemId)
+        FROM progress
+        WHERE studentId = :studentId
+          AND itemType = 'REVISION_AGENT'
+          AND status = :completedStatus
+          AND language IN ('en', 'kn')
+          AND language = :language
+          AND completedAt BETWEEN :startOfDay AND :endOfDay
+          AND appName = :appName
+        """,
+    )
+    suspend fun countTodayCompletedRevisions(
+        studentId: String,
+        language: String,
+        startOfDay: Long,
+        endOfDay: Long,
+        appName: String,
+        completedStatus: String = ProgressStatus.COMPLETED.value,
+    ): Int
+
+    @Query(
+        """
+        SELECT COUNT(DISTINCT itemId)
+        FROM progress
+        WHERE studentId = :studentId
+          AND itemType = 'REVISION_AGENT'
+          AND itemId IN (:conceptIds)
+          AND status = :completedStatus
+          AND language IN ('en', 'kn')
+          AND language = :language
+          AND completedAt BETWEEN :startOfDay AND :endOfDay
+          AND appName = :appName
+        """,
+    )
+    suspend fun countTodayCompletedRevisionsForConcepts(
+        studentId: String,
+        conceptIds: List<String>,
+        language: String,
+        startOfDay: Long,
+        endOfDay: Long,
+        appName: String,
+        completedStatus: String = ProgressStatus.COMPLETED.value,
+    ): Int
+
+    @Query(
+        """
+        SELECT COUNT(DISTINCT p.itemId)
+        FROM progress p
+        INNER JOIN concepts c ON p.itemId = c.conceptId
+        WHERE p.studentId = :studentId
+          AND c.chapterId IN (:chapterIds)
+          AND p.status = :completedStatus
+          AND p.language IN ('en', 'kn')
+          AND p.language = :language
+          AND p.completedAt BETWEEN :startOfDay AND :endOfDay
+          AND p.appName = :appName
+        """,
+    )
+    suspend fun countTodayCompletedInChapters(
+        studentId: String,
+        chapterIds: List<String>,
+        language: String,
+        startOfDay: Long,
+        endOfDay: Long,
+        appName: String,
+        completedStatus: String = ProgressStatus.COMPLETED.value,
     ): Int
 }
 

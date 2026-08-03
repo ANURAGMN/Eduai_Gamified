@@ -51,8 +51,8 @@ class ProgressRepository(
             studentId, itemType, itemId, AppConfig.APP_NAME, language,
             newStatus, progressPercentage, timestamp
         )
-        // Trigger real-time sync
-        DataSyncService.triggerFullSync()
+        // Coalesced deferred upload instead of an immediate full sync of every collection.
+        DataSyncService.scheduleDeferredUpload()
     }
 
     /** Get a reactive Flow of progress for a single item */
@@ -176,8 +176,8 @@ class ProgressRepository(
             studentId, chapterId, language, AppConfig.APP_NAME,
             studyPercentage, simulationPercentage, revisionPercentage, overallPercentage
         )
-        // Trigger real-time sync
-        com.ncert7.aitutorandlab.service.sync.DataSyncService.triggerFullSync()
+        // Coalesced deferred upload instead of an immediate full sync of every collection.
+        com.ncert7.aitutorandlab.service.sync.DataSyncService.scheduleDeferredUpload()
     }
 
     /**

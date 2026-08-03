@@ -14,14 +14,23 @@ import com.ncert7.aitutorandlab.service.analytics.AdAnalyticsTracker
 import com.ncert7.aitutorandlab.service.analytics.FunnelAnalyticsTracker
 import com.ncert7.aitutorandlab.repository.SimulationInteractionRepository
 import com.ncert7.aitutorandlab.service.analytics.InteractionTracker
+import com.ncert7.aitutorandlab.service.analytics.GamificationAnalyticsTracker
 import com.ncert7.aitutorandlab.service.analytics.SessionManager
 import com.ncert7.aitutorandlab.service.ads.ClickAdGate
 import com.ncert7.aitutorandlab.service.analytics.SimulationAnalyticsTracker
+import com.ncert7.aitutorandlab.service.logging.CrashlyticsLogger
 import com.ncert7.aitutorandlab.service.sync.DataSyncService
 import com.ncert7.aitutorandlab.service.sync.WeeklySyncWorker
+import com.ncert7.aitutorandlab.notification.NotificationChannels
+import com.ncert7.aitutorandlab.notification.NotificationScheduler
 import com.ncert7.aitutorandlab.utils.AppLifecycleObserver
 import com.ncert7.aitutorandlab.utils.LanguageHelper
+import com.ncert7.aitutorandlab.utils.bindStoredLanguagePreference
+import com.ncert7.aitutorandlab.utils.normalizeLanguageCode
 import dagger.hilt.android.HiltAndroidApp
+import com.ncert7.aitutorandlab.di.AppDataMigrationEntryPoint
+import com.ncert7.aitutorandlab.di.TutorConfigEntryPoint
+import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -41,6 +50,7 @@ class EduAiApplication : Application(), Configuration.Provider {
 
     override fun onCreate() {
         super.onCreate()
+        CrashlyticsLogger.initialize()
         DebugLogger.debugLog("EduAiApplication", "Application onCreate")
 
         // Initialize language preference from SharedPreferences
@@ -49,18 +59,23 @@ class EduAiApplication : Application(), Configuration.Provider {
         // Initialize DataSyncService for real-time and offline sync
         DataSyncService.initialize(this)
 
-        migrateLegacyProgressLanguages()
+        runAppDataMigrations()
+        loadTutorConfig()
 
         // Initialize SessionManager (handles both sessions and analytics)
         SessionManager.initialize(this)
+        GamificationAnalyticsTracker.initialize(this)
         SimulationAnalyticsTracker.initialize(this)
         ContentClickAnalyticsTracker.initialize(this)
         AdAnalyticsTracker.initialize(this)
         FunnelAnalyticsTracker.initialize(this)
         ClickAdGate.initialize(this)
 
+        NotificationChannels.ensureCreated(this)
+
         val database = EduAiDatabase.getInstance(this)
         val sharedPref = SharedPreferenceUtils(this)
+        NotificationScheduler.scheduleAll(this)
         InteractionTracker.initialize(
             SimulationInteractionRepository(
                 interactionDao = database.simulationInteractionDao(),
@@ -81,20 +96,38 @@ class EduAiApplication : Application(), Configuration.Provider {
         scheduleDailySync()
     }
 
-    private fun migrateLegacyProgressLanguages() {
+    private fun loadTutorConfig() {
+        applicationScope.launch(Dispatchers.IO) {
+            try {
+                val userId = SharedPreferenceUtils(this@EduAiApplication).getUserId() ?: return@launch
+                val repo =
+                    EntryPointAccessors
+                        .fromApplication(this@EduAiApplication, TutorConfigEntryPoint::class.java)
+                        .tutorConfigRepository()
+                repo.ensureLoaded(this@EduAiApplication, userId)
+            } catch (e: Exception) {
+                DebugLogger.errorLog("EduAiApplication", "Tutor config load failed: ${e.message}")
+            }
+        }
+    }
+
+    private fun runAppDataMigrations() {
         applicationScope.launch(Dispatchers.IO) {
             try {
                 val prefs = SharedPreferenceUtils(this@EduAiApplication)
-                if (prefs.isLegacyProgressMigrationDone()) return@launch
-                val dao = EduAiDatabase.getInstance(this@EduAiApplication).progressDao()
-                dao.markFullWordLegacyLanguages()
-                dao.markDuplicateLegacyEnglishProgress()
-                prefs.setLegacyProgressMigrationDone()
-                DebugLogger.debugLog("EduAiApplication", "Legacy progress language migration completed")
+                val userId = prefs.getUserId() ?: return@launch
+                val language = normalizeLanguageCode(prefs.getLanguagePreference())
+                val runner =
+                    EntryPointAccessors
+                        .fromApplication(
+                            this@EduAiApplication,
+                            AppDataMigrationEntryPoint::class.java,
+                        ).appDataMigrationRunner()
+                runner.runPendingMigrations(userId, language)
             } catch (e: Exception) {
                 DebugLogger.errorLog(
                     "EduAiApplication",
-                    "Legacy progress language migration failed: ${e.message}"
+                    "App data migration failed: ${e.message}",
                 )
             }
         }
@@ -103,6 +136,7 @@ class EduAiApplication : Application(), Configuration.Provider {
     private fun initializeLanguage() {
         try {
             val sharedPref = SharedPreferenceUtils(this)
+            bindStoredLanguagePreference { sharedPref.getLanguagePreference() }
             val savedLanguage = sharedPref.getLanguagePreference() ?: "en"
             LanguageHelper.setLanguage(savedLanguage)
             DebugLogger.debugLog("EduAiApplication", "Language initialized to: $savedLanguage")

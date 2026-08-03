@@ -1,0 +1,20 @@
+{
+  "simId": "science_2_1",
+  "lang": "en",
+  "title": "Science Fair Mystery",
+  "steps": [
+    {
+      "text": "A secret message is hidden on the paper — written with an invisible basic solution. Let's reveal it with an indicator!"
+    },
+    {
+      "text": "Tap “Spray” to spray the indicator across the paper.",
+      "target": "Spray"
+    },
+    {
+      "text": "Watch closely — where the indicator meets the base, it changes colour and the hidden message appears."
+    },
+    {
+      "text": "That's the power of acid–base indicators: they change colour to reveal substances we can't see. Spies once used this trick with invisible ink!"
+    }
+  ]
+}

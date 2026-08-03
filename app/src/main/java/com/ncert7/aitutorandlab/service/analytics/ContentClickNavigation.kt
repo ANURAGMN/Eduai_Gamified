@@ -5,6 +5,13 @@ package com.ncert7.aitutorandlab.service.analytics
  */
 object ContentClickNavigation {
 
+    fun chapterContentType(type: String): ContentClickType =
+        when (type.uppercase()) {
+            "SIMULATION" -> ContentClickType.CHAPTER_SIMULATION
+            "MATH PROBLEM" -> ContentClickType.CHAPTER_MATH
+            else -> ContentClickType.CHAPTER_STUDY
+        }
+
     suspend fun trackSubjectClick(subjectId: String) {
         ContentClickAnalyticsTracker.trackClickAndWait(
             itemId = subjectId,
@@ -14,14 +21,9 @@ object ContentClickNavigation {
     }
 
     suspend fun trackChapterListClick(chapterId: String, type: String) {
-        val contentType = when (type.uppercase()) {
-            "SIMULATION" -> ContentClickType.CHAPTER_SIMULATION
-            "MATH PROBLEM" -> ContentClickType.CHAPTER_MATH
-            else -> ContentClickType.CHAPTER_STUDY
-        }
         ContentClickAnalyticsTracker.trackClickAndWait(
             itemId = chapterId,
-            contentType = contentType,
+            contentType = chapterContentType(type),
             source = ClickSource.CHAPTER_LIST
         )
     }
@@ -55,6 +57,23 @@ object ContentClickNavigation {
             itemId = conceptId,
             contentType = ContentClickType.LESSON,
             source = ClickSource.HOME
+        )
+    }
+
+    suspend fun trackPlanTrialItemClick(
+        itemId: String,
+        kind: String,
+    ) {
+        val contentType =
+            when (kind.uppercase()) {
+                "SIM_AGENT", "SIM_URL" -> ContentClickType.CHAPTER_SIMULATION
+                "REVISION" -> ContentClickType.REVISION
+                else -> ContentClickType.STUDY
+            }
+        ContentClickAnalyticsTracker.trackClickAndWait(
+            itemId = itemId,
+            contentType = contentType,
+            source = ClickSource.PLAN_TRIAL,
         )
     }
 }

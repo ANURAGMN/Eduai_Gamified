@@ -43,15 +43,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.ncert7.aitutorandlab.R
+import com.ncert7.aitutorandlab.debug.OnboardingDebugHelper
 import com.ncert7.aitutorandlab.debug.DebugLogger
 import com.ncert7.aitutorandlab.service.analytics.FunnelAnalyticsTracker
 import com.ncert7.aitutorandlab.service.analytics.FunnelStep
@@ -111,6 +115,7 @@ fun UserDetailEntryScreen(
             is UserSaveState.Success -> {
                 isSaving = false
                 DebugLogger.debugLog("UserDetailEntryScreen", "User saved successfully")
+                OnboardingDebugHelper.prepareOnboardingReplayAfterSignIn(context)
                 navController.navigate("main") {
                     popUpTo("login") { inclusive = true }
                 }
@@ -153,7 +158,10 @@ fun UserDetailEntryScreen(
                 Image(
                     painter = painterResource(id = R.drawable.logo),
                     contentDescription = stringResource(R.string.app_logo_desc),
-                    modifier = Modifier.height(dimens.containerMinHeight - dimens.buttonHeight)
+                    modifier = Modifier
+                        .size(128.dp)
+                        .clip(RoundedCornerShape(dimens.cornerRadiusMedium)),
+                    contentScale = ContentScale.Fit
                 )
             }
             Card(

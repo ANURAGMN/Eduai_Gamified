@@ -1,0 +1,45 @@
+EduAI — Release notes (1.0.9)
+
+Short (Play Console — What's new, ~500 chars max)
+---
+• Gamified home with streaks, gems, quests, and exam plan
+• Plan & trial mode — schedule study and sim sessions by day
+• Friends, leagues, and avatar customization
+• Rewarded ads for quest gem rewards (production ad units)
+• In-app updates, Crashlytics, and analytics improvements
+• Privacy policy and terms links in Settings
+
+Full (internal / optional)
+---
+Version: 1.0.9 (11)
+Track: Production (or Closed testing first)
+
+Changes:
+- GAMIFIED_HOME_ENABLED=true in release build
+- Quest system: daily sims/study/bonus quests with rewarded ad gem claims
+- Plan overview + trial calendar with rollover
+- Friends list + invite gem rewards (Path B)
+- Leagues UI (local cohort; cross-device sync deferred)
+- Avatar screen + native tutor avatar when gamified home is on
+- Production AdMob: banner + rewarded (REWARDED_AD_1)
+- In-app update host (Play flexible/immediate)
+- Firebase Crashlytics logging
+- GA4 gamification analytics; Firestore analytics mirror disabled
+- Session/time-spent tracking fixes
+- Privacy: https://anuragmn.github.io/privacy-policy.html
+- Terms: https://anuragmn.github.io/terms-of-service.html
+- Firestore rules deployed for gamification sync paths
+
+Known limitations (post-launch):
+- Concept maps in chatbot require GEMINI_API_KEY (optional; main tutor uses backend)
+- Ad gem grants are client-side (AdMob SSV deferred)
+- Leagues cross-device sync deferred
+
+Upload checklist:
+[ ] Upload app-release.aab (bundleRelease output)
+[ ] Paste short release notes above
+[ ] Confirm privacy policy URL in Play Console matches GitHub Pages
+[ ] Refresh phone screenshots for gamified home, plan, quests
+[ ] Confirm feature graphic still compliant (docs/store-listing/)
+[ ] Add release SHA-256 to Firebase if using new upload keystore
+[ ] Send listing + release for review

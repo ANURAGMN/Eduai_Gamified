@@ -37,6 +37,9 @@ interface ChapterAgentProgressDao {
         appName: String
     ): ChapterAgentProgressEntity?
 
+    @Query("SELECT COUNT(*) FROM chapter_agent_progress WHERE studentId = :studentId AND appName = :appName")
+    suspend fun getChapterProgressCount(studentId: String, appName: String): Int
+
     @Query(
         """
         SELECT * FROM chapter_agent_progress 

@@ -1,4 +1,13 @@
 {
-  "indexes": [],
+  "indexes": [
+    {
+      "collectionGroup": "youtube_videos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "active", "order": "ASCENDING" },
+        { "fieldPath": "publishedAtMillis", "order": "DESCENDING" }
+      ]
+    }
+  ],
   "fieldOverrides": []
 }

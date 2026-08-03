@@ -1,0 +1,471 @@
+07-31 16:03:10.712 26721 26737 I TestRunner: started: outpostScene_rendersAtSceneSegmentWidth(com.anurag.eduai.uikit.garden.GardenPhase0RenderTest)
+07-31 16:03:10.715 26721 26737 D IdlingRegistry: Registering idling resources: [androidx.compose.ui.test.EspressoLink@d3a9d74]
+07-31 16:03:10.716 26721 26737 W Settings: Setting always_finish_activities has moved from android.provider.Settings.System to android.provider.Settings.Global, returning read-only value.
+07-31 16:03:10.718  3306  4364 I [UAH_CLIENT]: UahEventAcquire, cmdid:2, pkg:none, identity:com.android.server.wm
+07-31 16:03:10.719  3306  5386 V GrammaticalInflectionUtils: AttributionSource: android.content.AttributionSource@b4c68a29 does not have READ_SYSTEM_GRAMMATICAL_GENDER permission.
+07-31 16:03:10.723  3306  5386 D TaskOrganizerController: TaskOrganizerController.addStartingWindow: call wmshell to addStartingWindow:ActivityRecord{72388056 u0 com.anurag.eduai.uikit.test/androidx.activity.ComponentActivity t7147}
+07-31 16:03:10.723  3306  5386 D ActivityTrigger: ActivityTrigger activityPauseTrigger
+07-31 16:03:10.724  4699  4795 D WindowManager: Add to mViews: android.widget.FrameLayout{9ea47f5 V.E...... ......I. 0,0-0,0 alpha=1.0 viewInfo = },pkg= com.anurag.eduai.uikit.test
+07-31 16:03:10.725  4699  4831 D skia    : setRusSupported enable 0
+07-31 16:03:10.731  4699  4795 D ViewRootImplExtImpl: onDisplayChanged -1 for VRI android.view.ViewRootImpl@24e39c4
+07-31 16:03:10.732  3306  5229 I OplusHansManager : front pkg: com.anurag.eduai.uikit.test, uid: 10570, prev pkg: com.android.settings, prev uid: 1000
+07-31 16:03:10.732  3306  4257 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET, states=14
+07-31 16:03:10.733  1942  8123 E ANDR-PERF-LM: MetaMeter: handleAsync() 166: AdaptLaunch Invalid Async
+07-31 16:03:10.733  3306  4886 I OplusHansManager : uid=10570, pkg=com.anurag.eduai.uikit.test R exit SM
+07-31 16:03:10.733  3306  4886 I OplusHansManager : uid=10570, pkg=com.anurag.eduai.uikit.test R exit(), R stay=0
+07-31 16:03:10.733  2183  2183 I BpBinder: onLastStrongRef automatically unlinking death recipients:
+07-31 16:03:10.733  3306  4633 I Osense-BaseDecisionMaker: notifySceneToAthenaPolicy: SCENE_APP_SWITCH, bundle: Bundle[{prevPkgName=com.android.settings, curUid=10570, isGame=false, curPkgName=com.anurag.eduai.uikit.test, prevUid=1000}]
+07-31 16:03:10.734  3306  4257 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET6, states=14
+07-31 16:03:10.734  3306  4633 I Osense-BaseDecisionMaker: scene: SCENE_APP_SWITCH, excutingPolicy: freezer
+07-31 16:03:10.734  3306  5038 W OplusHansManager : Failed to notify phone app uid : not register
+07-31 16:03:10.734  3306  4633 D Osense-BaseDecisionMaker: invoke freezer policy,type: fast
+07-31 16:03:10.734  3306  4257 D InetDiagMessage: Destroyed live tcp sockets for uids={10287} in 2ms
+07-31 16:03:10.734  3306  4910 I OPM-Process: resume pkg: com.anurag.eduai.uikit.test, uid:10570, prev pkg: com.android.settings, prev uid: 1000
+07-31 16:03:10.735 26721 26847 D ColorModeChangeItem: preExecute mColorMode=0
+07-31 16:03:10.736  3306  5219 I [UAH_CLIENT]: UahEventAcquire, cmdid:2, pkg:none, identity:OplusActivityManagerServiceEnhance
+07-31 16:03:10.737  3306  4364 I [UAH_CLIENT]: UahEventAcquire, cmdid:0, pkg:com.anurag.eduai.uikit.test, identity:com.android.server.wm
+07-31 16:03:10.739  2183  2438 D VRR [OTI]: handleIdle from 0 to 0
+07-31 16:03:10.739  2183  2438 I VRR [MVT]: request is same as current request, ignore it.
+07-31 16:03:10.739  5480  5511 W Battery : AppSwitchDetectorV2: OnAppSwitchObserver: onAppExit , info = OplusAppExitInfo = {  targetName = com.android.settings hasResumingActivity = true resumingPackageName = com.anurag.eduai.uikit.test resumingActivityName = androidx.activity.ComponentActivity resumingWindowMode = 1 isResumingMultiApp = false isResumingFirstStart = false extension = Bundle[mParcelledData.dataSize=608]} lastReg=1785468162837
+07-31 16:03:10.739  5480  5511 W Battery : AppSwitchManager: onAppSwitch: [k4.o$d@21c659c]
+07-31 16:03:10.740  4446  3335 V DCSEX-AppSwitchManager: OnAppSwitchObserver: onAppExit, resuming = com.anurag.eduai.uikit.test, target = com.android.settings, is ResumingFirstStart =  false, is ResumingMultiApp =  false, extensionInfo =  Bundle[mParcelledData.dataSize=608]
+07-31 16:03:10.740  4973  5410 I Athena  : AthenaDynamicReceiver: pre_app:com.android.settings, next_app:com.anurag.eduai.uikit.test(10570|26721)
+07-31 16:03:10.740  3306  4982 D OplusLatencyOptimizerManager: enter pkg: com.anurag.eduai.uikit.test isPrevBlackAppTop: false mIsBlackAppTop: false
+07-31 16:03:10.740  4699  4769 D ShellTaskOrganizerExt: visibleFlexibleTaskInfos delete:7091
+07-31 16:03:10.740  4699  4769 D ShellTaskOrganizerExt: isOnCanvas size:0
+07-31 16:03:10.740  4699  4769 D ShellTaskOrganizerExt: isOnThreeFlexibleCanvas size:0
+07-31 16:03:10.740  4446 14609 D DCSEX-AppLaunchEventRecorder: onAppSwitch from = com.android.settings to = com.anurag.eduai.uikit.test
+07-31 16:03:10.741 24087 25444 D SceneSDK.1.0.4-SNAPSHOT.24087.DeepThinkerAppSwitchAbility: onAppSwitchEvent: AppSwitchEvent(timeStamp=1785493990739, eventType=2, targetName=com.android.settings, firstStart=false, multiApp=false, windowMode=0, resumingPackageName=com.anurag.eduai.uikit.test, resumingActivityName=androidx.activity.ComponentActivity, isResumingMultiApp=false, isResumingFirstStart=false)
+07-31 16:03:10.741 24087 25444 I metis_v2_AppSwitchDataCollector: AppExitEvent =  com.android.settings, NextAppName = com.anurag.eduai.uikit.test
+07-31 16:03:10.741  3306  3568 D SurfaceComposerClient: Transaction::apply InputWindowCommands.focusRequests timestamp=75182632480380, windowName=<null>
+07-31 16:03:10.742  6611 11133 D OplusAtlas.OplusAudioScene: callback success event:atlas_event_on_foreground_activities_changed eventInfo:pid:26721,uid:10570,hasForegroundActivities:1
+07-31 16:03:10.742  2175   648 D AudioBoost: audioSchedBoost, pid=2175, tid=648, enable=1, ret=0
+07-31 16:03:10.743  2175   648 D AudioFlingerExtImpl: updateForegroundInfo, mapInf mForegroundMap(2)|[com.anurag.eduai.uikit.test]=1|[]=1, uidPidMapInf mForegroundUidPidMap(1)|[10570]=26721
+07-31 16:03:10.743  2175   648 D AudioBoost: audioSchedBoost, pid=2175, tid=648, enable=0, ret=0
+07-31 16:03:10.744  4699  4795 E OplusBracketLog: [OplusViewMirrorManager] updateHostViewRootIfNeeded, not support android.view.ViewRootImpl@24e39c4
+07-31 16:03:10.744  4699  4795 D ViewRootImplExtImpl: wrapConfigInfoIntoFlags rotation=0, smallestScreenWidthDp=0, residentWS=false, scenario=0, bounds=Rect(0, 0 - 1080, 2414), relayoutAsync=false, flags=0, newFlags=1265631232, title=Splash Screen com.anurag.eduai.uikit.test
+07-31 16:03:10.744  3306  6006 I OStatsManager_Calc: add screen power pkgName = com.android.settings, uid = 1000, power = 12.666279999539256, is Fg = true, fore size = 1, mScale = 1.0
+07-31 16:03:10.744  3306  6006 I OStatsManager_Calc: noteBeforePkgSwitch change = false, curTime = 158041708, com.anurag.eduai.uikit.test, fg = false
+07-31 16:03:10.744  3306  6006 I OStatsManager_OplusBatteryStatsManager: updateStateTime: PkgName = com.anurag.eduai.uikit.test, uid = 10570, state to fg, mForegroundCnt = 1, isFg = true
+07-31 16:03:10.744  3306  6006 I OStatsManager_OplusBatteryStatsManager: notePkgForeground [com.anurag.eduai.uikit.test10570, com.android.settings1000], uid = 10570, pid = 26721, pkgName = com.anurag.eduai.uikit.test
+07-31 16:03:10.745 26721 26721 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@d86a7f8 in: PRE_ON_CREATE
+07-31 16:03:10.745 26721 26721 V ActivityScenario: Activity lifecycle changed event received but ignored because the reported transition was not ON_CREATE while the last known transition was PRE_ON_CREATE
+07-31 16:03:10.745 26721 26721 D OplusPredictiveBackController: initPredictiveBackConfig for androidx.activity.ComponentActivity@d86a7f8 initPredictiveBackConfig mShouldInterceptKeyEvent false
+07-31 16:03:10.745 26721 26721 D WindowOnBackDispatcher:  predictive settings is disabled for com.anurag.eduai.uikit.test
+07-31 16:03:10.746  5480  5511 W Battery : ThermalControlUtils: mForegroundPkg=com.anurag.eduai.uikit.test mLastWindowMode=1
+07-31 16:03:10.746  5480  5511 W Battery : StateManager: getAppType com.anurag.eduai.uikit.test, last=1785493986475
+07-31 16:03:10.746  5480  5511 W Battery : ThermalControllerCenter: mSafetyState=00000,  mSafetyTestConfigList=01111,10111,11011,11101,11110,00111,01011,01101,01110,10011,10101,10110,11001,11010,11100,11111
+07-31 16:03:10.746  5480  5511 W Battery : ThermalControllHandler: tempLevel=[3],userMode=2,gameUserMode=-1,appType=-1,envTempType=0,appStates=[],appSwitchSafetyMode=true,split=[],float={},full=[com.anurag.eduai.uikit.test], tempGear=[3],configItemName=common_config
+07-31 16:03:10.746  5480  5511 W Battery : ThermalControllerCenter: MSG_THERMAL_CONTROL_CATEGORY_PROTECT_PERIOD enter.
+07-31 16:03:10.746  5480  5511 W Battery : ThermalControlUtils: not set the same wifi=0
+07-31 16:03:10.746  5480 21682 W Battery : AppSceneCenter: PerfPolicy not enable!
+07-31 16:03:10.747  3306  5194 W OplusNavigationBarUtil: color navigation bar util isn't init.
+07-31 16:03:10.741  4446  3335 V DCSEX-AppSwitchManager: OnAppSwitchObserver: onAppEnter, launchedFrom =  com.anurag.eduai.uikit.test, target =  com.anurag.eduai.uikit.test, is firstStart =  false, is multiApp =  false, extensionInfo =  Bundle[mParcelledData.dataSize=1032], launch_source_type =  , launch_source_traceid =
+07-31 16:03:10.748  4699  4795 D BufferQueueConsumer: [](id:125b000003cb,api:0,p:-1,c:4699) connect: controlledByApp=false
+07-31 16:03:10.748  4699  4795 D BufferQueueConsumer: [VRI[test]#968(BLAST Consumer)968](id:125b000003cb,api:0,p:-1,c:4699) setMaxAcquiredBufferCount: 2
+07-31 16:03:10.751  4699  4831 D HWUI    : createSurface new attribs array
+07-31 16:03:10.751  4699  4831 D libEGL  : this is from skia gles
+07-31 16:03:10.751  4699  4831 D BufferQueueProducer: [VRI[test]#968(BLAST Consumer)968](id:125b000003cb,api:1,p:4699,c:4699) connect: api=1 producerControlledByApp=true
+07-31 16:03:10.751  1731  1769 W statsd  : StatsPullerManager::PullLocked Unknown tagId 150146
+07-31 16:03:10.751  2183  2475 D SurfaceFlinger: updateWinowInfo=1, setFocusedWindow timestamp=75182632480380, windowName=<null>
+07-31 16:03:10.751  4699  4795 I SurfaceControl:  setExtendedRangeBrightness sc=Surface(name=Splash Screen com.anurag.eduai.uikit.test)/@0xab9afe2,currentBufferRatio=1.0,desiredRatio=1.0
+07-31 16:03:10.751  3306  5402 I InputDispatcher: updateFocusedWindow,  on display 0, reason: NO_WINDOW, result:   FocusedWindows: <none>
+07-31 16:03:10.752  1731  1769 E statsd  : Gauge Stats puller failed for tag: 150146 at 158041709453847
+07-31 16:03:10.752  4699  4769 D ZoomController: onTaskMovedToFront, task id:7147
+07-31 16:03:10.752  4699  4769 I ZoomUiController: FloatHandle-isFloatHandleShow mPackageName = null
+07-31 16:03:10.752  3306  5229 I InputDispatcher: NFW_setFocusedWindow, <null> on display 0, same as the previous:1
+07-31 16:03:10.752  3306  5229 D InputDispatcher: setFocusedWindow <null> on display 0 ignored, reason: already focused
+07-31 16:03:10.752 20757 20757 D VRI[SubSettings]: onFocusEvent false
+07-31 16:03:10.754  4699  4831 D BLASTBufferQueue: [VRI[test]#968](f:0,a:1) acquireNextBufferLocked size=1080x2414 mFrameNumber=1 applyTransaction=true mTimestamp=75182645376891(auto) mPendingTransactions.size=0 graphicBufferId=20182051334191 transform=0
+07-31 16:03:10.754  4699  4831 D VRI[test]: Received frameCommittedCallback lastAttemptedDrawFrameNum=1 didProduceBuffer=true syncBuffer=false
+07-31 16:03:10.754  4699  4795 D VRI[test]: draw finished. seqId=0
+07-31 16:03:10.758  1731  1769 E statsd  : Stats puller failed for tag: 150134 at 158041715952077
+07-31 16:03:10.759  4773  6029 V OsAgent : broadcastSystemEvent - 7
+07-31 16:03:10.760  4699  4769 D OplusShellTransition: dispatchReady, active:(#1352) android.os.BinderProxy@746fbfb@0, isSync=false, track:com.android.wm.shell.transition.Transitions$Track@868b9dc
+07-31 16:03:10.761  4699  4769 D OplusShellTransition: Abort transition (#1352) android.os.BinderProxy@746fbfb@0 WMCore requested. reason: 0; abortTransition: false
+07-31 16:03:10.761  4699  4769 D FlexibleTaskTransitionHandler:  performAnimation transition:android.os.BinderProxy@746fbfb ,info:{id=1352 t=OPEN f=0x0 trk=0 r=[0@Point(0, 0)] c=[{m=OPEN f=NONE leash=Surface(name=Task=7147)/@0x7869348 sb=Rect(0, 0 - 1080, 2414) eb=Rect(0, 0 - 1080, 2414) epz=Point(1080, 2414) d=0 taskParent=-1},{m=TO_BACK f=NONE leash=Surface(name=Task=7091)/@0x6dcd5e1 sb=Rect(0, 0 - 1080, 2414) eb=Rect(0, 0 - 1080, 2414) epz=Point(1080, 2414) d=0 taskParent=-1}]
+07-31 16:03:10.761  4699  4769 D FlexibleTaskTransitionHandler: extendInfo=[
+07-31 16:03:10.761  4699  4769 D FlexibleTaskTransitionHandler:  OplusTransitionExtendedInfo{mTmpFinishT=null, mInOplusCompatMode=false, mIsProcessRunning=true, mHasMismatchBoundsTarget=false, mRecentsController=null, mRemoteTransition=null, mIsTranslucentActivityToHome=false, mAvoidInterceptKeyEventToHome=false, mIsFromHome=false, mParentLeash=null, mBackAnimClosingLeash=null, mIsOplusAnimRes=false, mKeepBgForContinuous=false, mIsBalAllow=true, mTaskNotInRecent=false, mIsPredictiveBackAnim=false, mIsMergedWithPredictive=false, mIsLaunchFromSpruce=false, mIsLaunchFromDrive=false, mGlobalSearchPageSwitch=false, mNeedNoAlphaGlobalSearchScene=false, mAssistScreenShowing=false, mSwipeUpBrowserScreenShowing=false, mUserIdTransition=0
+07-31 16:03:10.761  4699  4769 D FlexibleTaskTransitionHandler: , mInRemoteScene=false, mInPreReady=false, mPreStart=false, mToken=null, mAbortByRemoteFromHome=false, mShellApplyToken=null, mRequestTransitionTaskId=7147, mAbortTransitionOnShell=0, mStartFromShortcut=false, mRemovedTaskId=-1, mTransitionInterruptType=0, mMergeSecondTaskId=-1, mTaskIdStartFromRecents=0, mTransitionId=1352, mCanUseSpringSlideAnim=false, mTransitionLaunchFrom=0, mFoldChangeType=-1, mAnimStartingPosition=[0, 0, 0, 0], mIsOpeningStkDialogActivity=false, mSecondaryHomeToFrontWhenUnFolding=false, mIsNeedApplyStartTForEmbedded=false
+07-31 16:03:10.761  4699  4769 D FlexibleTaskTransitionHandler: , mNeedCanvasExitAnim=false, mMergeSecondTaskAnimation=false, mIsLaunchUnityStart=false, mIsLaunchFromAssistantByDefault=false, mSkipRemoteTransitionfalse, mIsStartFromKeyguard=false flags=0x0, mWCT=null, mIsOpenMergeToInValidPredictive=false, mPromoteTaskWhenKeyguard-1, mRootLayerZOrderArray={}}]}
+07-31 16:03:10.761  4699  4769 D FlexibleTaskTransitionHandler:  no need handler this transitionInfo: {id=1352 t=OPEN f=0x0 trk=0 r=[0@Point(0, 0)] c=[{m=OPEN f=NONE leash=Surface(name=Task=7147)/@0x7869348 sb=Rect(0, 0 - 1080, 2414) eb=Rect(0, 0 - 1080, 2414) epz=Point(1080, 2414) d=0 taskParent=-1},{m=TO_BACK f=NONE leash=Surface(name=Task=7091)/@0x6dcd5e1 sb=Rect(0, 0 - 1080, 2414) eb=Rect(0, 0 - 1080, 2414) epz=Point(1080, 2414) d=0 taskParent=-1}]
+07-31 16:03:10.761  4699  4769 D FlexibleTaskTransitionHandler: extendInfo=[
+07-31 16:03:10.761  4699  4769 D FlexibleTaskTransitionHandler:  OplusTransitionExtendedInfo{mTmpFinishT=null, mInOplusCompatMode=false, mIsProcessRunning=true, mHasMismatchBoundsTarget=false, mRecentsController=null, mRemoteTransition=null, mIsTranslucentActivityToHome=false, mAvoidInterceptKeyEventToHome=false, mIsFromHome=false, mParentLeash=null, mBackAnimClosingLeash=null, mIsOplusAnimRes=false, mKeepBgForContinuous=false, mIsBalAllow=true, mTaskNotInRecent=false, mIsPredictiveBackAnim=false, mIsMergedWithPredictive=false, mIsLaunchFromSpruce=false, mIsLaunchFromDrive=false, mGlobalSearchPageSwitch=false, mNeedNoAlphaGlobalSearchScene=false, mAssistScreenShowing=false, mSwipeUpBrowserScreenShowing=false, mUserIdTransition=0
+07-31 16:03:10.761  4699  4769 D FlexibleTaskTransitionHandler: , mInRemoteScene=false, mInPreReady=false, mPreStart=false, mToken=null, mAbortByRemoteFromHome=false, mShellApplyToken=null, mRequestTransitionTaskId=7147, mAbortTransitionOnShell=0, mStartFromShortcut=false, mRemovedTaskId=-1, mTransitionInterruptType=0, mMergeSecondTaskId=-1, mTaskIdStartFromRecents=0, mTransitionId=1352, mCanUseSpringSlideAnim=false, mTransitionLaunchFrom=0, mFoldChangeType=-1, mAnimStartingPosition=[0, 0, 0, 0], mIsOpeningStkDialogActivity=false, mSecondaryHomeToFrontWhenUnFolding=false, mIsNeedApplyStartTForEmbedded=false
+07-31 16:03:10.761  4699  4769 D FlexibleTaskTransitionHandler: , mNeedCanvasExitAnim=false, mMergeSecondTaskAnimation=false, mIsLaunchUnityStart=false, mIsLaunchFromAssistantByDefault=false, mSkipRemoteTransitionfalse, mIsStartFromKeyguard=false flags=0x0, mWCT=null, mIsOpenMergeToInValidPredictive=false, mPromoteTaskWhenKeyguard-1, mRootLayerZOrderArray={}}]}
+07-31 16:03:10.761  4699  4769 D FSS_OplusFoldSwitchStateObserver: cancelAnimationIfNeedWhenFolding: foldChangeType = -1
+07-31 16:03:10.762  4699  4769 D OplusShellTransition: getPlatformAnimation platformLevel 3 LEVEL_LOW 1 needAnimForLowEndDevice false
+07-31 16:03:10.762  4699  4769 D OplusShellTransition: load oplus transition, type: 1, isTask: true , wallpaperTransit: 0
+07-31 16:03:10.762  4699  4769 D OplusShellTransition: default transition handler transfer value refresh rate rect:Rect(0, 0 - 1080, 2414)
+07-31 16:03:10.763  4699  4769 D OplusShellTransition: startAnimation transitionToken=android.os.BinderProxy@746fbfb
+07-31 16:03:10.763  4699  4769 D OplusShellTransition: getPlatformAnimation platformLevel 3 LEVEL_LOW 1 needAnimForLowEndDevice false
+07-31 16:03:10.763  4699  4769 D OplusShellTransition: load oplus transition, type: 1, isTask: true , wallpaperTransit: 0
+07-31 16:03:10.763  4699  4769 D OplusShellTransition: default transition handler transfer value refresh rate rect:Rect(0, 0 - 1080, 2414)
+07-31 16:03:10.763  4699  4769 D OplusShellTransition: startAnimation transitionToken=android.os.BinderProxy@746fbfb
+07-31 16:03:10.764  4699  4769 D OplusShellTransition: addBackgroundColorOnTask, , isTaskLevelTransition = true, hasBgAlready = false
+07-31 16:03:10.764 24087 25444 D SceneSDK.1.0.4-SNAPSHOT.24087.DeepThinkerAppSwitchAbility: onAppSwitchEvent: AppSwitchEvent(timeStamp=1785493990741, eventType=1, targetName=com.anurag.eduai.uikit.test, firstStart=false, multiApp=false, windowMode=1, resumingPackageName=, resumingActivityName=, isResumingMultiApp=false, isResumingFirstStart=false)
+07-31 16:03:10.765 24087 25444 I metis_v2_AppSwitchDataCollector: AppEnterEvent =  com.anurag.eduai.uikit.test, windowMode = 1,firstStart = false
+07-31 16:03:10.765  4699  4787 I [UAH_CLIENT]: UahEventAcquire, cmdid:490, pkg:none, identity:SchedUtil
+07-31 16:03:10.765 24087 25444 W metis_v2_AppSwitchDataCollector: fenceKey = com.oplus.metis:TOP_APPLICATION, getExits = [], getEnters = [] packageName = com.anurag.eduai.uikit.test
+07-31 16:03:10.765  4699  4769 D OplusShellTransition: dispatchTransition, animated mHandler: com.android.wm.shell.transition.DefaultTransitionHandler@6fab93b
+07-31 16:03:10.767 24087 25444 W metis_v2_AppSwitchDataCollector: pid = 26721, cachePid=26721
+07-31 16:03:10.769 24087 25444 I metis_v2_AppSwitchDataCollector:  set isNotifiedTVCast
+07-31 16:03:10.770  1731  1769 W statsd  : StatsPullerManager::PullLocked Unknown tagId 150146
+07-31 16:03:10.770  1731  1769 E statsd  : Stats puller failed for tag: 150146 at 158041715952077
+07-31 16:03:10.770 11720 18786 I Quality-ScreenOnOffLogProcessor: withInScreenOnOffRange mIsScreenOn:true refTime:1785493990727 mRecentScreenOnTime:1785493257954 mRecentScreenOffTime:1785492120917
+07-31 16:03:10.770 24087 25444 E metis_v2_FactManager: There is no subModel: com.oplus.linker
+07-31 16:03:10.770 24087 25444 I metis_v2_AppSwitchDataCollector: Skip call fire
+07-31 16:03:10.771  4699  4769 D OplusShellTransition: DefaultTransitionHandler#onAnimFinish=> transition=android.os.BinderProxy@746fbfb, backAnimContinue=false
+07-31 16:03:10.772  4699  4769 D ShellTaskOrganizerExt: adjust change for exiting mini task: -1
+07-31 16:03:10.773 26028 26888 I AlarmManager: setExactAndAllowWhileIdle [name: GCM_HB_ALARM type: 2 triggerAtMillis: 158641737]
+07-31 16:03:10.775  3306  5038 I OplusHansManager : unfreeze uid: 10160 com.google.android.gm pids: [21347] reason: acquireWakeLock GOOGL... WorkSource{10160 com.google.android.gm} scene: LcdOn
+07-31 16:03:10.776  3306  4886 I OplusHansManager : uid=10160, pkg=com.google.android.gm F exit(), F stay=19, reason=acquireWakeLock GOOGL... WorkSource{10160 com.google.android.gm}, FrozenActionKeepProxy=false
+07-31 16:03:10.776  3306  6006 I OStatsManager_OplusBatteryStatsManager: updateStateTime: PkgName = com.google.android.gm, uid = 10160, state to bg, mForegroundCnt = 0, isFg = false
+07-31 16:03:10.777  3306  4890 I OplusHansManager : up_BC uid=10160 pkg=com.google.android.gm
+07-31 16:03:10.777 26028 26106 W ChimeraUtils: Module com.google.android.gms.gcm missing resource null(0)
+07-31 16:03:10.779 26028 26106 I AlarmManager: setExactAndAllowWhileIdle [name: FcmRetry type: 2 triggerAtMillis: 158161742]
+07-31 16:03:10.787  9286 12386 I ehlg    : (REDACTED) appOpsListener %s %s
+07-31 16:03:10.787  9286 12386 I ehlg    : (REDACTED) Ignoring irrelevant audio permission changes for package %s
+07-31 16:03:10.792  1035  1035 E lowmemorykiller: device memory 420631 free 90841 file 374435
+07-31 16:03:10.795 20757 20773 D VRI[SubSettings]: dispatchAppVisibility visible:false mUpcomingWindowFocus:false
+07-31 16:03:10.795 20757 20757 D VRI[SubSettings]: visibilityChanged oldVisibility=true newVisibility=false
+07-31 16:03:10.797  4699  4769 D ShellTaskOrganizer: Task appeared taskId=7147, parentTaskId=-1, taskVisibility=true
+07-31 16:03:10.797  4699  4787 I [UAH_CLIENT]: UahRelease, handle:48664
+07-31 16:03:10.797  4699  4769 D ShellTaskOrganizerExt: visibleFlexibleTaskInfos delete:7147
+07-31 16:03:10.797  4699  4769 D ShellTaskOrganizerExt: isOnCanvas size:0
+07-31 16:03:10.797  4699  4769 D ShellTaskOrganizerExt: isOnThreeFlexibleCanvas size:0
+07-31 16:03:10.799 26028 26049 W OplusExSystemServiceHelper: checkOplusExSystemService intent getComponent is null
+07-31 16:03:10.800  1731  1769 E statsd  : Stats puller failed for tag: 150134 at 158041762025462
+07-31 16:03:10.803  4699  4769 D ShellTaskOrganizerExt: visibleFlexibleTaskInfos delete:7091
+07-31 16:03:10.803  4699  4769 D ShellTaskOrganizerExt: isOnCanvas size:0
+07-31 16:03:10.803  4699  4769 D ShellTaskOrganizerExt: isOnThreeFlexibleCanvas size:0
+07-31 16:03:10.804 20757 20757 D HWUI    : RenderProxy::destroy: this=0xb400007c6564ea00, mContext=0xb400007c61396840
+07-31 16:03:10.805 20757 20900 D HWUI    : SkiaOpenGLPipeline::setSurface: this=0xb400007c65687080, surface=NULL
+07-31 16:03:10.805 20757 20900 D BufferQueueProducer: [VRI[SubSettings]#15(BLAST Consumer)15](id:51150000000f,api:1,p:20757,c:20757) disconnect: api 1
+07-31 16:03:10.805 20757 20757 D ViewRootImplExtImpl: wrapConfigInfoIntoFlags rotation=0, smallestScreenWidthDp=360, residentWS=false, scenario=0, bounds=Rect(0, 0 - 1080, 2414), relayoutAsync=false, flags=0, newFlags=1265642752, title=com.android.settings/com.android.settings.SubSettings
+07-31 16:03:10.807  3306  5194 D Theia.NoFocusWindow: FocusWindowErrorScene cancelCheckFreezeScreen
+07-31 16:03:10.807  3306  5194 W TheiaWindowMonitor: [check] focusedWindow is null or enable is false
+07-31 16:03:10.809 20757 20757 D BLASTBufferQueue: [VRI[SubSettings]#15](f:0,a:1) destructor()
+07-31 16:03:10.809  3306  3568 D SurfaceComposerClient: Transaction::apply InputWindowCommands.focusRequests timestamp=75182700305016, windowName=ffad34c com.anurag.eduai.uikit.test/androidx.activity.ComponentActivity
+07-31 16:03:10.809 20757 20757 D BufferQueueConsumer: [VRI[SubSettings]#15(BLAST Consumer)15](id:51150000000f,api:0,p:-1,c:20757) disconnect
+07-31 16:03:10.816  3306  4628 I Osense-BaseDecisionMaker: notifySceneToAthenaPolicy: SCENE_ACTIVITY_IDLE, bundle: Bundle[{scene=SCENE_ACTIVITY_IDLE}]
+07-31 16:03:10.816  3306  4628 I Osense-BaseDecisionMaker: OSense not supported scene! SCENE_ACTIVITY_IDLE
+07-31 16:03:10.816  3306  4632 D NirvanaManager: activateIdleShownUiPid: pkg=com.anurag.eduai.uikit.test, uid=10570, pid=26721
+07-31 16:03:10.816  3306  4632 D NirvanaManager: enable_bg_limit_level_thermal feature is not supported
+07-31 16:03:10.818 20757 20757 D VRI[SubSettings]: setWindowStopped stopped:true
+07-31 16:03:10.821  2183  2475 D SurfaceFlinger: updateWinowInfo=1, setFocusedWindow timestamp=75182700305016, windowName=ffad34c com.anurag.eduai.uikit.test/androidx.activity.ComponentActivity
+07-31 16:03:10.821 20757 20757 D ViewRootImplExtImpl: wrapConfigInfoIntoFlags rotation=0, smallestScreenWidthDp=360, residentWS=false, scenario=0, bounds=Rect(0, 0 - 1080, 2414), relayoutAsync=false, flags=0, newFlags=1265642752, title=com.android.settings/com.android.settings.SubSettings
+07-31 16:03:10.821  1731  1769 W statsd  : StatsPullerManager::PullLocked Unknown tagId 150146
+07-31 16:03:10.821  1731  1769 E statsd  : Stats puller failed for tag: 150146 at 158041762025462
+07-31 16:03:10.821  3306  5386 I InputDispatcher: NFW_setFocusedWindow, ffad34c com.anurag.eduai.uikit.test/androidx.activity.ComponentActivity on display 0, same as the previous:0
+07-31 16:03:10.821  3306  5386 W SurfaceFlingerPuller: Failed to pull atom 150119 from surfaceflinger. Success is 0, binder status is EX_NONE
+07-31 16:03:10.821  5480  5906 W Battery : Thermal.FpsControl: writeFps 0 com.android.settings
+07-31 16:03:10.822  1731  1769 E statsd  : Gauge Stats puller failed for tag: 150119 at 158041762025462
+07-31 16:03:10.822  3306  3568 D TaskOrganizerController: TaskOrganizerController.removeStartingWindow: call wmshell to removeStartingWindow Task{ea3416 #7147 type=standard A=10570:com.anurag.eduai.uikit.test}null
+07-31 16:03:10.823  3306  3568 I Quality : LaunchTime2.0: com.anurag.eduai.uikit.test/androidx.activity.ComponentActivity 2 95 com.anurag.eduai.uikit.test 36 -1
+07-31 16:03:10.816  4699  4699 I SystemUi--NavBar: NavigationBarGestureExImpl-->oplusAllowSystemGestureIgnoringBarVisibility isOplusFlagAllowBackGestureIgnoreVisibilityState = false isGestureMisTouchPreventionEnable = true
+07-31 16:03:10.823  5006  5006 W System.err: java.lang.NoSuchFieldException: No field mSnapshotBundle in class Landroid/window/TaskSnapshot; (declaration of 'android.window.TaskSnapshot' appears in /system/framework/framework.jar!classes5.dex)
+07-31 16:03:10.823  5006  5006 W System.err: 	at java.lang.Class.getDeclaredField(Native Method)
+07-31 16:03:10.823  5006  5006 W System.err: 	at com.oplus.basecommon.util.ReflectUtil.getFieldValue(SourceFile:4)
+07-31 16:03:10.823  5006  5006 W System.err: 	at com.oplus.basecommon.util.ReflectUtil.getFieldValue(SourceFile:1)
+07-31 16:03:10.823  5006  5006 W System.err: 	at com.oplus.basecommon.util.ReflectUtil.getRefBundle(SourceFile:0)
+07-31 16:03:10.823  5006  5006 W System.err: 	at com.android.systemui.shared.recents.model.ThumbnailData.<init>(SourceFile:31)
+07-31 16:03:10.823  5006  5006 W System.err: 	at com.android.systemui.shared.system.TaskStackChangeListeners$Impl.lambda$handleMessage$1(SourceFile:22)
+07-31 16:03:10.823  5006  5006 W System.err: 	at com.android.systemui.shared.system.TaskStackChangeListeners$Impl.b(SourceFile:0)
+07-31 16:03:10.823  5006  5006 W System.err: 	at com.android.systemui.shared.system.m.run(SourceFile:6)
+07-31 16:03:10.823  5006  5006 W System.err: 	at com.android.quickstep.OplusTaskThumbnailCacheImpl.callTaskSnapshotChanged(SourceFile:62)
+07-31 16:03:10.823  5006  5006 W System.err: 	at com.android.systemui.shared.system.TaskStackChangeListeners$Impl.handleMessage(SourceFile:632)
+07-31 16:03:10.823  5006  5006 W System.err: 	at android.os.Handler.dispatchMessage(Handler.java:111)
+07-31 16:03:10.823  5006  5006 W System.err: 	at android.os.Looper.loopOnce(Looper.java:302)
+07-31 16:03:10.823  5006  5006 W System.err: 	at android.os.Looper.loop(Looper.java:412)
+07-31 16:03:10.823  5006  5006 W System.err: 	at com.android.launcher.monitor.exception.MainThreadExceptionMonitor.startWatching$lambda$2(SourceFile:14)
+07-31 16:03:10.823  5006  5006 W System.err: 	at com.android.launcher.monitor.exception.MainThreadExceptionMonitor.a(SourceFile:0)
+07-31 16:03:10.823  5006  5006 W System.err: 	at com.android.launcher.guide.s.run(SourceFile:63)
+07-31 16:03:10.823  5006  5006 W System.err: 	at android.os.Handler.handleCallback(Handler.java:1027)
+07-31 16:03:10.823  5006  5006 W System.err: 	at android.os.Handler.dispatchMessage(Handler.java:108)
+07-31 16:03:10.823  5006  5006 W System.err: 	at android.os.Looper.loopOnce(Looper.java:302)
+07-31 16:03:10.823  5006  5006 W System.err: 	at android.os.Looper.loop(Looper.java:412)
+07-31 16:03:10.823  5006  5006 W System.err: 	at android.app.ActivityThread.main(ActivityThread.java:9998)
+07-31 16:03:10.823  5006  5006 W System.err: 	at java.lang.reflect.Method.invoke(Native Method)
+07-31 16:03:10.823  5006  5006 W System.err: 	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:613)
+07-31 16:03:10.823  5006  5006 W System.err: 	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:1074)
+07-31 16:03:10.824  5006  5325 I SystemUiProxy: SystemUiProxy#getRecentTasks isInGoRecentsAnim: false
+07-31 16:03:10.827  3306  3564 I ActivityTaskManager: Displayed com.anurag.eduai.uikit.test/androidx.activity.ComponentActivity for user 0: +104ms
+07-31 16:03:10.830  4699  4795 D HWUI    : RenderProxy::destroy: this=0xb400007bf29d1200, mContext=0xb400007c2f956300
+07-31 16:03:10.830  4699  4831 D HWUI    : SkiaOpenGLPipeline::setSurface: this=0xb400007bfaf87400, surface=NULL
+07-31 16:03:10.830  4699  4831 D BufferQueueProducer: [VRI[test]#968(BLAST Consumer)968](id:125b000003cb,api:1,p:4699,c:4699) disconnect: api 1
+07-31 16:03:10.830  1731  1769 E statsd  : Gauge Stats puller failed for tag: 150134 at 158041790700358
+07-31 16:03:10.831  4699  4795 D ViewRootImplExtImpl: wrapConfigInfoIntoFlags rotation=0, smallestScreenWidthDp=360, residentWS=false, scenario=0, bounds=Rect(0, 0 - 1080, 2414), relayoutAsync=false, flags=0, newFlags=1265642752, title=Splash Screen com.anurag.eduai.uikit.test
+07-31 16:03:10.837  2183  2406 D SurfaceFlinger: VRR [SurfaceFlinger] setDesiredDisplayModeSpecs, from process 3306, 2, 0, primaryRanges = [ 0.000000, 120.000000, 0.000000, 90.000000 ], appRequestRanges = [ 0.000000, 120.000000, 0.000000 90.000000 ] forceChanged = 0
+07-31 16:03:10.837  4699  4795 D BLASTBufferQueue: [VRI[test]#968](f:0,a:1) destructor()
+07-31 16:03:10.837  4699  4795 D BufferQueueConsumer: [VRI[test]#968(BLAST Consumer)968](id:125b000003cb,api:0,p:-1,c:4699) disconnect
+07-31 16:03:10.838  2183  2183 I RefreshRateSelector: Display 4630947214369728643 policy changed
+07-31 16:03:10.838  2183  2183 I RefreshRateSelector: Previous: {defaultModeId=0, allowGroupSwitching=false, primaryRanges={physical=[0.00 Hz, 120.00 Hz], render=[0.00 Hz, 120.00 Hz]}, appRequestRanges={physical=[0.00 Hz, 120.00 Hz], render=[0.00 Hz, 120.00 Hz]} idleScreenConfig=nullptr}
+07-31 16:03:10.838  2183  2183 I RefreshRateSelector: Current:  DisplayManagerPolicy{defaultModeId=2, allowGroupSwitching=false, primaryRanges={physical=[0.00 Hz, 120.00 Hz], render=[0.00 Hz, 90.00 Hz]}, appRequestRanges={physical=[0.00 Hz, 120.00 Hz], render=[0.00 Hz, 90.00 Hz]} idleScreenConfig=nullptr}
+07-31 16:03:10.838  2183  2183 I RefreshRateSelector: 1 mode changes were performed under the previous policy
+07-31 16:03:10.838  2183  2183 D SurfaceFlinger: VRR [SurfaceFlinger] applyRefreshRateSelectorPolicy: 2 (90.00 Hz), policy: {defaultModeId=2, allowGroupSwitching=false, primaryRanges={physical=[0.00 Hz, 120.00 Hz], render=[0.00 Hz, 90.00 Hz]}, appRequestRanges={physical=[0.00 Hz, 120.00 Hz], render=[0.00 Hz, 90.00 Hz]} idleScreenConfig=nullptr}
+07-31 16:03:10.838  4699  4795 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=false callback=android.view.ViewRootImpl$$ExternalSyntheticLambda13@28080ad
+07-31 16:03:10.838  2183  2183 D SurfaceFlinger: VRR [SurfaceFlinger] setDesiredActiveMode: displayId: 4630947214369728643, renderRate: 90, vsyncRate: 90, event: 1
+07-31 16:03:10.838  2183  2183 D DisplayModeController: setDesiredMode 4630947214369728643 {mode={fps=90.00 Hz, modePtr={id=2, vsyncRate=90.00 Hz, peakRefreshRate=90.00 Hz}}, emitEvent=true, force=false}
+07-31 16:03:10.838  2183  2438 D VRR [OTI]: handleIdle from 0 to 0
+07-31 16:03:10.838  2183  2438 I VRR [MVT]: requestFrameRateMode source: oti-hw, mode: {fps=90, modePtr={id=2, vsyncRate=90.00 Hz, peakRefreshRate=90.00 Hz}}
+07-31 16:03:10.838  2183  2438 I VRR [MVT]: chooseFrameRateMode : {fps=90, modePtr={id=2, vsyncRate=90.00 Hz, peakRefreshRate=90.00 Hz}}
+07-31 16:03:10.838  2183  2447 D SurfaceFlinger: requestDisplayModes mModeChangePending is true
+07-31 16:03:10.839  3306  5035 I InputDispatcher: updateFocusedWindow, ffad34c com.anurag.eduai.uikit.test/androidx.activity.ComponentActivity on display 0, reason: Window became focusable. Previous reason: NOT_VISIBLE, result:   FocusedWindows:
+07-31 16:03:10.839  3306  5035 I InputDispatcher:     displayId=0, name='ffad34c com.anurag.eduai.uikit.test/androidx.activity.ComponentActivity'
+07-31 16:03:10.840 26721 26721 W LOG_FLOWCTRL: ==LOGS OVER PROC QUOTA(300), rows(27) bytes(2986) com.anurag.eduai.uikit.test u(0) l(0) t(0) c(0) DROPPED==
+07-31 16:03:10.840 26721 26721 D VRI[ComponentActivity]: onFocusEvent true
+07-31 16:03:10.843  3306  4577 D OsenseCommonUtils: /dev/memcg/apps/uid_1000/memory.app_score not exist
+07-31 16:03:10.844  3306  6006 I OStatsManager_Calc: add screen power pkgName = com.anurag.eduai.uikit.test, uid = 10570, power = 14.393500000238419, is Fg = true, fore size = 2, mScale = 1.0
+07-31 16:03:10.844  3306  6006 I OStatsManager_Calc: add screen power pkgName = com.android.settings, uid = 1000, power = 14.393500000238419, is Fg = true, fore size = 2, mScale = 1.0
+07-31 16:03:10.844  3306  6006 I OStatsManager_Calc: noteBeforePkgSwitch change = false, curTime = 158041807, com.android.settings, fg = true
+07-31 16:03:10.844  3306  6006 I OStatsManager_OplusBatteryStatsManager: updateStateTime: PkgName = com.android.settings, uid = 1000, state to bg, mForegroundCnt = 0, isFg = false
+07-31 16:03:10.844  3306  6006 I OStatsManager_OplusBatteryStatsManager: notePkgBackground [com.anurag.eduai.uikit.test10570], uid = 1000, pid = 20757, pkgName = com.android.settings
+07-31 16:03:10.844  3306  4194 I ImeTracker: com.anurag.eduai.uikit.test:29241705: onRequestHide at ORIGIN_SERVER reason HIDE_UNSPECIFIED_WINDOW fromUser false
+07-31 16:03:10.846 26721 26721 D Vibrator: SystemVibrator Created
+07-31 16:03:10.846  2183  2183 I HWC2    : [0] setActiveConfigWithConstraints[2]
+07-31 16:03:10.846  1890 12353 I SDM     : HWCDisplay::SetActiveConfigToIrisWrapper: SetActiveConfigToIrisWrapper on id_: 0
+07-31 16:03:10.846  1890 12353 W SDM     : HWCDisplay::SetActiveConfigToIrisWrapper: HWC SetActiveConfig [0, 2], switch to [1240x2772@90]
+07-31 16:03:10.847  1890 12353 W SDM     : HWDeviceDRM::GetSupportedBitClkRate: Requested rate not supported: 1112000000
+07-31 16:03:10.847  1890 12353 I SDM     : HWDeviceDRM::UpdateMixerAttributes: Mixer WxH 1240x2772-1 for Peripheral
+07-31 16:03:10.847  1890 12353 I CwbService: CwbService::notifyConfigChange: display:0, config:2 size:3, sec.size():0
+07-31 16:03:10.847  1890 12353 I CwbService: CwbService::notifyConfigChange: display: 0, config = 2
+07-31 16:03:10.847  1890 12353 I SDM     : HWCDisplay::SubmitDisplayConfig: Active configuration changed from config 0 to 2
+07-31 16:03:10.849  9162  9162 I GoogleInputMethodService: GoogleInputMethodService.onFinishInput():2259
+07-31 16:03:10.850 27515 29364 E AccessibilityService: bindInput must be paired with unbindInput.
+07-31 16:03:10.850  9162  9162 I Module  : DeviceLockedStatusModuleProvider$Module.updateDeviceLockedStatus():103 repeatCheckTimes = 0, locked = false
+07-31 16:03:10.850 27515 27515 V A11yInputMethod: startInput(): editor=android.view.inputmethod.EditorInfo@a9769a9
+07-31 16:03:10.850 27515 27515 V A11yInputMethod: CALL: onStartInput
+07-31 16:03:10.850  4773  6029 V OsAgent : broadcastSystemEvent - 7
+07-31 16:03:10.850  9162  9162 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1446 onStartInput(EditorInfo{EditorInfo{packageName=com.anurag.eduai.uikit.test, inputType=0, inputTypeString=NULL, enableLearning=false, autoCorrection=false, autoComplete=false, imeOptions=0, privateImeOptions=null, actionName=UNSPECIFIED, actionLabel=null, initialSelStart=-1, initialSelEnd=-1, initialCapsMode=0, label=null, fieldId=0, fieldName=null, extras=Bundle[{com.oplus.im.WINDOW_MODE=1, com.oplus.im.SCENES=0}], hintText=null, hintLocales=[]}}, false)
+07-31 16:03:10.850  9162  9162 I AndroidIME: LatinIMEBase.updateInputViewCoverNavigation():322 Update input view padding, isNavbarOverInputWindow=true, bottom inset=132
+07-31 16:03:10.851  9162  9162 I Module  : DeviceLockedStatusModuleProvider$Module.updateDeviceLockedStatus():103 repeatCheckTimes = 1, locked = false
+07-31 16:03:10.851 26721 26721 D InsetsController: hide(ime(), fromIme=false)
+07-31 16:03:10.851 26721 26721 I ImeTracker: com.anurag.eduai.uikit.test:29241705: onCancelled at PHASE_CLIENT_ALREADY_HIDDEN
+07-31 16:03:10.851  3306  3434 I ImeTracker: system_server:77e90d5d: onRequestHide at ORIGIN_SERVER reason IME_REQUESTED_CHANGED_LISTENER fromUser false
+07-31 16:03:10.854  3306  4194 I ImeTracker: system_server:77e90d5d: onCancelled at PHASE_SERVER_SHOULD_HIDE
+07-31 16:03:10.855 27515 16249 W AccessibilityInteractionClient: return null for 1
+07-31 16:03:10.875  3306  4364 I [UAH_CLIENT]: UahEventAcquire, cmdid:2, pkg:none, identity:com.android.server.wm
+07-31 16:03:10.876  3306  3434 V GrammaticalInflectionUtils: AttributionSource: android.content.AttributionSource@b4c68a29 does not have READ_SYSTEM_GRAMMATICAL_GENDER permission.
+07-31 16:03:10.877  3306  3306 E OplusGestureAnimationManagerPolicy: mScreenHeight:2414 mScreenWidth:1080 mRotation:0
+07-31 16:03:10.878  2183  2438 I VRR [MVT]: request is same as current request, ignore it.
+07-31 16:03:10.878  2183  2447 D SurfaceFlinger: VRR [SurfaceFlinger] setDesiredActiveMode: displayId: 4630947214369728643, renderRate: 90, vsyncRate: 90, event: 0
+07-31 16:03:10.878  2183  2447 D DisplayModeController: setDesiredMode 4630947214369728643 {mode={fps=90.00 Hz, modePtr={id=2, vsyncRate=90.00 Hz, peakRefreshRate=90.00 Hz}}, emitEvent=false, force=false}
+07-31 16:03:10.878  2175 32173 D AudioBoost: audioSchedBoost, pid=2175, tid=32173, enable=1, ret=0
+07-31 16:03:10.878  1853  3446 D AHAL: AudioDevice: SetParameters: 1972: enter: screen_state=on
+07-31 16:03:10.878  1853  3446 D AHAL: hfp: hfp_set_parameters: 696: enter
+07-31 16:03:10.878  1853  3446 D AHAL: hfp: hfp_set_parameters: 701: OPLUS_HFP_SUPPORT is not supported
+07-31 16:03:10.878  1853  3446 D AHAL: AudioDevice: SetParameters: 2077:  - screen = on
+07-31 16:03:10.879  1853  3446 D AHAL: AudioDevice: SetParameters: 2821: exit
+07-31 16:03:10.879  3306  3434 D ActivityTrigger: ActivityTrigger activityPauseTrigger
+07-31 16:03:10.880  2175 32173 D AudioBoost: audioSchedBoost, pid=2175, tid=32173, enable=0, ret=0
+07-31 16:03:10.881 26721 26721 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@d86a7f8 in: PAUSED
+07-31 16:03:10.882 26721 26721 V ActivityScenario: Update currentActivityStage to PAUSED, currentActivity=androidx.activity.ComponentActivity@d86a7f8
+07-31 16:03:10.884 26721 26731 D ColorModeChangeItem: preExecute mColorMode=0
+07-31 16:03:10.885  1731  1769 E statsd  : Stats puller failed for tag: 150134 at 158041847329004
+07-31 16:03:10.886  1942  8123 E ANDR-PERF-LM: MetaMeter: handleAsync() 166: AdaptLaunch Invalid Async
+07-31 16:03:10.886  3306  5035 I [UAH_CLIENT]: UahEventAcquire, cmdid:2, pkg:none, identity:OplusActivityManagerServiceEnhance
+07-31 16:03:10.887  2183  5463 D [PREVIEW]: SF obtain preview_adapter: 0
+07-31 16:03:10.887  2183  5463 D [PREVIEW]: TabletPreviewAdapter::parallel world 0
+07-31 16:03:10.888  2183  2183 I BpBinder: onLastStrongRef automatically unlinking death recipients:
+07-31 16:03:10.889  3306  3568 D SurfaceComposerClient: Transaction::apply InputWindowCommands.focusRequests timestamp=75182777591422, windowName=<null>
+07-31 16:03:10.890  1035  1035 E lowmemorykiller: device memory 414043 free 78796 file 376914
+07-31 16:03:10.891 26721 26721 D LifecycleMonitor: Lifecycle status change: androidx.test.core.app.InstrumentationActivityInvoker$EmptyActivity@b73bafb in: PRE_ON_CREATE
+07-31 16:03:10.891 26721 26721 V ActivityScenario: Activity lifecycle changed event received but ignored because the intent does not match. startActivityIntent=Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10008000 cmp=com.anurag.eduai.uikit.test/androidx.activity.ComponentActivity }, activity.getIntent()=Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10000000 xflg=0x4 cmp=com.anurag.eduai.uikit.test/androidx.test.core.app.InstrumentationActivityInvoker$EmptyActivity mCallingUid=10570 }, activity=androidx.test.core.app.InstrumentationActivityInvoker$EmptyActivity@b73bafb
+07-31 16:03:10.891 26721 26721 E OplusPredictiveBackController:  NoSuchMethodException
+07-31 16:03:10.891 26721 26721 D OplusPredictiveBackController: initPredictiveBackConfig for androidx.test.core.app.InstrumentationActivityInvoker$EmptyActivity@b73bafb initPredictiveBackConfig mShouldInterceptKeyEvent false
+07-31 16:03:10.891 26721 26721 D WindowOnBackDispatcher:  predictive settings is disabled for com.anurag.eduai.uikit.test
+07-31 16:03:10.894  3306  4492 W OplusNavigationBarUtil: color navigation bar util isn't init.
+07-31 16:03:10.895 26721 26721 D LifecycleMonitor: Lifecycle status change: androidx.test.core.app.InstrumentationActivityInvoker$EmptyActivity@b73bafb in: CREATED
+07-31 16:03:10.895 26721 26721 V ActivityScenario: Activity lifecycle changed event received but ignored because the intent does not match. startActivityIntent=Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10008000 cmp=com.anurag.eduai.uikit.test/androidx.activity.ComponentActivity }, activity.getIntent()=Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10000000 xflg=0x4 cmp=com.anurag.eduai.uikit.test/androidx.test.core.app.InstrumentationActivityInvoker$EmptyActivity mCallingUid=10570 }, activity=androidx.test.core.app.InstrumentationActivityInvoker$EmptyActivity@b73bafb
+07-31 16:03:10.896 26721 26721 D LifecycleMonitor: Lifecycle status change: androidx.test.core.app.InstrumentationActivityInvoker$EmptyActivity@b73bafb in: STARTED
+07-31 16:03:10.896 26721 26721 V ActivityScenario: Activity lifecycle changed event received but ignored because the intent does not match. startActivityIntent=Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10008000 cmp=com.anurag.eduai.uikit.test/androidx.activity.ComponentActivity }, activity.getIntent()=Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10000000 xflg=0x4 cmp=com.anurag.eduai.uikit.test/androidx.test.core.app.InstrumentationActivityInvoker$EmptyActivity mCallingUid=10570 }, activity=androidx.test.core.app.InstrumentationActivityInvoker$EmptyActivity@b73bafb
+07-31 16:03:10.896  1731  1769 W statsd  : StatsPullerManager::PullLocked Unknown tagId 150146
+07-31 16:03:10.896  1731  1769 E statsd  : Stats puller failed for tag: 150146 at 158041847329004
+07-31 16:03:10.897  1731  1769 E statsd  : Stats puller failed for tag: 150134 at 158041855040201
+07-31 16:03:10.897 26721 26721 D LifecycleMonitor: Lifecycle status change: androidx.test.core.app.InstrumentationActivityInvoker$EmptyActivity@b73bafb in: RESUMED
+07-31 16:03:10.898 26721 26721 V ActivityScenario: Activity lifecycle changed event received but ignored because the intent does not match. startActivityIntent=Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10008000 cmp=com.anurag.eduai.uikit.test/androidx.activity.ComponentActivity }, activity.getIntent()=Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10000000 xflg=0x4 cmp=com.anurag.eduai.uikit.test/androidx.test.core.app.InstrumentationActivityInvoker$EmptyActivity mCallingUid=10570 }, activity=androidx.test.core.app.InstrumentationActivityInvoker$EmptyActivity@b73bafb
+07-31 16:03:10.898  4699  4699 I KeyguardDisplayManager: onDisplayChanged displayId: 0
+07-31 16:03:10.898  4699  4699 I SystemUi--Keyguard: KeyguardDisplayManagerExImpl-->orientationChanged=false, presentationDisplayChanged=false, lastPresentationWidth=0, lastPresentationHeight=0, lastPresentationDensity=0
+07-31 16:03:10.898  4699  4769 D ShellTaskOrganizerExt: visibleFlexibleTaskInfos delete:7147
+07-31 16:03:10.898  4699  4769 D ShellTaskOrganizerExt: isOnCanvas size:0
+07-31 16:03:10.898  4699  4769 D ShellTaskOrganizerExt: isOnThreeFlexibleCanvas size:0
+07-31 16:03:10.898 26721 26721 D WindowManager: Add to mViews: com.android.internal.policy.DecorView{a4de130 I.E...... R.....ID 0,0-0,0 alpha=1.0 viewInfo = }[InstrumentationActivityInvoker$EmptyActivity],pkg= com.anurag.eduai.uikit.test
+07-31 16:03:10.898 26721 26757 D skia    : setRusSupported enable 0
+07-31 16:03:10.901  2183  2475 D SurfaceFlinger: updateWinowInfo=1, setFocusedWindow timestamp=75182777591422, windowName=<null>
+07-31 16:03:10.901  3306  5035 I InputDispatcher: updateFocusedWindow,  on display 0, reason: NO_WINDOW, result:   FocusedWindows: <none>
+07-31 16:03:10.901  3306  5229 I InputDispatcher: NFW_setFocusedWindow, <null> on display 0, same as the previous:1
+07-31 16:03:10.901  3306  5229 D InputDispatcher: setFocusedWindow <null> on display 0 ignored, reason: already focused
+07-31 16:03:10.901  4699  4769 D ShellTaskOrganizerExt: visibleFlexibleTaskInfos delete:7147
+07-31 16:03:10.901  4699  4769 D ShellTaskOrganizerExt: isOnCanvas size:0
+07-31 16:03:10.901  4699  4769 D ShellTaskOrganizerExt: isOnThreeFlexibleCanvas size:0
+07-31 16:03:10.903 26721 26721 D ViewRootImplExtImpl: onDisplayChanged -1 for VRI android.view.ViewRootImpl@5e39ecf
+07-31 16:03:10.904  1731  1769 W statsd  : StatsPullerManager::PullLocked Unknown tagId 150146
+07-31 16:03:10.904  1731  1769 E statsd  : Stats puller failed for tag: 150146 at 158041855040201
+07-31 16:03:10.904  1731  1769 E statsd  : Gauge Stats puller failed for tag: 150119 at 158041855040201
+07-31 16:03:10.905 26721 26721 D VRI[ComponentActivity]: onFocusEvent false
+07-31 16:03:10.907 26721 26721 E OplusBracketLog: [OplusViewMirrorManager] updateHostViewRootIfNeeded, not support android.view.ViewRootImpl@5e39ecf
+07-31 16:03:10.908 26721 26721 D WindowOnBackDispatcher:  predictive settings is disabled for com.anurag.eduai.uikit.test
+07-31 16:03:10.908 26721 26721 D WindowOnBackDispatcher:  predictive settings is disabled for com.anurag.eduai.uikit.test
+07-31 16:03:10.908 26721 26721 D ViewRootImplExtImpl: wrapConfigInfoIntoFlags rotation=0, smallestScreenWidthDp=0, residentWS=false, scenario=0, bounds=Rect(0, 0 - 1080, 2414), relayoutAsync=false, flags=0, newFlags=1265631232, title=com.anurag.eduai.uikit.test/androidx.test.core.app.InstrumentationActivityInvoker$EmptyActivity
+07-31 16:03:10.911  3306  5035 D Theia.NoFocusWindow: FocusWindowErrorScene cancelCheckFreezeScreen
+07-31 16:03:10.911  3306  5035 W TheiaWindowMonitor: [check] focusedWindow is null or enable is false
+07-31 16:03:10.913 26721 26721 D BufferQueueConsumer: [](id:686100000015,api:0,p:-1,c:26721) connect: controlledByApp=false
+07-31 16:03:10.913 26721 26721 D BufferQueueConsumer: [VRI[InstrumentationActivityInvoker$EmptyActivity]#21(BLAST Consumer)21](id:686100000015,api:0,p:-1,c:26721) setMaxAcquiredBufferCount: 2
+07-31 16:03:10.914 26721 26757 D HWUI    : createSurface new attribs array
+07-31 16:03:10.914 26721 26757 D libEGL  : this is from skia gles
+07-31 16:03:10.914 26721 26757 D BufferQueueProducer: [VRI[InstrumentationActivityInvoker$EmptyActivity]#21(BLAST Consumer)21](id:686100000015,api:1,p:26721,c:26721) connect: api=1 producerControlledByApp=true
+07-31 16:03:10.914 26721 26721 I SurfaceControl:  setExtendedRangeBrightness sc=Surface(name=com.anurag.eduai.uikit.test/androidx.test.core.app.InstrumentationActivityInvoker$EmptyActivity)/@0x95ddef4,currentBufferRatio=1.0,desiredRatio=1.0
+07-31 16:03:10.916 26721 26757 D BLASTBufferQueue: [VRI[InstrumentationActivityInvoker$EmptyActivity]#21](f:0,a:1) acquireNextBufferLocked size=1080x2414 mFrameNumber=1 applyTransaction=true mTimestamp=75182807863974(auto) mPendingTransactions.size=0 graphicBufferId=114765821116500 transform=0
+07-31 16:03:10.917 26721 26757 D VRI[InstrumentationActivityInvoker$EmptyActivity]: Received frameCommittedCallback lastAttemptedDrawFrameNum=1 didProduceBuffer=true syncBuffer=false
+07-31 16:03:10.917 26721 26721 D VRI[InstrumentationActivityInvoker$EmptyActivity]: draw finished. seqId=0
+07-31 16:03:10.918 26721 26721 D ActivityClient: activity finished by caller: android.app.Activity.finish:7644 android.app.Activity.finish:7661 androidx.test.core.app.InstrumentationActivityInvoker.$r8$lambda$A9Xye-wJ3E1idQIJVAcRV8mCn-Y:0 androidx.test.core.app.InstrumentationActivityInvoker$$ExternalSyntheticLambda2.run:0 java.util.concurrent.Executors$RunnableAdapter.call:520 java.util.concurrent.FutureTask.run:328 android.app.Instrumentation$SyncRunnable.run:2647 android.os.Handler.handleCallback:1027 android.os.Handler.dispatchMessage:108 android.os.Looper.loopOnce:302
+07-31 16:03:10.922 11720 18786 I Quality-ScreenOnOffLogProcessor: withInScreenOnOffRange mIsScreenOn:true refTime:1785493990880 mRecentScreenOnTime:1785493257954 mRecentScreenOffTime:1785492120917
+07-31 16:03:10.923  3306  3568 I Quality : LaunchTime2.0: com.anurag.eduai.uikit.test/androidx.test.core.app.InstrumentationActivityInvoker$EmptyActivity 2 43 com.anurag.eduai.uikit.test -1 -1
+07-31 16:03:10.923  3306  3564 I ActivityTaskManager: Displayed com.anurag.eduai.uikit.test/androidx.test.core.app.InstrumentationActivityInvoker$EmptyActivity for user 0: +43ms
+07-31 16:03:10.923  4699  4769 D OplusShellTransition: dispatchReady, active:(#1353) android.os.BinderProxy@ad58490@0, isSync=false, track:com.android.wm.shell.transition.Transitions$Track@868b9dc
+07-31 16:03:10.923  4699  4769 D OplusShellTransition: Abort transition (#1353) android.os.BinderProxy@ad58490@0 WMCore requested. reason: 0; abortTransition: false
+07-31 16:03:10.924  4699  4769 D FlexibleTaskTransitionHandler:  performAnimation transition:android.os.BinderProxy@ad58490 ,info:{id=1353 t=OPEN f=0x0 trk=0 r=[0@Point(0, 0)] c=[{m=OPEN f=FILLS_TASK leash=Surface(name=ActivityRecord{74203200 u0 com.anurag.eduai.uikit.test/androidx.test.core.app.InstrumentationActivityInvoker$EmptyActivity t7147})/@0x7a4a1af sb=Rect(0, 0 - 0, 0) eb=Rect(0, 0 - 1080, 2414) epz=Point(1080, 2414) d=-1->0 r=-1->0:-1 component=com.anurag.eduai.uikit.test/androidx.test.core.app.InstrumentationActivityInvoker$EmptyActivity opt={t=CUSTOM enterResId=0 changeResId=0 exitResId=0 mUserId=0}},{m=TO_BACK f=FILLS_TASK leash=Surface(name=ActivityRecord{72388056 u0 com.anurag.eduai.uikit.test/androidx.activity.ComponentActivity t7147})/@0x6b659bc sb=Rect(0, 0 - 1080, 2414) eb=Rect(0, 0 - 1080, 2414) epz=Point(1080, 2414) d=0 component=com.anurag.eduai.uikit.test/androidx.activity.ComponentActivity opt={t=CUSTOM enterResId=0 changeResId=0 exitResId=0 mUserId=0}}]
+07-31 16:03:10.924  4699  4769 D FlexibleTaskTransitionHandler: extendInfo=[
+07-31 16:03:10.924  4699  4769 D FlexibleTaskTransitionHandler:  OplusTransitionExtendedInfo{mTmpFinishT=null, mInOplusCompatMode=false, mIsProcessRunning=false, mHasMismatchBoundsTarget=false, mRecentsController=null, mRemoteTransition=null, mIsTranslucentActivityToHome=false, mAvoidInterceptKeyEventToHome=false, mIsFromHome=false, mParentLeash=null, mBackAnimClosingLeash=null, mIsOplusAnimRes=false, mKeepBgForContinuous=false, mIsBalAllow=false, mTaskNotInRecent=false, mIsPredictiveBackAnim=false, mIsMergedWithPredictive=false, mIsLaunchFromSpruce=false, mIsLaunchFromDrive=false, mGlobalSearchPageSwitch=false, mNeedNoAlphaGlobalSearchScene=false, mAssistScreenShowing=false, mSwipeUpBrowserScreenShowing=false, mUserIdTransition=-1
+07-31 16:03:10.924  4699  4769 D FlexibleTaskTransitionHandler: , mInRemoteScene=false, mInPreReady=false, mPreStart=false, mToken=null, mAbortByRemoteFromHome=false, mShellApplyToken=null, mRequestTransitionTaskId=7147, mAbortTransitionOnShell=0, mStartFromShortcut=false, mRemovedTaskId=-1, mTransitionInterruptType=0, mMergeSecondTaskId=-1, mTaskIdStartFromRecents=0, mTransitionId=1353, mCanUseSpringSlideAnim=false, mTransitionLaunchFrom=0, mFoldChangeType=-1, mAnimStartingPosition=[0, 0, 0, 0], mIsOpeningStkDialogActivity=false, mSecondaryHomeToFrontWhenUnFolding=false, mIsNeedApplyStartTForEmbedded=false
+07-31 16:03:10.924  4699  4769 D FlexibleTaskTransitionHandler: , mNeedCanvasExitAnim=false, mMergeSecondTaskAnimation=false, mIsLaunchUnityStart=false, mIsLaunchFromAssistantByDefault=false, mSkipRemoteTransitionfalse, mIsStartFromKeyguard=false flags=0x0, mWCT=null, mIsOpenMergeToInValidPredictive=false, mPromoteTaskWhenKeyguard-1, mRootLayerZOrderArray={}}]}
+07-31 16:03:10.924  4699  4769 D FlexibleTaskTransitionHandler:  no need handler this transitionInfo: {id=1353 t=OPEN f=0x0 trk=0 r=[0@Point(0, 0)] c=[{m=OPEN f=FILLS_TASK leash=Surface(name=ActivityRecord{74203200 u0 com.anurag.eduai.uikit.test/androidx.test.core.app.InstrumentationActivityInvoker$EmptyActivity t7147})/@0x7a4a1af sb=Rect(0, 0 - 0, 0) eb=Rect(0, 0 - 1080, 2414) epz=Point(1080, 2414) d=-1->0 r=-1->0:-1 component=com.anurag.eduai.uikit.test/androidx.test.core.app.InstrumentationActivityInvoker$EmptyActivity opt={t=CUSTOM enterResId=0 changeResId=0 exitResId=0 mUserId=0}},{m=TO_BACK f=FILLS_TASK leash=Surface(name=ActivityRecord{72388056 u0 com.anurag.eduai.uikit.test/androidx.activity.ComponentActivity t7147})/@0x6b659bc sb=Rect(0, 0 - 1080, 2414) eb=Rect(0, 0 - 1080, 2414) epz=Point(1080, 2414) d=0 component=com.anurag.eduai.uikit.test/androidx.activity.ComponentActivity opt={t=CUSTOM enterResId=0 changeResId=0 exitResId=0 mUserId=0}}]
+07-31 16:03:10.924  4699  4769 D FlexibleTaskTransitionHandler: extendInfo=[
+07-31 16:03:10.924  4699  4769 D FlexibleTaskTransitionHandler:  OplusTransitionExtendedInfo{mTmpFinishT=null, mInOplusCompatMode=false, mIsProcessRunning=false, mHasMismatchBoundsTarget=false, mRecentsController=null, mRemoteTransition=null, mIsTranslucentActivityToHome=false, mAvoidInterceptKeyEventToHome=false, mIsFromHome=false, mParentLeash=null, mBackAnimClosingLeash=null, mIsOplusAnimRes=false, mKeepBgForContinuous=false, mIsBalAllow=false, mTaskNotInRecent=false, mIsPredictiveBackAnim=false, mIsMergedWithPredictive=false, mIsLaunchFromSpruce=false, mIsLaunchFromDrive=false, mGlobalSearchPageSwitch=false, mNeedNoAlphaGlobalSearchScene=false, mAssistScreenShowing=false, mSwipeUpBrowserScreenShowing=false, mUserIdTransition=-1
+07-31 16:03:10.924  4699  4769 D FlexibleTaskTransitionHandler: , mInRemoteScene=false, mInPreReady=false, mPreStart=false, mToken=null, mAbortByRemoteFromHome=false, mShellApplyToken=null, mRequestTransitionTaskId=7147, mAbortTransitionOnShell=0, mStartFromShortcut=false, mRemovedTaskId=-1, mTransitionInterruptType=0, mMergeSecondTaskId=-1, mTaskIdStartFromRecents=0, mTransitionId=1353, mCanUseSpringSlideAnim=false, mTransitionLaunchFrom=0, mFoldChangeType=-1, mAnimStartingPosition=[0, 0, 0, 0], mIsOpeningStkDialogActivity=false, mSecondaryHomeToFrontWhenUnFolding=false, mIsNeedApplyStartTForEmbedded=false
+07-31 16:03:10.924  4699  4769 D FlexibleTaskTransitionHandler: , mNeedCanvasExitAnim=false, mMergeSecondTaskAnimation=false, mIsLaunchUnityStart=false, mIsLaunchFromAssistantByDefault=false, mSkipRemoteTransitionfalse, mIsStartFromKeyguard=false flags=0x0, mWCT=null, mIsOpenMergeToInValidPredictive=false, mPromoteTaskWhenKeyguard-1, mRootLayerZOrderArray={}}]}
+07-31 16:03:10.924  4699  4769 D FSS_OplusFoldSwitchStateObserver: cancelAnimationIfNeedWhenFolding: foldChangeType = -1
+07-31 16:03:10.925  4699  4769 D OplusShellTransition: canCustomizeAppTransition, isGlobalSearchPageSwitch = false, swipeUpBrowserPageSwitch = false, onlyHasTranslucentActivity = false, pkgName = com.anurag.eduai.uikit.test
+07-31 16:03:10.925  4699  4769 D OplusShellTransition: This page has its own override animation, enterResId = 0, closeResId = 0, pkgName = com.anurag.eduai.uikit.test
+07-31 16:03:10.925  4699  4769 D OplusShellTransition: checkAndLoadCustomAnimation packageName =:com.anurag.eduai.uikit.test,transit =:1,enter =:false,animResId =:0
+07-31 16:03:10.925  4699  4769 D OplusShellTransition: canCustomizeAppTransition, isGlobalSearchPageSwitch = false, swipeUpBrowserPageSwitch = false, onlyHasTranslucentActivity = false, pkgName = com.anurag.eduai.uikit.test
+07-31 16:03:10.925  4699  4769 D OplusShellTransition: This page has its own override animation, enterResId = 0, closeResId = 0, pkgName = com.anurag.eduai.uikit.test
+07-31 16:03:10.925  4699  4769 D OplusShellTransition: checkAndLoadCustomAnimation packageName =:com.anurag.eduai.uikit.test,transit =:1,enter =:true,animResId =:0
+07-31 16:03:10.925  4699  4769 D OplusShellTransition: addBackgroundColorOnTask, , isTaskLevelTransition = false, hasBgAlready = false
+07-31 16:03:10.925  4699  4769 D OplusShellTransition: DefaultTransitionHandler#onAnimFinish=> transition=android.os.BinderProxy@ad58490, backAnimContinue=false
+07-31 16:03:10.926  4699  4769 D ShellTaskOrganizerExt: adjust change for exiting mini task: -1
+07-31 16:03:10.926  3306  3568 D SurfaceComposerClient: Transaction::apply InputWindowCommands.focusRequests timestamp=75182804822411, windowName=e8b2821 com.anurag.eduai.uikit.test/androidx.test.core.app.InstrumentationActivityInvoker$EmptyActivity
+07-31 16:03:10.929 26721 26731 D VRI[ComponentActivity]: dispatchAppVisibility visible:false mUpcomingWindowFocus:false
+07-31 16:03:10.930  4699  4769 D OplusShellTransition: dispatchTransition, animated mHandler: com.android.wm.shell.transition.DefaultTransitionHandler@6fab93b
+07-31 16:03:10.930  4699  4769 D ShellTaskOrganizerExt: visibleFlexibleTaskInfos delete:7147
+07-31 16:03:10.930  4699  4769 D ShellTaskOrganizerExt: isOnCanvas size:0
+07-31 16:03:10.930  4699  4769 D ShellTaskOrganizerExt: isOnThreeFlexibleCanvas size:0
+07-31 16:03:10.934 26721 26757 D VRI[InstrumentationActivityInvoker$EmptyActivity]: Received frameCommittedCallback lastAttemptedDrawFrameNum=2 didProduceBuffer=false syncBuffer=false
+07-31 16:03:10.934 26721 26721 D VRI[InstrumentationActivityInvoker$EmptyActivity]: draw finished. seqId=0
+07-31 16:03:10.935  2183  2475 D SurfaceFlinger: updateWinowInfo=1, setFocusedWindow timestamp=75182804822411, windowName=e8b2821 com.anurag.eduai.uikit.test/androidx.test.core.app.InstrumentationActivityInvoker$EmptyActivity
+07-31 16:03:10.935  3306  5035 I InputDispatcher: NFW_setFocusedWindow, e8b2821 com.anurag.eduai.uikit.test/androidx.test.core.app.InstrumentationActivityInvoker$EmptyActivity on display 0, same as the previous:0
+07-31 16:03:10.935  3306  5035 I InputDispatcher: updateFocusedWindow, e8b2821 com.anurag.eduai.uikit.test/androidx.test.core.app.InstrumentationActivityInvoker$EmptyActivity on display 0, reason: setFocusedWindow, result:   FocusedWindows:
+07-31 16:03:10.935  3306  5035 I InputDispatcher:     displayId=0, name='e8b2821 com.anurag.eduai.uikit.test/androidx.test.core.app.InstrumentationActivityInvoker$EmptyActivity'
+07-31 16:03:10.935 26721 26721 D VRI[InstrumentationActivityInvoker$EmptyActivity]: onFocusEvent true
+07-31 16:03:10.935 26721 26721 D VRI[ComponentActivity]: visibilityChanged oldVisibility=true newVisibility=false
+07-31 16:03:10.936 26721 26721 D VRI[ComponentActivity]: setWindowStopped stopped:true
+07-31 16:03:10.936 26721 26721 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@d86a7f8 in: STOPPED
+07-31 16:03:10.936 26721 26721 V ActivityScenario: Update currentActivityStage to STOPPED, currentActivity=androidx.activity.ComponentActivity@d86a7f8
+07-31 16:03:10.939 26721 26721 D LifecycleMonitor: Lifecycle status change: androidx.activity.ComponentActivity@d86a7f8 in: DESTROYED
+07-31 16:03:10.939 26721 26721 V ActivityScenario: Update currentActivityStage to DESTROYED, currentActivity=null
+07-31 16:03:10.939 26721 26721 D OplusScrollToTopManager: com.anurag.eduai.uikit.test/androidx.activity.ComponentActivity,window dying
+07-31 16:03:10.939 26721 26721 D OplusScrollToTopManager: com.anurag.eduai.uikit.test/androidx.activity.ComponentActivity,unregisterSystemUIBroadcastReceiver
+07-31 16:03:10.939 26721 26721 D OplusScrollToTopManager: com.anurag.eduai.uikit.test/androidx.activity.ComponentActivity, unregisterSystemUIBroadcastReceiver failed java.lang.IllegalArgumentException: Receiver not registered: android.view.OplusScrollToTopManager$2@aa45fea
+07-31 16:03:10.939 26721 26721 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=false callback=android.view.ViewRootImpl$$ExternalSyntheticLambda13@b5f56c3
+07-31 16:03:10.940 26721 26721 D HWUI    : RenderProxy::destroy: this=0x7d0be5d400, mContext=0x7d03e53f40
+07-31 16:03:10.940 26721 26757 D HWUI    : SkiaOpenGLPipeline::setSurface: this=0x7d7168be80, surface=NULL
+07-31 16:03:10.941 26721 26757 D BufferQueueProducer: [VRI[ComponentActivity]#20(BLAST Consumer)20](id:686100000014,api:1,p:26721,c:26721) disconnect: api 1
+07-31 16:03:10.941 26721 26757 D BLASTBufferQueue: [VRI[ComponentActivity]#20](f:0,a:1) destructor()
+07-31 16:03:10.941 26721 26757 D BufferQueueConsumer: [VRI[ComponentActivity]#20(BLAST Consumer)20](id:686100000014,api:0,p:-1,c:26721) disconnect
+07-31 16:03:10.941 26721 26721 D ViewRootImpl: Skipping stats log for color mode
+07-31 16:03:10.943  3306  4009 I ImeTracker: system_server:6807773e: onRequestHide at ORIGIN_SERVER reason IME_REQUESTED_CHANGED_LISTENER fromUser false
+07-31 16:03:10.943  3306  4194 I ImeTracker: system_server:6807773e: onCancelled at PHASE_SERVER_SHOULD_HIDE
+07-31 16:03:10.945 26721 26721 D ActivityClient: activity finished by caller: android.app.Activity.finish:7644 android.app.Activity.finish:7661 androidx.test.core.app.InstrumentationActivityInvoker$EmptyActivity.finish:329 androidx.test.core.app.InstrumentationActivityInvoker$EmptyActivity$1.onReceive:314 android.app.LoadedApk$ReceiverDispatcher$Args.lambda$getRunnable$0:2002 android.app.LoadedApk$ReceiverDispatcher$Args.$r8$lambda$mcNAAl1SQ4MyJPyDg8TJ2x2h0Rk:0 android.app.LoadedApk$ReceiverDispatcher$Args$$ExternalSyntheticLambda0.run:0 android.os.Handler.handleCallback:1027 android.os.Handler.dispatchMessage:108 android.os.Looper.loopOnce:302
+07-31 16:03:10.950  3306  4364 I [UAH_CLIENT]: UahEventAcquire, cmdid:0, pkg:com.anurag.eduai.uikit.test, identity:com.android.server.wm
+07-31 16:03:10.951  3306  4009 D ActivityTrigger: ActivityTrigger activityPauseTrigger
+07-31 16:03:10.954  3306  4194 I ImeTracker: com.anurag.eduai.uikit.test:86f60f8f: onRequestHide at ORIGIN_SERVER reason HIDE_UNSPECIFIED_WINDOW fromUser false
+07-31 16:03:10.954 27515 27515 V A11yInputMethod: startInput(): editor=android.view.inputmethod.EditorInfo@fbf4c3a
+07-31 16:03:10.954 27515 27515 V A11yInputMethod: CALL: doFinishInput
+07-31 16:03:10.954 27515 27515 V A11yInputMethod: CALL: onFinishInput
+07-31 16:03:10.955  2183  2183 I BpBinder: onLastStrongRef automatically unlinking death recipients:
+07-31 16:03:10.956 26721 26721 D LifecycleMonitor: Lifecycle status change: androidx.test.core.app.InstrumentationActivityInvoker$EmptyActivity@b73bafb in: PAUSED
+07-31 16:03:10.956 26721 26721 V ActivityScenario: Activity lifecycle changed event received but ignored because the intent does not match. startActivityIntent=Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10008000 cmp=com.anurag.eduai.uikit.test/androidx.activity.ComponentActivity }, activity.getIntent()=Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10000000 xflg=0x4 cmp=com.anurag.eduai.uikit.test/androidx.test.core.app.InstrumentationActivityInvoker$EmptyActivity mCallingUid=10570 }, activity=androidx.test.core.app.InstrumentationActivityInvoker$EmptyActivity@b73bafb
+07-31 16:03:10.957  4699  4769 D ZoomController: onTaskMovedToFront, task id:7091
+07-31 16:03:10.957  4699  4769 I ZoomUiController: FloatHandle-isFloatHandleShow mPackageName = null
+07-31 16:03:10.957  9162  9162 I GoogleInputMethodService: GoogleInputMethodService.onFinishInput():2259
+07-31 16:03:10.957  3306  4009 V SensorManager: call sensorServiceCommonInterface name: setScreenShotDisable
+07-31 16:03:10.957  3306  4009 D SensorServiceExtImpl: sensorServiceCommonInterface funcName = setScreenShotDisable, flag = 0, status = 0
+07-31 16:03:10.957  3306  4009 I OplusHansManager : front pkg: com.android.settings, uid: 1000, prev pkg: com.anurag.eduai.uikit.test, prev uid: 10570
+07-31 16:03:10.957  9162  9162 I Module  : DeviceLockedStatusModuleProvider$Module.updateDeviceLockedStatus():103 repeatCheckTimes = 0, locked = false
+07-31 16:03:10.958  3306  4633 I Osense-BaseDecisionMaker: notifySceneToAthenaPolicy: SCENE_APP_SWITCH, bundle: Bundle[{prevPkgName=com.anurag.eduai.uikit.test, curUid=1000, isGame=false, curPkgName=com.android.settings, prevUid=10570}]
+07-31 16:03:10.958  3306  5038 W OplusHansManager : Failed to notify phone app uid : not register
+07-31 16:03:10.958  9162  9162 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1446 onStartInput(EditorInfo{EditorInfo{packageName=com.anurag.eduai.uikit.test, inputType=0, inputTypeString=NULL, enableLearning=false, autoCorrection=false, autoComplete=false, imeOptions=0, privateImeOptions=null, actionName=UNSPECIFIED, actionLabel=null, initialSelStart=-1, initialSelEnd=-1, initialCapsMode=0, label=null, fieldId=0, fieldName=null, extras=Bundle[{com.oplus.im.WINDOW_MODE=1, com.oplus.im.SCENES=0}], hintText=null, hintLocales=[]}}, false)
+07-31 16:03:10.958  9162  9162 I AndroidIME: LatinIMEBase.updateInputViewCoverNavigation():322 Update input view padding, isNavbarOverInputWindow=true, bottom inset=132
+07-31 16:03:10.958  9162  9162 I Module  : DeviceLockedStatusModuleProvider$Module.updateDeviceLockedStatus():103 repeatCheckTimes = 1, locked = false
+07-31 16:03:10.959  3306  4633 I Osense-BaseDecisionMaker: scene: SCENE_APP_SWITCH, excutingPolicy: freezer
+07-31 16:03:10.959  3306  4633 D Osense-BaseDecisionMaker: invoke freezer policy,type: fast
+07-31 16:03:10.959 20757 21038 D VRI[SubSettings]: dispatchAppVisibility visible:true mUpcomingWindowFocus:false
+07-31 16:03:10.959  3306  4364 I [UAH_CLIENT]: UahEventAcquire, cmdid:0, pkg:com.android.settings, identity:com.android.server.wm
+07-31 16:03:10.960  3306  4910 I OPM-Process: resume pkg: com.android.settings, uid:1000, prev pkg: com.anurag.eduai.uikit.test, prev uid: 10570
+07-31 16:03:10.961  1731  1769 E statsd  : Stats puller failed for tag: 150134 at 158041920847597
+07-31 16:03:10.962  3306  4982 D OplusLatencyOptimizerManager: enter pkg: com.android.settings isPrevBlackAppTop: false mIsBlackAppTop: false
+07-31 16:03:10.962  4973  5410 I Athena  : AthenaDynamicReceiver: pre_app:com.anurag.eduai.uikit.test, next_app:com.android.settings(1000|20757)
+07-31 16:03:10.962  5480  6139 W Battery : AppSwitchDetectorV2: OnAppSwitchObserver: onAppExit , info = OplusAppExitInfo = {  targetName = com.anurag.eduai.uikit.test hasResumingActivity = true resumingPackageName = com.android.settings resumingActivityName = com.android.settings.SubSettings resumingWindowMode = 1 isResumingMultiApp = false isResumingFirstStart = false extension = Bundle[mParcelledData.dataSize=676]} lastReg=1785468162837
+07-31 16:03:10.962  5480  6139 W Battery : AppSwitchManager: onAppSwitch: [k4.o$d@21c659c]
+07-31 16:03:10.962  2183  2438 D VRR [OTI]: handleIdle from 0 to 0
+07-31 16:03:10.962  2183  2438 I VRR [MVT]: request is same as current request, ignore it.
+07-31 16:03:10.962  4446  3335 V DCSEX-AppSwitchManager: OnAppSwitchObserver: onAppExit, resuming = com.android.settings, target = com.anurag.eduai.uikit.test, is ResumingFirstStart =  false, is ResumingMultiApp =  false, extensionInfo =  Bundle[mParcelledData.dataSize=676]
+07-31 16:03:10.962  4446 14609 D DCSEX-AppLaunchEventRecorder: onAppSwitch from = com.anurag.eduai.uikit.test to = com.android.settings
+07-31 16:03:10.962  4446  8252 V DCSEX-AppSwitchManager: OnAppSwitchObserver: onAppEnter, launchedFrom =  com.android.settings, target =  com.android.settings, is firstStart =  false, is multiApp =  false, extensionInfo =  Bundle[mParcelledData.dataSize=1108], launch_source_type =  , launch_source_traceid =
+07-31 16:03:10.963  5480  6139 W Battery : ThermalControlUtils: mForegroundPkg=com.android.settings mLastWindowMode=1
+07-31 16:03:10.963  5480  6139 W Battery : StateManager: getAppType com.android.settings, last=1785493866537
+07-31 16:03:10.963  5480  6139 W Battery : ThermalControllerCenter: mSafetyState=00000,  mSafetyTestConfigList=01111,10111,11011,11101,11110,00111,01011,01101,01110,10011,10101,10110,11001,11010,11100,11111
+07-31 16:03:10.963  5480  6139 W Battery : ThermalControllHandler: tempLevel=[3],userMode=2,gameUserMode=-1,appType=-1,envTempType=0,appStates=[],appSwitchSafetyMode=true,split=[],float={},full=[com.android.settings], tempGear=[3],configItemName=common_config
+07-31 16:03:10.964  5480  6123 W Battery : ThermalControllHandler: MSG_THERMAL_CONTROL_CATEGORY_CHANGED
+07-31 16:03:10.964  3306  6006 I OStatsManager_Calc: add screen power pkgName = com.anurag.eduai.uikit.test, uid = 10570, power = 17.272199999541044, is Fg = true, fore size = 1, mScale = 1.0
+07-31 16:03:10.964  3306  6006 I OStatsManager_Calc: noteBeforePkgSwitch change = false, curTime = 158041928, com.android.settings, fg = false
+07-31 16:03:10.964  3306  6006 I OStatsManager_OplusBatteryStatsManager: updateStateTime: PkgName = com.android.settings, uid = 1000, state to fg, mForegroundCnt = 1, isFg = true
+07-31 16:03:10.964  3306  6006 I OStatsManager_OplusBatteryStatsManager: notePkgForeground [com.anurag.eduai.uikit.test10570, com.android.settings1000], uid = 1000, pid = 20757, pkgName = com.android.settings
+07-31 16:03:10.964  5480 31966 W Battery : AppSceneCenter: PerfPolicy not enable!
+07-31 16:03:10.964 20757 21038 D ColorModeChangeItem: preExecute mColorMode=0
+07-31 16:03:10.965 20757 20757 D VRI[SubSettings]: setWindowStopped stopped:false
+07-31 16:03:10.966 26721 26721 D InsetsController: hide(ime(), fromIme=false)
+07-31 16:03:10.966 26721 26721 I ImeTracker: com.anurag.eduai.uikit.test:86f60f8f: onCancelled at PHASE_CLIENT_ALREADY_HIDDEN
+07-31 16:03:10.967  3306  5229 I InputDispatcher: updateFocusedWindow,  on display 0, reason: NO_WINDOW, result:   FocusedWindows: <none>
+07-31 16:03:10.968 26721 26721 D VRI[InstrumentationActivityInvoker$EmptyActivity]: onFocusEvent false
+07-31 16:03:10.968 20757 20763 I ndroid.settings: CollectorTransition concurrent mark compact GC freed 2401KB AllocSpace bytes, 0(0B) LOS objects, 49% free, 8323KB/16MB, paused 572us,2.808ms total 124.303ms
+07-31 16:03:10.969 20757 20757 I WirelessDebuggingFrag: onEnabled(): connect_port=44155
+07-31 16:03:10.969  3306  5035 I ImeTracker: system_server:9ead2327: onRequestHide at ORIGIN_SERVER reason IME_REQUESTED_CHANGED_LISTENER fromUser false
+07-31 16:03:10.970  5480  5906 W Battery : Thermal.FpsControl: writeFps 0 com.anurag.eduai.uikit.test
+07-31 16:03:10.970 24087 25444 D SceneSDK.1.0.4-SNAPSHOT.24087.DeepThinkerAppSwitchAbility: onAppSwitchEvent: AppSwitchEvent(timeStamp=1785493990969, eventType=2, targetName=com.anurag.eduai.uikit.test, firstStart=false, multiApp=false, windowMode=0, resumingPackageName=com.android.settings, resumingActivityName=com.android.settings.SubSettings, isResumingMultiApp=false, isResumingFirstStart=false)
+07-31 16:03:10.970 24087 25444 I metis_v2_AppSwitchDataCollector: AppExitEvent =  com.anurag.eduai.uikit.test, NextAppName = com.android.settings
+07-31 16:03:10.970  3306  4194 I ImeTracker: system_server:9ead2327: onCancelled at PHASE_SERVER_SHOULD_HIDE
+07-31 16:03:10.970  3306  4886 I OplusHansManager : uid=10570, pkg=com.anurag.eduai.uikit.test enter SM
+07-31 16:03:10.971  3306  4886 I OplusHansManager : uid=10570, pkg=com.anurag.eduai.uikit.test R enter(), D stay=0
+07-31 16:03:10.972  4699  4769 D ShellTaskOrganizerExt: visibleFlexibleTaskInfos delete:7147
+07-31 16:03:10.972  4699  4769 D ShellTaskOrganizerExt: isOnCanvas size:0
+07-31 16:03:10.972  4699  4769 D ShellTaskOrganizerExt: isOnThreeFlexibleCanvas size:0
+07-31 16:03:10.972  4699  4769 D ShellTaskOrganizerExt: visibleFlexibleTaskInfos delete:7091
+07-31 16:03:10.972  4699  4769 D ShellTaskOrganizerExt: isOnCanvas size:0
+07-31 16:03:10.972  4699  4769 D ShellTaskOrganizerExt: isOnThreeFlexibleCanvas size:0
+07-31 16:03:10.973 20757 26810 D Settings_SettingsActivity: No enabled state changed, skipping updateCategory call
+07-31 16:03:10.974  4773  6029 V OsAgent : broadcastSystemEvent - 7
+07-31 16:03:10.974 20757 26556 I TileUtils: getCategories -- currentUser: 0
+07-31 16:03:10.974 20757 26556 I TileUtils: getCategories -- userId: 0
+07-31 16:03:10.974 20757 20757 D ViewRootImplExtImpl: wrapConfigInfoIntoFlags rotation=0, smallestScreenWidthDp=360, residentWS=false, scenario=0, bounds=Rect(0, 0 - 1080, 2414), relayoutAsync=false, flags=0, newFlags=1265642752, title=com.android.settings/com.android.settings.SubSettings
+07-31 16:03:10.978  3306  5219 D Theia.NoFocusWindow: FocusWindowErrorScene cancelCheckFreezeScreen
+07-31 16:03:10.978  3306  5219 W TheiaWindowMonitor: [check] focusedWindow is null or enable is false
+07-31 16:03:10.979 20757 20757 D BufferQueueConsumer: [](id:511500000010,api:0,p:-1,c:20757) connect: controlledByApp=false
+07-31 16:03:10.979  4699  4699 I SystemUi--NavBar: NavigationBarGestureExImpl-->oplusAllowSystemGestureIgnoringBarVisibility isOplusFlagAllowBackGestureIgnoreVisibilityState = false isGestureMisTouchPreventionEnable = true
+07-31 16:03:10.979 20757 20757 D BufferQueueConsumer: [VRI[SubSettings]#16(BLAST Consumer)16](id:511500000010,api:0,p:-1,c:20757) setMaxAcquiredBufferCount: 2
+07-31 16:03:10.979 20757 20900 D HWUI    : createSurface new attribs array
+07-31 16:03:10.979 20757 20900 D libEGL  : this is from skia gles
+07-31 16:03:10.980 20757 20900 D BufferQueueProducer: [VRI[SubSettings]#16(BLAST Consumer)16](id:511500000010,api:1,p:20757,c:20757) connect: api=1 producerControlledByApp=true
+07-31 16:03:10.980 26721 26737 D IdlingRegistry: Unregistering idling resources: [androidx.compose.ui.test.EspressoLink@d3a9d74]
+07-31 16:03:10.981 20757 20757 I SurfaceControl:  setExtendedRangeBrightness sc=Surface(name=com.android.settings/com.android.settings.SubSettings)/@0xd25bc5f,currentBufferRatio=1.0,desiredRatio=1.0
+07-31 16:03:10.983 20757 20900 D BLASTBufferQueue: [VRI[SubSettings]#16](f:0,a:1) acquireNextBufferLocked size=1080x2414 mFrameNumber=1 applyTransaction=true mTimestamp=75182874705901(auto) mPendingTransactions.size=0 graphicBufferId=89150636163137 transform=0
+07-31 16:03:10.984 20757 20900 D VRI[SubSettings]: Received frameCommittedCallback lastAttemptedDrawFrameNum=1 didProduceBuffer=true syncBuffer=false
+07-31 16:03:10.984 20757 20757 D VRI[SubSettings]: draw finished. seqId=0
+07-31 16:03:10.985  3306  4628 I Osense-BaseDecisionMaker: notifySceneToAthenaPolicy: SCENE_ACTIVITY_IDLE, bundle: Bundle[{scene=SCENE_ACTIVITY_IDLE}]
+07-31 16:03:10.985  3306  4628 I Osense-BaseDecisionMaker: OSense not supported scene! SCENE_ACTIVITY_IDLE
+07-31 16:03:10.987  1731  1769 W statsd  : StatsPullerManager::PullLocked Unknown tagId 150146
+07-31 16:03:10.987  1731  1769 E statsd  : Stats puller failed for tag: 150146 at 158041920847597
+07-31 16:03:10.988  1731  1769 W statsd  : StatsPullerManager::PullLocked Unknown tagId 150146
+07-31 16:03:10.988  1731  1769 E statsd  : Gauge Stats puller failed for tag: 150146 at 158041926230618
+07-31 16:03:10.988 26721 26737 I TestRunner: finished: outpostScene_rendersAtSceneSegmentWidth(com.anurag.eduai.uikit.garden.GardenPhase0RenderTest)

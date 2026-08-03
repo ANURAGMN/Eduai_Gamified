@@ -1,9 +1,18 @@
-# EduAI — Dev Changelog (Fri 20 Jun – Sun 22 Jun 2026)
+# EduAI — Dev Changelog (Fri 20 Jun – Wed 25 Jun 2026)
 
-Internal reference for changes made during the pre-launch / MVP test sprint.  
+Internal reference for changes made during the pre-launch / MVP test sprint and **Play Production resubmit (1.0.7)**.  
 **Repo:** https://github.com/ANURAGMN/EduAI_app.git  
 **Branch:** `main`  
 **Related doc:** [APP_STRUCTURE.md](./APP_STRUCTURE.md)
+
+### Ship status (25 Jun 2026)
+
+| Item | Status |
+|------|--------|
+| **Play Production AAB** | **Uploaded** — `1.0.7` / versionCode **9** |
+| **GitHub `main`** | **Pushed** — commit `51abd2d` |
+| **AdMob + Play policy** | Child-safe SDK + console questionnaire / blocking updated |
+| **Device tested** | Oppo CPH2661 — login, ads, funnel verified |
 
 ---
 
@@ -15,6 +24,7 @@ Internal reference for changes made during the pre-launch / MVP test sprint.
 | 2026-06-20 | `181ef1e` | Team onboarding doc (`APP_STRUCTURE.md`, README) |
 | 2026-06-22 | `d2c9812` | Locale-aware UI labels; remove agent debug overlay |
 | 2026-06-22 | `e5f61c9` | Bilingual loading quotes on agent “thinking” states |
+| 2026-06-25 | `51abd2d` | **Release 1.0.7** — Play resubmit: login fixes, child-safe ads, funnel analytics |
 
 **Test device:** Oppo CPH2661 (`123249b7`)  
 **Test user:** `mail2anuragmn@gmail.com`  
@@ -564,7 +574,10 @@ Not all in app repo; tracked for dev awareness:
 - **Closed testing** completed on earlier build
 - **Production access** approved on Play Console
 - **app-ads.txt** + Search Console verification on https://anuragmn.github.io/
-- Pending before production ship: privacy policy page, data safety form, release AAB with bumped `versionCode`, remove full JWT log in `TokenManager.kt` (if not done), AdMob payments profile
+- **Production AAB uploaded:** `1.0.7` / versionCode **9** (25 Jun 2026)
+- **AdMob / Play policy:** child-directed SDK + console questionnaire updated for ad rejection
+- **Firestore rules:** deployed to `eduai-e090e` (1 Jul 2026) — see §18
+- **Still optional / backlog:** Firebase Auth on login (tighter rules), Play App Signing SHA-1 in Firebase, in-app update flow (§14), remove full JWT log in `TokenManager.kt` if still present
 
 ---
 
@@ -636,6 +649,7 @@ docs/DEV_CHANGELOG_JUN20-22.md → this file
 ## 13. Commits on `main` (pushed)
 
 ```
+51abd2d Release 1.0.7: Play resubmit — login, child-safe ads, funnel analytics
 e5f61c9 Show bilingual science quotes during agent loading states.
 d2c9812 Fix locale-aware home labels and remove agent debug overlay.
 181ef1e Add app structure documentation for team onboarding.
@@ -648,19 +662,32 @@ b8eaa4f Add analytics, AdMob monetization, and Firestore tooling for MVP test la
 
 Items deferred from production launch **1.0.1 (versionCode 3)** — fix in the following release.
 
-### Play rejection (24 Jun 2026) — Broken Functionality: “app doesn't open or load”
+### Play rejections — resolved in 1.0.7
 
-**Likely cause:** `isLoggedIn=true` in SharedPreferences (e.g. Android auto-backup from closed testing) but **empty Room DB** on fresh install → app skipped login and showed home **“Loading…” forever**.
+| Rejection | versionCode cited | Fix |
+|-----------|-------------------|-----|
+| **Broken Functionality** — infinite loading | 4 | Session validation, backup exclusions, home redirect (`1.0.2`+) |
+| **Login credentials** — Gmail OTP / invalid | 5–6 | Institutional `@padaams.in` sign-in + Gmail account picker (`1.0.5`+) |
+| **Ad Content** — ads vs content rating | 4 | Child-directed AdMob SDK (G rating) + AdMob/Play policy updates (`1.0.7`) |
 
-**Fixes in 1.0.2 (versionCode 4):**
-- Validate local session on startup (`hasValidLocalSession`) — require student row in DB
-- Exclude `app_prefs.xml` + DB from cloud/device backup
-- Home redirects to login if student missing after load
-- Existing-user login syncs syllabus when local subjects empty
-- ProGuard: Hilt, Firebase, Credential Manager, Room
-- Mobile Ads init wrapped in try/catch
+### Play rejection (Jul 2026) — Metadata: featured graphic
 
-**Before resubmit:** Play Console → **Android vitals** → Pre-launch report / crashes. Test release APK on **clean emulator** (no backup). Deploy Firestore rules. Confirm **Play App signing SHA-1** in Firebase.
+**Issue:** Featured graphic (en-US) rejected — promotional / social-proof wording.
+
+| Noncompliant (remove) | Why |
+|----------------------|-----|
+| **TRUSTED BY STUDENTS & PARENTS** | Reads like endorsement / popularity claim on a promotional asset |
+| Review also | **IMPROVE UNDERSTANDING**, **BUILD STRONG CONCEPTS** — outcome promises; safer to use feature labels |
+
+**Fix (store listing only — no app rebuild):**
+
+1. Edit featured graphic (1024×500) — remove trust/ranking/outcome claims from footer and anywhere else on the image.
+2. Use **factual feature text** only, e.g. footer: `NCERT ALIGNED` | `AI TUTOR & LABS` | `INTERACTIVE SIMULATIONS` | `ENGLISH & KANNADA`
+3. Play Console → **Grow users → Store presence → Main store listing** → replace **Feature graphic** → **Publishing overview** → send for review (metadata-only; same AAB OK if binary unchanged).
+
+Template: `docs/store-listing/feature-graphic-compliant.html` (export to PNG at 1024×500).
+
+See §19 for full checklist.
 
 ### In-app update popup (Play Store updates)
 
@@ -683,39 +710,179 @@ Items deferred from production launch **1.0.1 (versionCode 3)** — fix in the f
 
 ### Other launch follow-ups (optional)
 
-- Deploy Firestore rules (not deny-all) if not done before wide rollout
+- ~~Deploy Firestore rules~~ — **done** 1 Jul 2026 (§18)
+- **Firebase Auth on login** — wire `FirebaseAuth.signInWithCredential(Google)` so rules can use `request.auth.token.email` (§18)
 - Add **Play App Signing certificate** SHA-1 to Firebase (for Play-installed builds)
 - Privacy policy URL + data safety form complete in Play Console
 
 ---
 
-## 15. Release 1.0.6 (versionCode 8) — 2026-06-25
+## 15. Release 1.0.6 (versionCode 8) — 2026-06-25 *(local only)*
 
-**Ship:** Play Production resubmit after login rejection fixes + funnel analytics.
+Build included funnel analytics; **not uploaded to Play** (superseded by 1.0.7 after ad-policy fix).
 
 | Change | Detail |
 |--------|--------|
-| Gmail sign-in | Account picker fallback (v1.0.5 carry-forward) |
-| Institutional login | Collapsed @padaams.in sign-in for Play reviewers |
+| Funnel analytics | `FunnelAnalyticsTracker`, `onUserAuthenticated()` backfill |
+| Query script | `scripts/query-firestore-analytics.py` |
+
+---
+
+## 16. Release 1.0.7 (versionCode 9) — **SHIPPED** 2026-06-25
+
+**AAB:** `app/build/outputs/bundle/release/app-release.aab`  
+**Git:** `51abd2d` on `main` → https://github.com/ANURAGMN/EduAI_app  
+**Play:** Production upload submitted for review
+
+### What’s in this release
+
+| Area | Detail |
+|------|--------|
+| **Loading / session** | `hasValidLocalSession()`, backup exclusions, home invalid-session redirect |
+| **Gmail sign-in** | Account picker via `signInIntent` when Credential Manager has no cached account |
+| **Institutional login** | Collapsed **Institutional sign in** → `@padaams.in` + password (Play reviewers) |
+| **Child-safe ads** | `MobileAdsInitializer`: child-directed, under-age consent, **max rating G** |
 | **Funnel analytics** | `login_view`, `gmail_tap`, `institutional_expand`, `institutional_sign_in`, `profile_submit`, `home_view` → Firestore + GA4 |
-| Pre-login sync | `onUserAuthenticated()` backfills funnel events after sign-in |
-| Query script | `scripts/query-firestore-analytics.py` (no Node required) |
+| **Pre-login sync** | `DataSyncService.onUserAuthenticated()` backfills analytics/sessions after sign-in |
+| **Firestore rules** | Updated rules in repo (`firestore.rules`) |
+| **Scripts** | `query-firestore-analytics.py`, `test-gmail-signin.ps1`, `test-child-safe-ads.ps1` |
 
-**Play Console sign-in (reviewers):** tap **Institutional sign in** → `check@padaams.in` / password in `local.properties`.
+### Play Console — reviewer sign-in
+
+| Field | Value |
+|-------|--------|
+| **Username** | `check@padaams.in` |
+| **Password** | Same as `PADAAMS_SIGNIN_PASSWORD` in `local.properties` |
+| **Instructions** | Tap **Institutional sign in** (not Continue with Gmail). Internet required. |
+
+### AdMob / Play policy (required for ad rejection)
+
+Code enforces G-rated child-directed requests on **every** build (debug + release). Also completed in console:
+
+- AdMob → app **child-directed** + **block sensitive categories**
+- Play → **Content rating** questionnaire updated for child-safe ads
+- Guide: `scripts/admob-firebase-setup.md` § Step 4
+
+### Verification (25 Jun 2026)
+
+| Test | Result |
+|------|--------|
+| Gmail → account picker → home | Pass (Oppo CPH2661) |
+| Institutional expand + sign-in path | Pass |
+| Ad gate after 5+ clicks | Pass — education banner (e.g. tuition) |
+| Funnel events in Firestore | Pass — `query-firestore-analytics.py mail2anuragmn@gmail.com` |
+
+### Version history (this sprint)
+
+| versionName | versionCode | Play |
+|-------------|-------------|------|
+| 1.0.2 | 4 | Rejected — loading |
+| 1.0.3–1.0.5 | 5–7 | Login / Gmail fixes |
+| 1.0.6 | 8 | Not uploaded |
+| **1.0.7** | **9** | **Uploaded** |
 
 ---
 
-## 16. Release 1.0.7 (versionCode 9) — 2026-06-25
+## 17. Backend API (AWS EC2) — ops reference
 
-**Play rejection:** Ad Content — ads not consistent with content rating (review cited versionCode 4).
+Full detail: **[APP_STRUCTURE.md §11](./APP_STRUCTURE.md#11-backend-api-aws-ec2)**.
 
-| Fix | Detail |
-|-----|--------|
-| **Child-safe AdMob** | `MobileAdsInitializer`: child-directed + under-age consent + **max ad content rating G** |
-| **Console checklist** | `scripts/admob-firebase-setup.md` § Step 4 — AdMob blocking controls + Play content rating questionnaire |
+| Item | Value |
+|------|--------|
+| **API base URL** | `http://13.48.59.144:8000` |
+| **Public DNS** | `ec2-13-48-59-144.eu-north-1.compute.amazonaws.com` |
+| **Region** | `eu-north-1` |
+| **SSH user** | `ubuntu` |
+| **Shell access** | EC2 Instance Connect in AWS Console, or `ssh -i key.pem ubuntu@13.48.59.144` |
+| **Health** | `Invoke-RestMethod http://13.48.59.144:8000/health` |
+| **Docs** | http://13.48.59.144:8000/docs |
 
-Resubmit **1.0.7** after AdMob + Play Console steps below.
+`local.properties` → `AGENTIC_AI_BASE_URL=http://13.48.59.144:8000`. No `.pem` in repo.
 
 ---
 
-*Last updated: 2026-06-25. Each feature section includes **Bugs that existed & how we fixed them**. Use technical sections below for file-level debugging.*
+## 18. Firestore security rules — deployed 2026-07-01
+
+**Trigger:** Firebase email — Test Mode 30-day window expiring; client access would be denied without production rules.
+
+| Item | Detail |
+|------|--------|
+| **Rules file** | `firestore.rules` (in repo since 1.0.7 prep) |
+| **Deploy** | `firebase deploy --only firestore` → project `eduai-e090e` |
+| **Status** | **Live** — validated + deployed successfully |
+
+### What the rules allow
+
+| Path | Access |
+|------|--------|
+| `Concept/*` | Read-only (syllabus sync) |
+| `users/*` | Read all; create/update if `appName == eduai_app` |
+| `progress|analytics|sessions|streak|chapterprogress/eduai_app_{email}/…` | Read/write if `studentId` matches parent doc |
+| `errors/eduai_app/logs/*` | Create only |
+| Everything else | Deny |
+
+### Verify after deploy
+
+Sign in on device → home loads, progress syncs, no `PERMISSION_DENIED` in logcat for Firestore.
+
+### Follow-up: Firebase Auth (stronger security)
+
+**Current gap:** App uses Google Sign-In for the **backend API** only — not `FirebaseAuth`. Rules rely on path + `appName` / `studentId` fields, not `request.auth`.
+
+**Next release task:**
+
+1. On successful Google login → `FirebaseAuth.getInstance().signInWithCredential(GoogleAuthProvider.getCredential(idToken, null))`
+2. Tighten `firestore.rules` — e.g. `request.auth != null && request.auth.token.email == studentId`
+3. Restrict `users` reads to authenticated owner or admin scripts only
+4. Re-deploy: `firebase deploy --only firestore`
+
+**Files:** `GoogleLoginButton.kt` / login flow, `PadaamsEmailAuth` path (Firebase Auth email link or custom token if needed), `firestore.rules`
+
+---
+
+## 19. Play Metadata rejection — featured graphic (Jul 2026)
+
+**Status:** Listing rejected; **1.0.7 AAB can stay** — fix is store assets only.
+
+### What Google flagged
+
+Featured graphic contained wording that implies **performance, popularity, or endorsement** — not allowed on feature graphics (stricter than screenshots).
+
+**Primary offender:** footer pill **“TRUSTED BY STUDENTS & PARENTS”** on the **featured graphic**.
+
+**In-app (login screen):** footer had **“1M+ Students”** / **“Trusted Globally”** — same policy risk in store screenshots. Fixed in code: `FooterCard.kt` → **Interactive Labs** / **Math & Science** (§19, release 1.0.8+).
+
+**Also risky on the same banner:**
+
+| Text | Risk |
+|------|------|
+| TRUSTED BY STUDENTS & PARENTS | Social proof / trust claim — **remove** |
+| IMPROVE UNDERSTANDING | Outcome promise |
+| BUILD STRONG CONCEPTS | Outcome promise |
+
+**Keep (factual):** NCERT ALIGNED, AI TUTOR & LABS, MATH/SCIENCE, ENGLISH & KANNADA, SIMULATIONS — these describe what the app is.
+
+### Compliant footer (suggested)
+
+```
+NCERT ALIGNED  |  AI TUTOR & LABS  |  INTERACTIVE SIMULATIONS  |  ENGLISH & KANNADA
+```
+
+### Resubmit steps
+
+1. Open your design source (Canva/Figma) or `docs/store-listing/feature-graphic-compliant.html`
+2. Export **1024 × 500 PNG** (max 15 MB)
+3. Play Console → **Main store listing** → **Feature graphic** → upload
+4. Scan **title, short description, full description, icon** for: Best, #1, Top, Trusted, Popular, free/discount, awards
+5. **Publishing overview** → submit listing changes for review
+
+### Metadata checklist (all locales)
+
+- [ ] Feature graphic — no trust/ranking/price claims
+- [ ] App icon — no badges (“#1”, “Free”)
+- [ ] Title ≤ 30 chars, no promotional caps spam
+- [ ] Descriptions — factual features only; no unattributed testimonials
+
+---
+
+*Last updated: 2026-07-02 (featured graphic metadata rejection). Each feature section includes **Bugs that existed & how we fixed them**. Use technical sections below for file-level debugging.*

@@ -1,0 +1,20 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.anurag.eduai.uikit.test.ui-kit-mergeDebugAndroidTestResources-47:/values-watch-v21/values-watch-v21.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\anurag.mn\\.gradle\\caches\\8.13\\transforms\\8d4b9c4940d015e1afcd472a31c4b032\\transformed\\appcompat-1.6.1\\res\\values-watch-v21\\values-watch-v21.xml",
+                    "from": {
+                        "startLines": "2,6,10",
+                        "startColumns": "4,4,4",
+                        "startOffsets": "55,271,499",
+                        "endLines": "5,9,13",
+                        "endColumns": "12,12,12",
+                        "endOffsets": "266,494,724"
+                    }
+                }
+            ]
+        }
+    ]
+}

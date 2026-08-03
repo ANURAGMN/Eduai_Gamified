@@ -17,13 +17,19 @@ KEY_PASSWORD=your_key_password
 # Verify locally: .\scripts\verify-admob-config.ps1
 ADMOB_APP_ID=ca-app-pub-XXXXXXXXXXXXXXXX~YYYYYYYYYY
 BANNER_AD_UNIT_ID=ca-app-pub-XXXXXXXXXXXXXXXX/ZZZZZZZZZZ
+REWARDED_AD_UNIT_ID=ca-app-pub-XXXXXXXXXXXXXXXX/RRRRRRRRRR
 
 # Optional: hashed test device ID from logcat — debug builds ONLY (release AAB ignores this)
 ADMOB_TEST_DEVICE_ID=
 
+# --- Gamification (Sprint 1+) ---
+# Set true to enable the ui-kit Home for all builds using this local.properties
+GAMIFIED_HOME_ENABLED=false
+
 # --- Backend & AI (required for full app functionality) ---
+# EC2 FastAPI agent — see docs/APP_STRUCTURE.md §11 (SSH, health, region)
 AUTH_KEY=
-AGENTIC_AI_BASE_URL=
+AGENTIC_AI_BASE_URL=http://13.48.59.144:8000
 GEMINI_API_KEY=
 GROQ_API_KEY=
 SIMULATION_BASE_URL=

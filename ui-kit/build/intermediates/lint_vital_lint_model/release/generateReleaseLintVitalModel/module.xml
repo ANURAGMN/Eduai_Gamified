@@ -1,0 +1,19 @@
+<lint-module
+    format="1"
+    dir="C:\Users\anurag.mn\Desktop\Eduapp\ui-kit"
+    name=":ui-kit"
+    type="LIBRARY"
+    maven="EduAI:ui-kit:unspecified"
+    agpVersion="8.13.2"
+    buildFolder="build"
+    bootClassPath="C:\Users\anurag.mn\AppData\Local\Android\Sdk\platforms\android-36\android.jar;C:\Users\anurag.mn\AppData\Local\Android\Sdk\build-tools\35.0.0\core-lambda-stubs.jar"
+    javaSourceLevel="11"
+    compileTarget="android-36"
+    neverShrinking="true">
+  <lintOptions
+      abortOnError="true"
+      absolutePaths="true"
+      checkReleaseBuilds="true"
+      explainIssues="true"/>
+  <variant name="release"/>
+</lint-module>

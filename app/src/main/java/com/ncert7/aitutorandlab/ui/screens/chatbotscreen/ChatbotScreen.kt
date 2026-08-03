@@ -2,6 +2,7 @@ package com.ncert7.aitutorandlab.ui.screens.chatbotscreen
 
 import android.Manifest.permission.RECORD_AUDIO
 import android.content.pm.PackageManager
+import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.animateDpAsState
@@ -19,7 +20,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import com.ncert7.aitutorandlab.domain.examplan.TrialSessionStore
+import com.ncert7.aitutorandlab.ui.components.AgentSessionTimeGate
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -28,8 +32,12 @@ import com.ncert7.aitutorandlab.service.analytics.ScreenName
 import com.ncert7.aitutorandlab.service.analytics.TrackScreenEvent
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.AppDialog
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.ChatBotSettings
+import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.AutoListenAfterAgentTurn
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.ChatEffects
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.ChatHeaderIcons
+import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.AutoSuggestionChips
+import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.VoiceInputBar
+import com.ncert7.aitutorandlab.data.local.SharedPreferenceUtils
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.ConversationView
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.InitialAvatarView
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.InputSection
@@ -45,6 +53,8 @@ import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.dataclass.is
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.dataclass.lastAiMessage
 import com.ncert7.aitutorandlab.domain.chatbot.usecase.ChatIntent
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.dataclass.ChatBotSettingsState
+import com.ncert7.aitutorandlab.config.GamificationFeatureFlags
+import androidx.compose.runtime.LaunchedEffect
 
 @Composable
 fun ChatbotScreen(
@@ -63,9 +73,19 @@ fun ChatbotScreen(
     val chatState by chatViewModel.uiState.collectAsState()
     val ttsState by ttsController.state.collectAsState()
     val sttState by sttController.state.collectAsState()
+    val wordBoundaryIndex by ttsController.currentWordIndex.collectAsState()
+    val context = LocalContext.current
+    val useNativeAvatar = GamificationFeatureFlags.isNativeTutorAvatarEnabled(context)
+    val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
+
+    LaunchedEffect(useNativeAvatar) {
+        ttsController.setNativeLipSyncEnabled(useNativeAvatar)
+    }
 
     // Local UI state
     var permissionGranted by remember { mutableStateOf(false) }
+    var showMicPermissionDialog by remember { mutableStateOf(false) }
+    var pendingMicPermissionRequest by remember { mutableStateOf(false) }
     var lastProcessedSpeechText by remember { mutableStateOf("") }
     var showSessionResumeDialog by remember { mutableStateOf(false) }
     var showSettingsMenu by remember { mutableStateOf(false) }
@@ -73,6 +93,57 @@ fun ChatbotScreen(
 
     //settings state
     var settingsState by remember { mutableStateOf(ChatBotSettingsState()) }
+
+    // Hands-free voice: persisted toggle (default on). When on, the mic auto-opens
+    // after the tutor finishes speaking.
+    val sharedPrefs = remember { SharedPreferenceUtils(context) }
+    var handsFreeMode by remember { mutableStateOf(sharedPrefs.getHandsFreeMode()) }
+    val handsFreeLabel = if (chatState.isKannada) "ಧ್ವನಿ ಸಂಭಾಷಣೆ" else "Hands-free voice"
+
+    // Input mode: voice dock vs. text keyboard. Opens in whichever the "default input"
+    // setting says (persisted). The hands-free loop runs only in voice mode.
+    var inputMode by remember { mutableStateOf(if (sharedPrefs.getVoiceFirst()) "voice" else "text") }
+    var focusTextField by remember { mutableStateOf(false) }
+    val agentThinking = (chatState.isLoading || chatState.isTyping || chatState.waitingForTTSToComplete) &&
+            !ttsState.isSpeaking
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        permissionGranted = isGranted
+        pendingMicPermissionRequest = false
+        sttController.handlePermissionResult(
+            SpeechToText.RECORD_AUDIO_PERMISSION_REQUEST,
+            if (isGranted) intArrayOf(PackageManager.PERMISSION_GRANTED)
+            else intArrayOf(PackageManager.PERMISSION_DENIED)
+        )
+        if (!isGranted) {
+            showMicPermissionDialog = true
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        permissionGranted =
+            androidx.core.content.ContextCompat.checkSelfPermission(
+                context,
+                RECORD_AUDIO,
+            ) == PackageManager.PERMISSION_GRANTED
+    }
+
+    // Start voice capture (shared by the voice-dock orb and the text-mode mic button).
+    val beginListening: () -> Unit = {
+        chatViewModel.onIntent(ChatIntent.HideAutosuggestions)
+        chatViewModel.onIntent(ChatIntent.MarkUserActive)
+        if (permissionGranted && sttState.isInitialized) {
+            val language = if (chatState.isKannada) "kn-IN" else "en-IN"
+            sttController.startListening(language)
+        } else if (!permissionGranted) {
+            if (!pendingMicPermissionRequest) {
+                pendingMicPermissionRequest = true
+                permissionLauncher.launch(RECORD_AUDIO)
+            }
+        }
+    }
 
     val lastAIMessage = chatState.lastAiMessage
     val isConversationStarted = chatState.isConversationStarted
@@ -111,17 +182,18 @@ fun ChatbotScreen(
         label = "avatarSize"
     )
 
-    // Permission launcher
-    val permissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        permissionGranted = isGranted
-        sttController.handlePermissionResult(
-            SpeechToText.RECORD_AUDIO_PERMISSION_REQUEST,
-            if (isGranted) intArrayOf(PackageManager.PERMISSION_GRANTED)
-            else intArrayOf(PackageManager.PERMISSION_DENIED)
-        )
-    }
+    AppDialog(
+        show = showMicPermissionDialog,
+        title = "Microphone access needed",
+        message = "Allow microphone access to speak your answers, or keep typing in the text box.",
+        confirmText = "Try again",
+        dismissText = "Not now",
+        onConfirm = {
+            showMicPermissionDialog = false
+            permissionLauncher.launch(RECORD_AUDIO)
+        },
+        onDismiss = { showMicPermissionDialog = false },
+    )
 
     // Effects
     ChatEffects(
@@ -143,6 +215,23 @@ fun ChatbotScreen(
         avatarDisableDisplayName = stringResource(R.string.disable)
     )
 
+    // Hands-free loop: auto-open the mic once the tutor's turn completes. Runs only in
+    // voice mode so the mic never opens while the learner is typing.
+    AutoListenAfterAgentTurn(
+        enabled = inputMode == "voice" && handsFreeMode && !showSettingsMenu,
+        turnComplete = !ttsState.isSpeaking &&
+                !chatState.isLoading &&
+                !chatState.isTyping &&
+                !chatState.waitingForTTSToComplete &&
+                lastAIMessage != null &&
+                chatState.resourceCardState is ResourceCardUiState.Hidden,
+        isListening = sttState.isListening,
+        canListen = permissionGranted && sttState.isInitialized,
+        onStartListening = {
+            sttController.startListening(if (chatState.isKannada) "kn-IN" else "en-IN")
+        }
+    )
+
     // Background
     Box(
         modifier = Modifier
@@ -154,37 +243,70 @@ fun ChatbotScreen(
             containerColor = White,
             contentColor = White,
             bottomBar = {
-                InputSection(
-                    chatState = chatState,
-                    sttState = sttState,
-                    onTextChange = { chatViewModel.onIntent(ChatIntent.UpdateInputText(it)) },
-                    onSendClick = {
-                        if (chatState.inputText.isNotBlank()) {
+                if (inputMode == "voice") {
+                    Column(modifier = Modifier.imePadding()) {
+                        if (!sttState.isListening &&
+                            chatState.showAutosuggestions &&
+                            chatState.autosuggestions.isNotEmpty() &&
+                            !chatState.isLoading
+                        ) {
+                            AutoSuggestionChips(
+                                suggestions = chatState.autosuggestions,
+                                visible = true,
+                                onSuggestionClick = { suggestion ->
+                                    chatViewModel.onIntent(ChatIntent.TapAutosuggestion(suggestion))
+                                    chatViewModel.onIntent(ChatIntent.HideAutosuggestions)
+                                },
+                            )
+                        }
+                        VoiceInputBar(
+                            isKannada = chatState.isKannada,
+                            isListening = sttState.isListening,
+                            isSpeaking = ttsState.isSpeaking,
+                            isThinking = agentThinking,
+                            transcript = sttState.resultText,
+                            statusMessage = sttState.statusMessage,
+                            amplitude = sttState.audioAmplitude,
+                            onMicTap = { beginListening() },
+                            onStopListening = { sttController.stopListening() },
+                            onSwitchToType = {
+                                sttController.stopListening()
+                                inputMode = "text"
+                                focusTextField = true
+                            },
+                        )
+                    }
+                } else {
+                    InputSection(
+                        chatState = chatState,
+                        sttState = sttState,
+                        onTextChange = { chatViewModel.onIntent(ChatIntent.UpdateInputText(it)) },
+                        onSendClick = {
+                            if (chatState.inputText.isNotBlank()) {
+                                chatViewModel.onIntent(ChatIntent.HideAutosuggestions)
+                                chatViewModel.onIntent(ChatIntent.SendMessage(chatState.inputText))
+                                chatViewModel.onIntent(ChatIntent.UpdateInputText(""))
+                            }
+                        },
+                        onSpeakClick = {
+                            // Text-mode mic → switch to the voice dock and start listening.
+                            focusTextField = false
+                            inputMode = "voice"
+                            beginListening()
+                        },
+                        onStopListening = { sttController.stopListening() },
+                        onSuggestionClick = { suggestion ->
+                            chatViewModel.onIntent(ChatIntent.TapAutosuggestion(suggestion))
                             chatViewModel.onIntent(ChatIntent.HideAutosuggestions)
-                            chatViewModel.onIntent(ChatIntent.SendMessage(chatState.inputText))
-                            chatViewModel.onIntent(ChatIntent.UpdateInputText(""))
-                        }
-                    },
-                    onSpeakClick = {
-                        chatViewModel.onIntent(ChatIntent.HideAutosuggestions)
-                        chatViewModel.onIntent(ChatIntent.MarkUserActive)
-                        if (permissionGranted && sttState.isInitialized) {
-                            val language = if (chatState.isKannada) "kn-IN" else "en-IN"
-                            sttController.startListening(language)
-                        } else if (!permissionGranted) {
-                            permissionLauncher.launch(RECORD_AUDIO)
-                        }
-                    },
-                    onStopListening = { sttController.stopListening() },
-                    onSuggestionClick = { suggestion ->
-                        chatViewModel.onIntent(ChatIntent.TapAutosuggestion(suggestion))
-                        chatViewModel.onIntent(ChatIntent.HideAutosuggestions)
-                    },
-                    shouldDisableSend = shouldDisableSend,
-                    showImageIcon = false,
-                    modifier = Modifier
-                        .imePadding()
-                )
+                        },
+                        shouldDisableSend = shouldDisableSend,
+                        showImageIcon = false,
+                        kannadaKeyboard = chatState.isKannada,
+                        autoFocus = focusTextField,
+                        modifier = Modifier
+                            .imePadding()
+                    )
+                }
             }
         ) { innerPadding ->
             Column(
@@ -250,7 +372,25 @@ fun ChatbotScreen(
                             onSpeedChange = { label ->
                                 settingsState = settingsState.copy(selectedSpeed = label)
                                 handleSpeedChange(label, ttsController, ttsState, aiMessageOutput)
-                            }
+                            },
+                            useNativeTutorAvatar = useNativeAvatar,
+                            handsFreeMode = handsFreeMode,
+                            onHandsFreeChange = {
+                                handsFreeMode = it
+                                sharedPrefs.setHandsFreeMode(it)
+                            },
+                            handsFreeLabel = handsFreeLabel,
+                            showInputModeSetting = true,
+                            voiceFirst = inputMode == "voice",
+                            onInputModeChange = { voiceFirst ->
+                                sharedPrefs.setVoiceFirst(voiceFirst)
+                                if (!voiceFirst) sttController.stopListening()
+                                focusTextField = false
+                                inputMode = if (voiceFirst) "voice" else "text"
+                            },
+                            defaultInputLabel = if (chatState.isKannada) "ಡೀಫಾಲ್ಟ್ ಇನ್‌ಪುಟ್" else "Default input",
+                            voiceFirstLabel = if (chatState.isKannada) "ಧ್ವನಿ ಮೊದಲು" else "Voice first",
+                            textFirstLabel = if (chatState.isKannada) "ಪಠ್ಯ ಮೊದಲು" else "Text first",
                         )
                     }
                 )
@@ -262,6 +402,10 @@ fun ChatbotScreen(
                         modifier = Modifier.weight(0.1f).background(White),
                         isLoading = chatState.isLoading,
                         languageCode = chatState.currentLanguage,
+                        useNativeAvatar = useNativeAvatar,
+                        ttsState = ttsState,
+                        wordBoundaryIndex = wordBoundaryIndex,
+                        isListening = sttState.isListening,
                     )
                 } else {
                     // Conversation view with avatar and scrollable content
@@ -270,7 +414,11 @@ fun ChatbotScreen(
                         chatState = chatState,
                         lastAIMessage = lastAIMessage,
                         ttsController = ttsController,
-                        modifier = Modifier.weight(0.1f).background(White)
+                        modifier = Modifier.weight(0.1f).background(White),
+                        useNativeAvatar = useNativeAvatar,
+                        ttsState = ttsState,
+                        wordBoundaryIndex = wordBoundaryIndex,
+                        isListening = sttState.isListening,
                     )
                 }
             }
@@ -291,6 +439,15 @@ fun ChatbotScreen(
             }
         }
 
+        AgentSessionTimeGate(
+            languageCode = chatState.currentLanguage,
+            inTrialMode = TrialSessionStore.activeTrialItemId != null,
+            onProceed = {
+                chatViewModel.recordTrialProceed()
+                backDispatcher?.onBackPressed()
+            },
+            modifier = Modifier.align(Alignment.BottomCenter),
+        )
     }
 
 
@@ -379,7 +536,7 @@ private fun handleSpeedChange(
         "1.0x" -> 1.0f
         "1.25x" -> 1.25f
         "1.5x" -> 1.5f
-        else -> 0.75f
+        else -> 1.0f
     }
     ttsController.setSpeechRate(speed)
     if (ttsState.isSpeaking) {

@@ -31,6 +31,7 @@ object DebugLogger {
         // IMPORTANT: Log to Firestore in BOTH debug and release modes
         // Users won't see these errors, only firebase console will have them
         firestoreLogger?.logError(tag, message, exception, "ERROR")
+        com.ncert7.aitutorandlab.service.logging.CrashlyticsLogger.logError(tag, message, exception)
     }
 
     fun warnLog(tag: String, message: String, exception: Exception? = null) {
@@ -40,6 +41,7 @@ object DebugLogger {
 
         // Log warnings to Firestore in BOTH modes
         firestoreLogger?.logWarning(tag, message, exception)
+        com.ncert7.aitutorandlab.service.logging.CrashlyticsLogger.logWarning(tag, message, exception)
     }
 
     /**

@@ -10,6 +10,8 @@ import com.ncert7.aitutorandlab.data.local.SharedPreferenceUtils
 import com.ncert7.aitutorandlab.data.remote.SimSessionResponse
 import com.ncert7.aitutorandlab.debug.DebugLogger
 import com.ncert7.aitutorandlab.domain.chatbot.usecase.AvatarChangeUseCase
+import com.ncert7.aitutorandlab.domain.examplan.PlanTrialProgressTracker
+import com.ncert7.aitutorandlab.domain.examplan.TrialSessionStore
 import com.ncert7.aitutorandlab.domain.progress.ProgressEventTracker
 import com.ncert7.aitutorandlab.domain.simulation.model.SimulationScreenState
 import com.ncert7.aitutorandlab.domain.simulation.usecase.SimulationIntent
@@ -45,6 +47,7 @@ class SimulationAgentViewModel @Inject constructor(
     private val sendSimulationResponseUseCase: SendSimulationResponseUseCase,
     private val loadSimulationsUseCase: LoadSimulationsUseCase,
     private val progressEventTracker: ProgressEventTracker,
+    private val planTrialProgressTracker: PlanTrialProgressTracker,
     private val conceptRepository: ConceptRepository
 ) : ViewModel() {
 
@@ -459,6 +462,27 @@ class SimulationAgentViewModel @Inject constructor(
         } else {
             DebugLogger.debugLog(TAG, "Same message - no state change needed")
         }
+        checkTrialGeProgress(response)
+    }
+
+    /** Time-based proceed from the agent: mark the current trial item complete before leaving. */
+    fun recordTrialProceed() {
+        val trialItemId = TrialSessionStore.activeTrialItemId ?: return
+        viewModelScope.launch {
+            planTrialProgressTracker.recordGeReached(trialItemId)
+            DebugLogger.debugLog(TAG, "Trial sim agent proceed (time) for item $trialItemId")
+        }
+    }
+
+    private fun checkTrialGeProgress(response: SimSessionResponse) {
+        val trialItemId = TrialSessionStore.activeTrialItemId ?: return
+        val trajectory = response.learningState.trajectoryStatus?.uppercase()?.trim()
+        if (trajectory == "GE") {
+            viewModelScope.launch {
+                planTrialProgressTracker.recordGeReached(trialItemId)
+                DebugLogger.debugLog(TAG, "Trial sim agent reached GE for item $trialItemId")
+            }
+        }
     }
 
     fun setConceptId(conceptId: String) {
@@ -681,15 +705,17 @@ class SimulationAgentViewModel @Inject constructor(
                     DebugLogger.debugLog(TAG, "Simulation URL: ${response.simulation.htmlUrl}")
 
 
-                    //  Track Simulation Agent Progress
+                    // Track Simulation Agent Progress (skip premature complete during exam trial)
                     val conceptId = fetchConceptIdForSimulation(simulationId)
                     if (conceptId != null) {
                         currentConceptId = conceptId
                         val studentId = sharedPrefs.getUserId()
-                        if (studentId != null) {
+                        if (studentId != null && TrialSessionStore.activeTrialItemId == null) {
                             val lang = getCurrentLanguageCode()
                             progressEventTracker.markSimulationAgentCompleted(studentId, conceptId, lang)
                             DebugLogger.debugLog(TAG, " Marked Simulation Agent as completed for concept: $conceptId [$lang]")
+                        } else if (TrialSessionStore.activeTrialItemId != null) {
+                            DebugLogger.debugLog(TAG, "Trial mode — sim agent completion deferred until GE node")
                         } else {
                             DebugLogger.errorLog(TAG, "Could not retrieve studentId for progress tracking")
                         }

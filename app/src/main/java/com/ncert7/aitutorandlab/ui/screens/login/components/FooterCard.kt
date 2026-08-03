@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.People
+import androidx.compose.material.icons.filled.Science
 import androidx.compose.material3.Icon
 import com.ncert7.aitutorandlab.R
 import androidx.compose.material3.MaterialTheme
@@ -49,9 +49,9 @@ fun FooterCard() {
         )
 
         FeatureItem(
-            icon = Icons.Default.People,
-            title = stringResource(R.string.student_count),
-            subtitle = stringResource(R.string.trusted_globally),
+            icon = Icons.Default.Science,
+            title = stringResource(R.string.login_footer_labs_title),
+            subtitle = stringResource(R.string.login_footer_labs_subtitle),
             modifier = Modifier.weight(1f)
         )
     }

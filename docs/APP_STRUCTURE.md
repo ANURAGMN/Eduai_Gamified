@@ -224,9 +224,111 @@ ADMOB_TEST_DEVICE_ID=...   # optional, debug only
 ### BuildConfig fields (from local.properties)
 `AUTH_KEY`, `GEMINI_API_KEY`, `GROQ_API_KEY`, `AGENTIC_AI_BASE_URL`, `SIMULATION_BASE_URL`, `ADMOB_APP_ID`, `BANNER_AD_UNIT_ID`, `ADMOB_TEST_DEVICE_ID`
 
+### Firestore security rules
+
+| Item | Detail |
+|------|--------|
+| **Rules file** | `firestore.rules` |
+| **Project** | `eduai-e090e` |
+| **Deployed** | 2026-07-01 (replaces expired Test Mode open access) |
+
+**Deploy (admin):**
+
+```powershell
+cd Eduapp
+firebase deploy --only firestore
+```
+
+Or via Firebase MCP in Cursor (`firebase_deploy` with `only: firestore`).
+
+**Collections used by the app:** `Concept`, `users`, `progress`, `analytics`, `sessions`, `streak`, `chapterprogress`, `errors`. All other paths are denied. See `firestore.rules` for path-scoped read/write checks (`appName`, `studentId`).
+
+**Follow-up (backlog):** Add **Firebase Auth** on Google login so rules can bind to `request.auth.token.email` instead of field-only checks. Details in [DEV_CHANGELOG §18](./DEV_CHANGELOG_JUN20-22.md#18-firestore-security-rules--deployed-2026-07-01).
+
 ---
 
-## 11. Scripts (ops & metrics)
+## 11. Backend API (AWS EC2)
+
+FastAPI agent server for chatbot, math, simulation, and revision flows. The Android app reaches it via `AGENTIC_AI_BASE_URL` (Retrofit / OkHttp).
+
+### Public URL
+
+| Item | Value |
+|------|--------|
+| **Base URL** | `http://13.48.59.144:8000` |
+| **Public DNS** | `ec2-13-48-59-144.eu-north-1.compute.amazonaws.com` |
+| **AWS region** | `eu-north-1` (Stockholm) |
+| **Port** | **8000** — HTTP only (no HTTPS on this host) |
+
+**Health check (PowerShell):**
+
+```powershell
+Invoke-RestMethod "http://13.48.59.144:8000/health"
+```
+
+**API docs (browser):** http://13.48.59.144:8000/docs
+
+### App wiring
+
+| Location | Purpose |
+|----------|---------|
+| `local.properties` → `AGENTIC_AI_BASE_URL` | Backend base URL baked into debug/release builds |
+| `app/src/main/res/xml/network_security_config.xml` | Whitelists `13.48.59.144` for cleartext HTTP |
+
+Set in `local.properties`:
+
+```properties
+AGENTIC_AI_BASE_URL=http://13.48.59.144:8000
+```
+
+Most endpoints require Google ID token or API key auth; `/health` and `/simulation` are public.
+
+### SSH / shell access
+
+No EC2 private key (`.pem`) is stored in this repo. Use one of:
+
+**Option A — EC2 Instance Connect (recommended, no key file)**
+
+1. AWS Console → **EC2** → **Instances**
+2. Select instance with public IP **13.48.59.144**
+3. **Connect** → **EC2 Instance Connect** → **Connect**
+4. Browser shell opens as user **`ubuntu`** (Ubuntu 22.04/24.04 AMI)
+
+**Option B — SSH from your machine**
+
+Requires the `.pem` key pair downloaded when the instance was launched, and security group **TCP 22** open to your IP:
+
+```powershell
+ssh -i "C:\path\to\your-key.pem" ubuntu@13.48.59.144
+```
+
+Or:
+
+```powershell
+ssh -i "C:\path\to\your-key.pem" ubuntu@ec2-13-48-59-144.eu-north-1.compute.amazonaws.com
+```
+
+Full AWS setup (Docker, SSM secrets, security group): [AgenticDeploymentEC2 — AWS_Hosting_Instructions.pdf](https://github.com/ANURAGMN/AgenticDeploymentEC2/blob/main/AWS_Hosting_Instructions.pdf)
+
+### On-server ops
+
+Container name is typically **`fastapi`**:
+
+```bash
+docker ps
+docker logs -f fastapi
+curl http://localhost:8000/health
+```
+
+Image source: [EduAgent](https://github.com/ANURAGMN/AgenticInteractiveTutor) (`aloofzebra03/educational-api` on Docker Hub).
+
+### Region note
+
+The deployment PDF uses **ap-south-1** (Mumbai) for SSM Parameter Store examples. The **live instance is in eu-north-1** — match the AWS region in the console/CLI to wherever SSM params and the instance actually live.
+
+---
+
+## 12. Scripts (ops & metrics)
 
 | Script | Purpose |
 |--------|---------|
@@ -238,12 +340,13 @@ ADMOB_TEST_DEVICE_ID=...   # optional, debug only
 | `scripts/run-dashboard.ps1` | Generate `reports/dashboard.html` |
 | `scripts/setup-admob-ids.ps1` | Helper to set AdMob IDs in local.properties |
 | `scripts/setup-firebase-mcp.ps1` | Firebase MCP for Cursor |
+| `firestore.rules` + `firebase deploy --only firestore` | Production Firestore security rules (see §10) |
 
 Firestore scripts require `.tools/firebase-ci-token.txt` (gitignored).
 
 ---
 
-## 12. Build & run
+## 13. Build & run
 
 ```powershell
 $env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"
@@ -259,7 +362,7 @@ adb install -r app\build\outputs\apk\debug\app-debug.apk
 
 ---
 
-## 13. Team onboarding checklist
+## 14. Team onboarding checklist
 
 1. Clone: `git clone https://github.com/ANURAGMN/EduAI_app.git`
 2. Copy `local.properties.example` → `local.properties` and fill values
@@ -271,7 +374,7 @@ adb install -r app\build\outputs\apk\debug\app-debug.apk
 
 ---
 
-## 14. Recent MVP additions (commit `b8eaa4f`)
+## 15. Recent MVP additions (commit `b8eaa4f`)
 
 - Full click analytics (content + simulation) with Firestore + GA4
 - AdMob banner after 5 daily clicks
@@ -281,4 +384,4 @@ adb install -r app\build\outputs\apk\debug\app-debug.apk
 
 ---
 
-*Last updated: June 2026*
+*Last updated: 2026-07-01*

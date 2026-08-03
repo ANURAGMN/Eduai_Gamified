@@ -130,8 +130,11 @@ fun ConceptScreen(
                 ) {
                     Text(
                         text = when {
+                            state.type.equals("TRIAL", ignoreCase = true) ->
+                                if (currentLanguage.startsWith("kn", ignoreCase = true)) "ಪಾಠಗಳು ಮತ್ತು ಸಿಮ್ಯುಲೇಶನ್‌ಗಳು" else "Lessons & simulations"
                             state.type.equals("SIMULATION", ignoreCase = true) -> stringResource(R.string.simulations_to_explore)
-                            state.type.equals("MATH PROBLEM", ignoreCase = true) -> stringResource(R.string.problem_to_solve)                            else -> stringResource(R.string.lessons_to_master)
+                            state.type.equals("MATH PROBLEM", ignoreCase = true) -> stringResource(R.string.problem_to_solve)
+                            else -> stringResource(R.string.lessons_to_master)
                         },
                         style = MaterialTheme.typography.titleMedium,
                         color = TextPrimary,
@@ -147,8 +150,8 @@ fun ConceptScreen(
                                 concept = conceptUiModel,
                                 serialNumber = index + 1,
                                 onClick = { conceptId, problemId, conceptType ->
-                                    chatViewModel.selectConceptWithDialog(conceptUiModel.name)
-                                    if (!chatViewModel.hasExistingSession(conceptUiModel.name)) {
+                                    chatViewModel.selectConceptWithDialog(conceptUiModel.sessionKey)
+                                    if (!chatViewModel.hasExistingSession(conceptUiModel.sessionKey)) {
                                         onConceptClick(conceptId, problemId, conceptType)
                                     }
                                 },
@@ -186,7 +189,7 @@ fun ConceptScreen(
                     chatState.pendingConceptForDialog?.let { conceptName ->
                         chatViewModel.onIntent(ChatIntent.SelectConcept(conceptName))
                         chatViewModel.dismissSessionDialog()
-                        state.concepts.find { it.name == conceptName }?.let { concept ->
+                        state.concepts.find { it.sessionKey == conceptName || it.name == conceptName }?.let { concept ->
                             onConceptClick(concept.id, concept.problemId, concept.type)
                         }
                     }
@@ -195,7 +198,7 @@ fun ConceptScreen(
                     chatState.pendingConceptForDialog?.let { conceptName ->
                         chatViewModel.onIntent(ChatIntent.StartFreshSession(conceptName))
                         chatViewModel.dismissSessionDialog()
-                        state.concepts.find { it.name == conceptName }?.let { concept ->
+                        state.concepts.find { it.sessionKey == conceptName || it.name == conceptName }?.let { concept ->
                             onConceptClick(concept.id, concept.problemId, concept.type)
                         }
                     }

@@ -23,6 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -30,11 +31,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.intl.LocaleList
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
@@ -73,6 +77,8 @@ fun InputSection(
     onImagePickerClick: (() -> Unit)? = null,
     selectedImageUri: String? = null,
     onRemoveImage: (() -> Unit)? = null,
+    kannadaKeyboard: Boolean = false,
+    autoFocus: Boolean = false,
 ) {
     Column(
         modifier = modifier
@@ -109,7 +115,9 @@ fun InputSection(
                 onSendClick = onSendClick,
                 shouldDisableSend = shouldDisableSend,
                 showImageIcon = showImageIcon,
-                onImagePickerClick = onImagePickerClick ?: {}
+                onImagePickerClick = onImagePickerClick ?: {},
+                kannadaKeyboard = kannadaKeyboard,
+                autoFocus = autoFocus
             )
         } else {
             ListeningOverlay(
@@ -178,12 +186,24 @@ private fun InputField(
     shouldDisableSend: Boolean = false,
     showImageIcon: Boolean = true,
     onImagePickerClick: () -> Unit = {},
+    kannadaKeyboard: Boolean = false,
+    autoFocus: Boolean = false,
     modifier: Modifier = Modifier
 ) {
 
     val dimens = LocalDimensions.current
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
+    val focusRequester = remember { FocusRequester() }
+
+    // When the screen switches into text mode (e.g. tapping "Type" in the voice dock),
+    // grab focus and raise the keyboard immediately.
+    LaunchedEffect(autoFocus) {
+        if (autoFocus) {
+            focusRequester.requestFocus()
+            keyboardController?.show()
+        }
+    }
 
     // Buffer input locally so recompositions from other StateFlows
     // (chatViewModel TTS ticks etc.) don't interrupt the IME mid-keystroke.
@@ -224,6 +244,7 @@ private fun InputField(
             },
             modifier = Modifier
                 .weight(1f)
+                .focusRequester(focusRequester)
                 .border(
                     shape = RoundedCornerShape(dimens.inputRadius),
                     width = dimens.inputBorderWidth,
@@ -288,6 +309,10 @@ private fun InputField(
                 }
             },
             keyboardOptions = KeyboardOptions(
+                // Hint the IME (e.g. Gboard) to switch to Kannada script when the app
+                // language is Kannada. Best-effort: honored if the user has a Kannada
+                // keyboard/layout available; otherwise falls back to the default.
+                hintLocales = if (kannadaKeyboard) LocaleList("kn-IN") else LocaleList.Empty,
                 imeAction = if (canSend) {
                     ImeAction.Send
                 } else {

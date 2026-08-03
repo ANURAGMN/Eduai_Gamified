@@ -9,7 +9,9 @@ data class SessionResult(
     val agentResponse: String? = null,
     val metadata: SessionMetadata? = null,
     val messages: List<ChatMessageModel> = emptyList(),
-    val currentState: String? = null
+    val currentState: String? = null,
+    /** HTTP status from the agent API when [success] is false; null for local/non-HTTP failures. */
+    val httpStatusCode: Int? = null,
 )
 
 data class SessionData(

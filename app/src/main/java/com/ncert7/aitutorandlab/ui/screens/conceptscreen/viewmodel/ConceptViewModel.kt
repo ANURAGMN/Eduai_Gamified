@@ -140,6 +140,14 @@ class ConceptViewModel @Inject constructor(
 
                 // Load concepts based on type using specialized repository methods
                 val concepts = when {
+                    // Trial view: lessons AND simulations for the chapter, merged so both
+                    // sit together and any can be picked and started.
+                    type.equals("TRIAL", ignoreCase = true) -> {
+                        val study = conceptRepository.getStudyConceptsForChapter(chapterId)
+                        val sims = conceptRepository.getSimulationConceptsForChapter(chapterId, lang)
+                        DebugLogger.debugLog("ConceptVM", " Loaded TRIAL: ${study.size} study + ${sims.size} sim concepts")
+                        study + sims
+                    }
                     type.equals("SIMULATION", ignoreCase = true) -> {
                         val simConcepts = conceptRepository.getSimulationConceptsForChapter(chapterId, lang)
                         DebugLogger.debugLog("ConceptVM", " Loaded SIMULATION concepts: ${simConcepts.size}")
@@ -206,6 +214,18 @@ class ConceptViewModel @Inject constructor(
                         val hasUrl = !simUrl.isNullOrBlank() && !simUrl.equals("null", ignoreCase = true) && !simUrl.trim().equals("not found", ignoreCase = true)
 
                         val status = when {
+                            // Trial: status per item's own type, and NOT gated on the previous
+                            // item, so a learner can pick and start any lesson or simulation.
+                            type.equals("TRIAL", ignoreCase = true) -> {
+                                if (concept.type.equals("SIMULATION", ignoreCase = true)) {
+                                    determineSimulationStatus(
+                                        allProgress, concept.conceptId, hasAgent, hasUrl, index, concepts, lang
+                                    )
+                                } else {
+                                    val progress = allProgress.find { it.itemType == "CONCEPT" && it.itemId == concept.conceptId && it.language == lang }
+                                    determineConceptStatus(progress, true, null)
+                                }
+                            }
                             type.equals("SIMULATION", ignoreCase = true) -> {
                                 determineSimulationStatus(
                                     allProgress, concept.conceptId, hasAgent, hasUrl, index, concepts, lang
@@ -223,6 +243,7 @@ class ConceptViewModel @Inject constructor(
                         ConceptUiModel(
                             id = concept.conceptId,
                             name = displayName,
+                            sessionKey = concept.conceptName,
                             order = concept.orderIndex,
                             status = when (status) {
                                 ProgressStatus.COMPLETED.value -> {

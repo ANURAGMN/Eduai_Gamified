@@ -26,8 +26,8 @@ android {
         applicationId = "com.ncert7.aitutorandlab"
         minSdk = 28
         targetSdk = 35
-        versionCode = 9
-        versionName = "1.0.7"
+        versionCode = 13
+        versionName = "1.0.11"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         buildConfigField("String", "AUTH_KEY", "\"${prop("AUTH_KEY")}\"")
@@ -40,7 +40,27 @@ android {
         buildConfigField("String", "API_KEY_HEADER_NAME", "\"${prop("API_KEY_HEADER_NAME")}\"")
         buildConfigField("String", "ADMOB_APP_ID", "\"${prop("ADMOB_APP_ID")}\"")
         buildConfigField("String", "BANNER_AD_UNIT_ID", "\"${prop("BANNER_AD_UNIT_ID")}\"")
+        buildConfigField(
+            "String",
+            "REWARDED_AD_UNIT_ID",
+            "\"${prop("REWARDED_AD_UNIT_ID", "ca-app-pub-3940256099942544/5224354917")}\"",
+        )
         buildConfigField("String", "PADAAMS_SIGNIN_PASSWORD", "\"${prop("PADAAMS_SIGNIN_PASSWORD")}\"")
+        buildConfigField(
+            "boolean",
+            "GAMIFIED_HOME_ENABLED",
+            prop("GAMIFIED_HOME_ENABLED", "false").equals("true", ignoreCase = true).toString()
+        )
+        buildConfigField(
+            "boolean",
+            "NATIVE_TUTOR_AVATAR_ENABLED",
+            prop("NATIVE_TUTOR_AVATAR_ENABLED", "false").equals("true", ignoreCase = true).toString()
+        )
+        buildConfigField(
+            "boolean",
+            "GARDEN_ENABLED",
+            prop("GARDEN_ENABLED", "false").equals("true", ignoreCase = true).toString()
+        )
         // Manifest placeholders for runtime value substitution
         manifestPlaceholders["ADMOB_APP_ID"] = prop("ADMOB_APP_ID")
 
@@ -83,9 +103,13 @@ android {
         if (buildType.name == "release") {
             val appId = prop("ADMOB_APP_ID")
             val bannerId = prop("BANNER_AD_UNIT_ID")
-            if (appId.contains("3940256099942544") || bannerId.contains("3940256099942544")) {
+            val rewardedId = prop("REWARDED_AD_UNIT_ID", "ca-app-pub-3940256099942544/5224354917")
+            if (appId.contains("3940256099942544") ||
+                bannerId.contains("3940256099942544") ||
+                rewardedId.contains("3940256099942544")
+            ) {
                 logger.warn(
-                    "RELEASE uses Google sample AdMob IDs — set production ADMOB_APP_ID and BANNER_AD_UNIT_ID in local.properties"
+                    "RELEASE uses Google sample AdMob IDs — set production ADMOB_APP_ID, BANNER_AD_UNIT_ID, and REWARDED_AD_UNIT_ID in local.properties"
                 )
             }
         }
@@ -106,8 +130,10 @@ ksp {
 }
 
 dependencies {
+    implementation(project(":ui-kit"))
+
 // Compose BOM
-    implementation(platform("androidx.compose:compose-bom:2024.09.01"))
+    implementation(platform(libs.compose.bom))
 
 // Jetpack Compose - Core
     implementation("androidx.compose.ui:ui")
@@ -124,6 +150,9 @@ dependencies {
 // Activity & Navigation
     implementation("androidx.activity:activity-compose:1.11.0")
     implementation("androidx.navigation:navigation-compose:2.9.4")
+
+// YouTube in-app playback (home video lessons; v13+ sets Referer/Origin for embed policy)
+    implementation("com.pierfrancescosoffritti.androidyoutubeplayer:core:13.0.0")
 
 // Media / ExoPlayer
     implementation("androidx.media3:media3-exoplayer:1.3.1")
@@ -143,6 +172,7 @@ dependencies {
 // Firebase
     implementation(platform("com.google.firebase:firebase-bom:34.7.0"))
     implementation("com.google.firebase:firebase-firestore-ktx:25.0.0")
+    implementation("com.google.firebase:firebase-auth-ktx:23.0.0")
     implementation("com.google.firebase:firebase-analytics")
     implementation(libs.firebase.crashlytics)
 
@@ -185,9 +215,16 @@ dependencies {
     implementation("com.auth0:java-jwt:4.4.0")
     // Google Play In-App Update
     implementation("com.google.android.play:app-update:2.1.0")
+    implementation("com.google.android.play:review:2.0.2")
+    implementation("com.google.android.play:review-ktx:2.0.2")
 
     // Google Mobile Ads SDK
     implementation("com.google.android.gms:play-services-ads:25.4.0")
 
     testImplementation("junit:junit:4.13.2")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.test:runner:1.6.2")
+    androidTestImplementation(platform(libs.compose.bom))
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
 }

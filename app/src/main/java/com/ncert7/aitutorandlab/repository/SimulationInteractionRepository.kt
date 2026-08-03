@@ -6,6 +6,7 @@ import com.ncert7.aitutorandlab.data.local.dao.SimulationInteractionDao
 import com.ncert7.aitutorandlab.data.local.entities.SimulationInteractionEntity
 import com.ncert7.aitutorandlab.debug.DebugLogger
 import com.ncert7.aitutorandlab.service.analytics.InteractionEvent
+import com.ncert7.aitutorandlab.service.analytics.SessionManager
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -16,7 +17,8 @@ class SimulationInteractionRepository(
 ) {
     suspend fun saveInteraction(event: InteractionEvent, occurredAt: Long = System.currentTimeMillis()) {
         val studentId = sharedPreferenceUtils.getUserId().orEmpty()
-        val sessionId = sharedPreferenceUtils.getCurrentSession().orEmpty()
+        val sessionId = SessionManager.getCurrentSessionId()
+            ?: sharedPreferenceUtils.getCurrentSession().orEmpty()
 
         if (studentId.isBlank() || sessionId.isBlank()) {
             DebugLogger.debugLog(TAG, "Skipping interaction save: missing studentId or sessionId")
@@ -45,8 +47,7 @@ class SimulationInteractionRepository(
     }
 
     suspend fun updateLatestPendingVerdict(verdict: String) {
-        val sessionId = sharedPreferenceUtils.getCurrentSession().orEmpty()
-        if (sessionId.isBlank()) return
+        val sessionId = currentSessionId() ?: return
         interactionDao.updateLatestPendingVerdict(sessionId, verdict)
     }
 
@@ -56,8 +57,7 @@ class SimulationInteractionRepository(
         chapterName: String,
         timeTaken: String
     ) {
-        val sessionId = sharedPreferenceUtils.getCurrentSession().orEmpty()
-        if (sessionId.isBlank()) return
+        val sessionId = currentSessionId() ?: return
         interactionDao.updateLatestSessionTime(
             sessionId = sessionId,
             simulationTitle = simulationTitle,
@@ -66,6 +66,10 @@ class SimulationInteractionRepository(
             timeTaken = timeTaken
         )
     }
+
+    private fun currentSessionId(): String? =
+        SessionManager.getCurrentSessionId()?.takeIf { it.isNotBlank() }
+            ?: sharedPreferenceUtils.getCurrentSession()?.takeIf { it.isNotBlank() }
 
     companion object {
         private const val TAG = "SimulationInteractionRepo"

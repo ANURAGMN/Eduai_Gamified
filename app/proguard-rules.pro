@@ -93,7 +93,12 @@
     volatile <fields>;
 }
 
-# ========== ANDROID COMPONENTS ==========
+# ========== BUILD CONFIG (gamification flags read at runtime) ==========
+-keepclassmembers class com.ncert7.aitutorandlab.BuildConfig {
+    public static final boolean GAMIFIED_HOME_ENABLED;
+    public static final boolean NATIVE_TUTOR_AVATAR_ENABLED;
+    public static final boolean DEBUG;
+}
 # Keep custom exceptions
 -keep public class * extends java.lang.Exception
 
@@ -117,6 +122,9 @@
 -keep class com.google.firebase.** { *; }
 -keep class com.google.android.gms.** { *; }
 -dontwarn com.google.firebase.**
+
+# ========== GOOGLE PLAY REVIEW KTX ==========
+-dontwarn com.google.android.gms.common.annotation.NoNullnessRewrite
 
 # ========== GOOGLE SIGN-IN / CREDENTIAL MANAGER ==========
 -keep class com.google.android.libraries.identity.googleid.** { *; }

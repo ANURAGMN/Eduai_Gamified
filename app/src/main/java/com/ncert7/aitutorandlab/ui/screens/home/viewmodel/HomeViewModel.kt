@@ -1,25 +1,64 @@
 package com.ncert7.aitutorandlab.ui.screens.home.viewmodel
 
+import android.app.Activity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ncert7.aitutorandlab.config.AppConfig
 import com.ncert7.aitutorandlab.data.local.SharedPreferenceUtils
+import com.ncert7.aitutorandlab.data.local.dao.ChapterDao
 import com.ncert7.aitutorandlab.data.local.dao.ConceptDao
 import com.ncert7.aitutorandlab.data.local.dao.ProgressDao
 import com.ncert7.aitutorandlab.data.local.dao.StudentDao
 import com.ncert7.aitutorandlab.data.local.entities.ConceptEntity
 import com.ncert7.aitutorandlab.data.local.entities.ProgressEntity
+import com.ncert7.aitutorandlab.data.local.entities.GamificationProfileEntity
 import com.ncert7.aitutorandlab.data.local.entities.StudentEntity
+import com.ncert7.aitutorandlab.data.local.entities.SubjectEntity
 import com.ncert7.aitutorandlab.debug.DebugLogger
+import com.ncert7.aitutorandlab.domain.gamification.QuestClaimResult
+import com.ncert7.aitutorandlab.domain.gamification.QuestClaimType
+import com.ncert7.aitutorandlab.domain.gamification.QuestGemRewardService
+import com.ncert7.aitutorandlab.repository.ExamPlanRepository
+import com.ncert7.aitutorandlab.repository.FriendRepository
+import com.ncert7.aitutorandlab.repository.GamificationRepository
+import com.ncert7.aitutorandlab.repository.LeagueRepository
+import com.ncert7.aitutorandlab.repository.PlanTrialRepository
+import com.ncert7.aitutorandlab.repository.QuestRepository
 import com.ncert7.aitutorandlab.repository.StreakRepository
 import com.ncert7.aitutorandlab.repository.SubjectRepository
+import com.ncert7.aitutorandlab.service.sync.DataSyncService
+import com.anurag.eduai.uikit.screens.YoutubeVideoItem
+import com.ncert7.aitutorandlab.ui.screens.home.GamifiedHomeMapper
+import com.ncert7.aitutorandlab.ui.screens.plan.ExamPlanUiMapper
+import com.anurag.eduai.uikit.components.FriendUpdate
+import com.anurag.eduai.uikit.components.PlanDayNode
+import com.ncert7.aitutorandlab.data.local.entities.ExamPlanDayEntity
+import com.ncert7.aitutorandlab.data.local.entities.FriendFeedItemEntity
+import com.ncert7.aitutorandlab.data.local.entities.PlanTrialItemEntity
+import com.ncert7.aitutorandlab.data.local.entities.QuestDailyEntity
+import com.ncert7.aitutorandlab.service.analytics.GamificationAnalyticsTracker
+import com.ncert7.aitutorandlab.domain.youtube.YoutubeVideo
+import com.ncert7.aitutorandlab.data.local.entities.GardenTheme
+import com.ncert7.aitutorandlab.data.local.entities.GrownItemEntity
+import com.ncert7.aitutorandlab.domain.garden.GardenProgress
+import com.ncert7.aitutorandlab.domain.garden.GardenStarterHighlight
+import com.ncert7.aitutorandlab.domain.onboarding.OnboardingChapterCatalog
+import com.ncert7.aitutorandlab.repository.GardenRepository
+import com.ncert7.aitutorandlab.repository.YoutubeVideoRepository
+import com.ncert7.aitutorandlab.ui.screens.friends.FriendUiMapper
 import com.ncert7.aitutorandlab.utils.getLocalizedName
 import com.ncert7.aitutorandlab.utils.isKannada
+import com.ncert7.aitutorandlab.utils.getCurrentLanguageCode
 import com.ncert7.aitutorandlab.utils.normalizeLanguageCode
+import com.ncert7.aitutorandlab.utils.TrialTitleResolver
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -30,11 +69,21 @@ import javax.inject.Inject
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val conceptDao: ConceptDao,
+    private val chapterDao: ChapterDao,
     private val progressDao: ProgressDao,
     private val studentDao: StudentDao,
     private val streakRepository: StreakRepository,
+    private val gamificationRepository: GamificationRepository,
+    private val leagueRepository: LeagueRepository,
+    private val friendRepository: FriendRepository,
+    private val examPlanRepository: ExamPlanRepository,
+    private val planTrialRepository: PlanTrialRepository,
+    private val questRepository: QuestRepository,
+    private val questGemRewardService: QuestGemRewardService,
     private val sharedPrefs: SharedPreferenceUtils,
-    private val subjectRepository: SubjectRepository
+    private val subjectRepository: SubjectRepository,
+    private val youtubeVideoRepository: YoutubeVideoRepository,
+    private val gardenRepository: GardenRepository,
 ) : ViewModel(){
 
     private val userId: String
@@ -49,6 +98,14 @@ class HomeViewModel @Inject constructor(
 
     private val _streakCount = MutableStateFlow(0)
     val streakCount: StateFlow<Int> = _streakCount
+
+    /** Non-null (the streak count) when the once-per-day "keep it alive" celebration should show. */
+    private val _dailyStreakGreeting = MutableStateFlow<Int?>(null)
+    val dailyStreakGreeting: StateFlow<Int?> = _dailyStreakGreeting
+
+    /** Non-null (the new count) when the streak just extended this session — triumphant celebration. */
+    private val _streakExtended = MutableStateFlow<Int?>(null)
+    val streakExtended: StateFlow<Int?> = _streakExtended
 
     private val _todayConceptCount = MutableStateFlow(0)
     val todayConceptCount: StateFlow<Int> = _todayConceptCount
@@ -76,18 +133,93 @@ class HomeViewModel @Inject constructor(
     private val _languageChangeTrigger = MutableStateFlow(0)
     val languageChangeTrigger: StateFlow<Int> = _languageChangeTrigger
 
-    private val _currentLanguage = MutableStateFlow(if (isKannada()) "kn" else "en")
+    private val _currentLanguage = MutableStateFlow(normalizeLanguageCode(getCurrentLanguageCode()))
     val currentLanguage: StateFlow<String> = _currentLanguage
 
     private val _selectedSubjectName = MutableStateFlow("")
     val selectedSubjectName: StateFlow<String> = _selectedSubjectName
 
+    private val _availableSubjects = MutableStateFlow<List<SubjectEntity>>(emptyList())
+    val availableSubjects: StateFlow<List<SubjectEntity>> = _availableSubjects
+
+    private val _gamificationProfile = MutableStateFlow<GamificationProfileEntity?>(null)
+    val gamificationProfile: StateFlow<GamificationProfileEntity?> = _gamificationProfile
+
+    private val _leagueRank = MutableStateFlow(0)
+    val leagueRank: StateFlow<Int> = _leagueRank
+
+    private val _planDays = MutableStateFlow<List<PlanDayNode>>(emptyList())
+    val planDays: StateFlow<List<PlanDayNode>> = _planDays
+
+    private var cachedPlanDayEntities: List<ExamPlanDayEntity> = emptyList()
+
+    private val _todayPlanDay = MutableStateFlow<ExamPlanDayEntity?>(null)
+    val todayPlanDay: StateFlow<ExamPlanDayEntity?> = _todayPlanDay
+
+    private val _todayQuest = MutableStateFlow<QuestDailyEntity?>(null)
+    val todayQuest: StateFlow<QuestDailyEntity?> = _todayQuest
+
+    private val _todayTrialItems = MutableStateFlow<List<PlanTrialItemEntity>>(emptyList())
+    val todayTrialItems: StateFlow<List<PlanTrialItemEntity>> = _todayTrialItems
+
+    private val _rewardedAdReady = MutableStateFlow(false)
+    val rewardedAdReady: StateFlow<Boolean> = _rewardedAdReady
+
+    private val _friendFeedItems = MutableStateFlow<List<FriendFeedItemEntity>>(emptyList())
+
+    private val _friendUpdates = MutableStateFlow<List<FriendUpdate>>(emptyList())
+    val friendFeed: StateFlow<List<FriendUpdate>> = _friendUpdates
+
+    private val _unseenFriendFeed = MutableStateFlow(0)
+    val unseenFriendFeed: StateFlow<Int> = _unseenFriendFeed
+
+    private val _friendCount = MutableStateFlow(0)
+    val friendCount: StateFlow<Int> = _friendCount
+
+    private val _youtubeVideos = MutableStateFlow<List<YoutubeVideo>>(emptyList())
+    val youtubeVideos: StateFlow<List<YoutubeVideo>> = _youtubeVideos
+
+    private val _gardenProgress = MutableStateFlow<GardenProgress?>(null)
+    val gardenProgress: StateFlow<GardenProgress?> = _gardenProgress
+
+    private val _gardenHighlightNewPlant = MutableStateFlow(false)
+    val gardenHighlightNewPlant: StateFlow<Boolean> = _gardenHighlightNewPlant
+
+    private val _gardenHighlightStarterPlant = MutableStateFlow(false)
+    val gardenHighlightStarterPlant: StateFlow<Boolean> = _gardenHighlightStarterPlant
+
+    private val _gardenPlantedItems = MutableStateFlow<List<GrownItemEntity>>(emptyList())
+    val gardenPlantedItems: StateFlow<List<GrownItemEntity>> = _gardenPlantedItems
+
     fun setLanguage(lang: String) {
+        syncLanguage(lang)
+    }
+
+    /** Updates language and re-localizes cached plan labels in the same frame. */
+    fun syncLanguage(lang: String) {
         val normalized = normalizeLanguageCode(lang)
-        if (_currentLanguage.value != normalized) {
-            _currentLanguage.value = normalized
-            DebugLogger.debugLog("HomeViewModel", "Language dynamically changed to: $normalized")
+        if (_currentLanguage.value == normalized) return
+        _currentLanguage.value = normalized
+        DebugLogger.debugLog("HomeViewModel", "Language dynamically changed to: $normalized")
+        if (cachedPlanDayEntities.isNotEmpty()) {
+            viewModelScope.launch {
+                remapLocalizedPlanDays(cachedPlanDayEntities, normalized)
+            }
         }
+        refreshSelectedSubjectName()
+    }
+
+    private suspend fun remapLocalizedPlanDays(
+        entities: List<ExamPlanDayEntity>,
+        language: String,
+    ) {
+        _planDays.value =
+            entities.map { day ->
+                ExamPlanUiMapper.toPlanDayNode(
+                    day,
+                    TrialTitleResolver.localizedPlanDayLabel(day, language, conceptDao),
+                )
+            }
     }
 
     fun refreshSelectedSubjectName() {
@@ -96,6 +228,24 @@ class HomeViewModel @Inject constructor(
             val subjectId = sharedPrefs.getSubjectSelectionId()
             val subject = subjectRepository.getSubject(subjectId)
             _selectedSubjectName.value = subject?.getLocalizedName(language) ?: ""
+        }
+    }
+
+    fun refreshAvailableSubjects() {
+        viewModelScope.launch {
+            val classLevel = _student.value?.classLevel ?: 7
+            _availableSubjects.value =
+                subjectRepository.getSubjectsForClass(classLevel).sortedBy { it.orderIndex }
+        }
+    }
+
+    private fun observeAvailableSubjects() {
+        viewModelScope.launch {
+            combine(_student, _currentLanguage) { student, _ -> student?.classLevel ?: 7 }
+                .collectLatest { classLevel ->
+                    _availableSubjects.value =
+                        subjectRepository.getSubjectsForClass(classLevel).sortedBy { it.orderIndex }
+                }
         }
     }
 
@@ -117,6 +267,434 @@ class HomeViewModel @Inject constructor(
         observeTotalCounts()
         observeProgressConceptsAndSimulations()
         observeSelectedSubjectName()
+        observeAvailableSubjects()
+        observeGamificationProfile()
+        observeLeagueRank()
+        observeExamPlan()
+        observeTodayTrialItems()
+        observeDailyQuests()
+        observeFriendFeed()
+        loadYoutubeVideos()
+        observeGardenProgress()
+        applyOnboardingPicksOnce()
+    }
+
+    /**
+     * Consumes the first-run picks exactly once: reward world → garden theme + starting scene,
+     * subject → home selection, chapter → a one-week exam plan so home aligns with today's focus.
+     */
+    private fun applyOnboardingPicksOnce() {
+        viewModelScope.launch {
+            if (sharedPrefs.hasAppliedOnboardingPicks()) return@launch
+            val id = userId.takeIf { it.isNotBlank() } ?: return@launch
+            DataSyncService.awaitGardenRestore()
+            val language = _currentLanguage.value
+            val subjectKey = sharedPrefs.getOnboardingSubject().orEmpty()
+            val chapterLabel = sharedPrefs.getOnboardingChapter().orEmpty()
+            val world = sharedPrefs.getOnboardingWorld().orEmpty()
+
+            val subjectId =
+                OnboardingChapterCatalog.subjectIdForKey(subjectKey)
+                    ?: subjectRepository.getSubjectsForClass(_student.value?.classLevel ?: 7)
+                        .firstOrNull {
+                            it.subjectName.trim().startsWith(subjectKey.trim(), ignoreCase = true)
+                        }?.subjectId
+
+            if (subjectId != null) {
+                sharedPrefs.setSubjectSelectionId(subjectId)
+                refreshSelectedSubjectName()
+            }
+
+            if (subjectId != null && chapterLabel.isNotBlank()) {
+                val chapters = chapterDao.getChaptersForSubjectSync(subjectId)
+                val chapterEntity =
+                    OnboardingChapterCatalog.resolveChapter(chapters, chapterLabel, language)
+                        ?: chapters.sortedBy { it.orderIndex }.firstOrNull()
+                if (chapterEntity != null) {
+                    try {
+                        examPlanRepository.createOnboardingPlan(
+                            studentId = id,
+                            subjectId = subjectId,
+                            chapterId = chapterEntity.chapterId,
+                            languageCode = language,
+                        )
+                        refreshExamPlanStatuses()
+                    } catch (e: Exception) {
+                        DebugLogger.errorLog(
+                            "HomeViewModel",
+                            "Onboarding plan creation failed: ${e.message}",
+                        )
+                    }
+                }
+            }
+
+            val gardenTheme =
+                if (world.equals("Space", ignoreCase = true)) GardenTheme.OUTPOST else GardenTheme.GARDEN
+            val hasRestoredGarden = (gardenRepository.getProgress(id)?.totalPlanted ?: 0) > 0
+            if (!hasRestoredGarden) {
+                gardenRepository.setTheme(id, gardenTheme)
+                gardenRepository.applyOnboardingStartingScene(id, gardenTheme)
+            }
+            _gardenProgress.value = gardenRepository.getProgress(id)
+            refreshGardenPlantedItems(id)
+
+            sharedPrefs.setOnboardingPicksApplied()
+        }
+    }
+
+    fun setGardenPreferredSlot(slot: Int) {
+        viewModelScope.launch {
+            val id = _student.value?.studentId?.takeIf { it.isNotBlank() } ?: userId
+            if (id.isBlank()) return@launch
+            gardenRepository.setPreferredSlot(id, slot)
+            _gardenProgress.value = gardenRepository.getProgress(id)
+        }
+    }
+
+    /** Home shows the updated rail — pulse when a new plant landed since the last home visit. */
+    fun refreshGardenOnHomeResume() {
+        viewModelScope.launch {
+            val id = _student.value?.studentId?.takeIf { it.isNotBlank() } ?: userId
+            val progress =
+                if (id.isBlank()) null else gardenRepository.getProgress(id)
+            _gardenProgress.value = progress
+            refreshGardenPlantedItems(id)
+            if (progress != null && id.isNotBlank()) {
+                val theme = gardenRepository.toComposeTheme(progress.theme)
+                val starterSeen = sharedPrefs.hasSeenGardenStarterPlantHighlight(id)
+                _gardenHighlightStarterPlant.value =
+                    GardenStarterHighlight.shouldShow(progress, theme, starterSeen)
+                val lastSeen = sharedPrefs.getLastHomeGardenPlantTotal(id)
+                if (progress.totalPlanted > lastSeen) {
+                    _gardenHighlightNewPlant.value = true
+                }
+            } else {
+                _gardenHighlightStarterPlant.value = false
+            }
+        }
+    }
+
+    fun acknowledgeGardenStarterHighlight() {
+        _gardenHighlightStarterPlant.value = false
+        viewModelScope.launch {
+            val id = _student.value?.studentId?.takeIf { it.isNotBlank() } ?: userId
+            if (id.isNotBlank()) {
+                sharedPrefs.setGardenStarterPlantHighlightSeen(id)
+            }
+        }
+    }
+
+    fun acknowledgeGardenHighlight() {
+        _gardenHighlightNewPlant.value = false
+        viewModelScope.launch {
+            val id = _student.value?.studentId?.takeIf { it.isNotBlank() } ?: userId
+            val totalPlanted = _gardenProgress.value?.totalPlanted ?: return@launch
+            if (id.isNotBlank()) {
+                sharedPrefs.setLastHomeGardenPlantTotal(id, totalPlanted)
+            }
+        }
+    }
+
+    fun refreshGardenProgress() {
+        viewModelScope.launch {
+            val id = _student.value?.studentId?.takeIf { it.isNotBlank() } ?: userId
+            _gardenProgress.value =
+                if (id.isBlank()) null else gardenRepository.getProgress(id)
+            refreshGardenPlantedItems(id)
+        }
+    }
+
+    private suspend fun refreshGardenPlantedItems(studentId: String) {
+        _gardenPlantedItems.value =
+            if (studentId.isBlank()) {
+                emptyList()
+            } else {
+                gardenRepository.getPlantedItems(studentId)
+            }
+    }
+
+    private fun observeGardenProgress() {
+        viewModelScope.launch {
+            combine(_student, _todayTrialItems) { student, items ->
+                val studentId = student?.studentId?.takeIf { it.isNotBlank() } ?: userId
+                studentId to trialProgressSignature(items)
+            }
+                .distinctUntilChanged()
+                .collectLatest { (studentId, _) ->
+                    _gardenProgress.value =
+                        if (studentId.isBlank()) null else gardenRepository.getProgress(studentId)
+                    refreshGardenPlantedItems(studentId)
+                }
+        }
+        viewModelScope.launch {
+            _student
+                .flatMapLatest { student ->
+                    val studentId = student?.studentId?.takeIf { it.isNotBlank() } ?: userId
+                    if (studentId.isBlank()) {
+                        flowOf(null)
+                    } else {
+                        gardenRepository.observeProgress(studentId)
+                    }
+                }
+                .collectLatest { progress ->
+                    if (progress != null) {
+                        _gardenProgress.value = progress
+                        val studentId =
+                            _student.value?.studentId?.takeIf { it.isNotBlank() } ?: userId
+                        refreshGardenPlantedItems(studentId)
+                        if (studentId.isNotBlank()) {
+                            val lastSeen = sharedPrefs.getLastHomeGardenPlantTotal(studentId)
+                            if (progress.totalPlanted > lastSeen) {
+                                _gardenHighlightNewPlant.value = true
+                            }
+                        }
+                    }
+                }
+        }
+    }
+
+    /** Changes when any trial bite completes — list size alone misses DONE transitions. */
+    private fun trialProgressSignature(items: List<PlanTrialItemEntity>): String =
+        items.joinToString("|") { "${it.id}:${it.status}:${it.completedCount}" }
+
+    fun mapYoutubeItems(languageCode: String): List<YoutubeVideoItem> =
+        GamifiedHomeMapper.mapYoutubeVideos(
+            videos = _youtubeVideos.value,
+            languageCode = normalizeLanguageCode(languageCode),
+            youtubeVideoRepository = youtubeVideoRepository,
+        )
+
+    fun refreshYoutubeVideos() {
+        viewModelScope.launch {
+            _youtubeVideos.value = youtubeVideoRepository.fetchVideos()
+        }
+    }
+
+    private fun loadYoutubeVideos() {
+        viewModelScope.launch {
+            _youtubeVideos.value = youtubeVideoRepository.fetchVideos()
+        }
+    }
+
+    private fun observeFriendFeed() {
+        viewModelScope.launch {
+            if (userId.isEmpty()) return@launch
+            friendRepository.syncFriendSocialData(userId)
+        }
+        viewModelScope.launch {
+            if (userId.isEmpty()) return@launch
+            combine(
+                friendRepository.observeHomeFeed(userId),
+                friendRepository.observeConnections(userId),
+            ) { items, connections ->
+                _friendFeedItems.value = items
+                _friendCount.value = connections.size
+                _friendUpdates.value =
+                    when {
+                        items.isNotEmpty() -> FriendUiMapper.toFriendUpdates(items)
+                        connections.isNotEmpty() -> FriendUiMapper.toLinkedFriendUpdates(connections)
+                        else -> emptyList()
+                    }
+            }.collectLatest { }
+        }
+        viewModelScope.launch {
+            if (userId.isEmpty()) return@launch
+            friendRepository.observeUnseenFeedCount(userId).collectLatest { count ->
+                _unseenFriendFeed.value = count
+            }
+        }
+    }
+
+    fun refreshFriendSocialData() {
+        viewModelScope.launch {
+            if (userId.isEmpty()) return@launch
+            friendRepository.syncFriendSocialData(userId)
+        }
+    }
+
+    fun cheerFriendAtIndex(index: Int) {
+        viewModelScope.launch {
+            if (userId.isEmpty()) return@launch
+            val item = _friendFeedItems.value.getOrNull(index) ?: return@launch
+            friendRepository.cheerFeedItem(userId, item.id)
+            GamificationAnalyticsTracker.cheerSent()
+        }
+    }
+
+    fun markFriendFeedSeen() {
+        viewModelScope.launch {
+            if (userId.isEmpty()) return@launch
+            friendRepository.markHomeFeedSeen(userId)
+        }
+    }
+
+    suspend fun getMyFriendCode(): String =
+        if (userId.isEmpty()) "" else friendRepository.getMyFriendCode(userId)
+
+    private fun observeExamPlan() {
+        viewModelScope.launch {
+            if (userId.isEmpty()) return@launch
+            examPlanRepository.ensureActivePlan(
+                studentId = userId,
+                subjectId = sharedPrefs.getSubjectSelectionId(),
+                languageCode = _currentLanguage.value,
+            )
+        }
+        viewModelScope.launch {
+            if (userId.isEmpty()) return@launch
+            combine(
+                examPlanRepository.observePlanDays(userId),
+                _currentLanguage,
+            ) { entities, language -> entities to language }
+                .collectLatest { (entities, language) ->
+                    cachedPlanDayEntities = entities
+                    remapLocalizedPlanDays(entities, language)
+                    _todayPlanDay.value =
+                        entities.firstOrNull { it.status == "TODAY" }
+                            ?: entities.firstOrNull { it.status == "UPCOMING" }
+                }
+        }
+    }
+
+    fun ensureExamPlanForCurrentSubject() {
+        viewModelScope.launch {
+            if (userId.isEmpty()) return@launch
+            examPlanRepository.ensureActivePlan(
+                studentId = userId,
+                subjectId = sharedPrefs.getSubjectSelectionId(),
+                languageCode = _currentLanguage.value,
+            )
+        }
+    }
+
+    fun refreshExamPlanStatuses() {
+        viewModelScope.launch {
+            if (userId.isEmpty()) return@launch
+            examPlanRepository.refreshDayStatuses(userId, _currentLanguage.value)
+            questRepository.refreshTodayQuest(userId, _currentLanguage.value)
+        }
+    }
+
+    suspend fun chapterIdForConcept(conceptId: String): String? =
+        conceptDao.getConcept(conceptId)?.chapterId
+
+    fun refreshDailyQuests() {
+        viewModelScope.launch {
+            if (userId.isEmpty()) return@launch
+            questRepository.refreshTodayQuest(userId, _currentLanguage.value)
+        }
+    }
+
+    fun refreshRewardedAdState() {
+        _rewardedAdReady.value = questGemRewardService.isRewardedAdReady()
+    }
+
+    fun preloadRewardedAd() {
+        questGemRewardService.preloadRewardedAd()
+        refreshRewardedAdState()
+    }
+
+    fun claimQuestWithAd(
+        activity: Activity,
+        claimType: QuestClaimType,
+        onResult: (QuestClaimResult) -> Unit,
+    ) {
+        viewModelScope.launch {
+            val result = questGemRewardService.claimWithRewardedAd(activity, userId, claimType)
+            refreshRewardedAdState()
+            onResult(result)
+        }
+    }
+
+    private fun observeTodayTrialItems() {
+        viewModelScope.launch {
+            if (userId.isEmpty()) return@launch
+            _todayPlanDay.collectLatest { day ->
+                if (day == null) return@collectLatest
+                if (sharedPrefs.hasCompletedFirstRun() && !sharedPrefs.hasAppliedOnboardingPicks()) {
+                    return@collectLatest
+                }
+                planTrialRepository.ensureTrialItemsForDay(day, _currentLanguage.value)
+            }
+        }
+        viewModelScope.launch {
+            if (userId.isEmpty()) return@launch
+            _todayPlanDay
+                .flatMapLatest { day ->
+                    if (day == null) {
+                        flowOf(emptyList())
+                    } else {
+                        planTrialRepository.observeTrialItems(userId, day.dayIndex)
+                    }
+                }.collect { items ->
+                    _todayTrialItems.value = items
+                }
+        }
+    }
+
+    private fun observeDailyQuests() {
+        viewModelScope.launch {
+            if (userId.isEmpty()) return@launch
+            _currentLanguage.collectLatest { language ->
+                questRepository.refreshTodayQuest(userId, language)
+            }
+        }
+        viewModelScope.launch {
+            if (userId.isEmpty()) return@launch
+            questRepository.observeTodayQuest(userId).collectLatest { quest ->
+                _todayQuest.value = quest
+            }
+        }
+    }
+
+    private fun observeGamificationProfile() {
+        viewModelScope.launch {
+            if (userId.isEmpty()) return@launch
+            gamificationRepository.getOrCreateProfile(userId)
+            friendRepository.syncFriendCodeToRemote(userId)
+            gamificationRepository.observeProfile(userId).collectLatest { profile ->
+                _gamificationProfile.value = profile
+                if (profile != null) {
+                    syncLeagueMember(profile)
+                }
+            }
+        }
+    }
+
+    private fun observeLeagueRank() {
+        viewModelScope.launch {
+            if (userId.isEmpty()) return@launch
+            leagueRepository.observeCachedRank(userId).collectLatest { rank ->
+                _leagueRank.value = rank
+            }
+        }
+        viewModelScope.launch {
+            if (userId.isEmpty()) return@launch
+            refreshHomeLeagueRank()
+        }
+    }
+
+    fun refreshHomeLeagueRank() {
+        viewModelScope.launch {
+            if (userId.isEmpty()) return@launch
+            val student = studentDao.getStudentSync(userId)
+            val streak = _streakCount.value
+            leagueRepository.refreshHomeLeagueCache(
+                studentId = userId,
+                displayName = student?.studentName.orEmpty(),
+                streak = streak,
+            )
+        }
+    }
+
+    private suspend fun syncLeagueMember(profile: GamificationProfileEntity) {
+        val student = studentDao.getStudentSync(userId)
+        leagueRepository.syncUserWeeklyXp(
+            studentId = userId,
+            weeklyXp = profile.weeklyXp,
+            displayName = student?.studentName.orEmpty(),
+            streak = _streakCount.value,
+        )
     }
 
     private fun observeSelectedSubjectName() {
@@ -237,11 +815,43 @@ class HomeViewModel @Inject constructor(
     private fun observeStreak() {
         viewModelScope.launch {
             if (userId.isEmpty()) return@launch
+            var previous: Int? = null
             streakRepository.getStreakFlow(userId).collectLatest { streak ->
                 // Default to 1 as requested for a better new user experience
-                _streakCount.value = streak?.streakCount ?: 1
+                val count = streak?.streakCount ?: 1
+                _streakCount.value = count
+
+                // Triumphant "streak extended" beat: a genuine increment observed during the session
+                // (the day's first finished activity flows through StreakRepository.recordActivity →
+                // the streak flow re-emits a higher count). Guarded so the initial load never fires it.
+                val prev = previous
+                if (prev != null && count > prev) {
+                    _streakExtended.value = count
+                    // The day's activity is clearly done, so the gentle "keep it alive" beat is
+                    // redundant today — mark it shown so it doesn't appear after the triumphant one.
+                    sharedPrefs.setStreakGreetingShownToday()
+                }
+                previous = count
+
+                // Gentle first-open-of-the-day beat: once per calendar day, when there's a streak to
+                // keep. Suppressed if the triumphant one is already queued this emission.
+                if (count >= 1 &&
+                    _streakExtended.value == null &&
+                    !sharedPrefs.wasStreakGreetingShownToday()
+                ) {
+                    _dailyStreakGreeting.value = count
+                }
             }
         }
+    }
+
+    fun acknowledgeDailyStreakGreeting() {
+        sharedPrefs.setStreakGreetingShownToday()
+        _dailyStreakGreeting.value = null
+    }
+
+    fun acknowledgeStreakExtended() {
+        _streakExtended.value = null
     }
 
 
@@ -325,6 +935,7 @@ class HomeViewModel @Inject constructor(
             val result = studentDao.getStudentSync(userId)
             _student.value = result
             _studentLoaded.value = true
+            refreshAvailableSubjects()
             DebugLogger.debugLog("HomeViewModel", "Student loaded: ${result?.studentName}")
         }
     }
@@ -334,5 +945,9 @@ class HomeViewModel @Inject constructor(
      */
     fun onLanguageChanged() {
         _languageChangeTrigger.value += 1
+    }
+
+    fun requestOpenPlanSetup() {
+        sharedPrefs.setOpenExamPlanSetupPending(true)
     }
 }

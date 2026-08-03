@@ -2,6 +2,8 @@ package com.ncert7.aitutorandlab.ui.navigation
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -20,6 +22,15 @@ import com.ncert7.aitutorandlab.ui.screens.login.LoginScreen
 import com.ncert7.aitutorandlab.ui.screens.login.UserDetailEntryScreen
 import com.ncert7.aitutorandlab.ui.screens.login.viewmodel.UserViewModel
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.collectAsState
+import com.anurag.eduai.uikit.screens.EduOnboardingScreen
+import com.ncert7.aitutorandlab.ui.screens.onboarding.OnboardingViewModel
+import com.ncert7.aitutorandlab.utils.getCurrentLanguageCode
+import com.ncert7.aitutorandlab.service.analytics.EngagementAnalyticsTracker
+import com.ncert7.aitutorandlab.service.analytics.FunnelAnalyticsTracker
+import com.ncert7.aitutorandlab.service.analytics.FunnelStep
+import com.ncert7.aitutorandlab.service.analytics.ScreenName
+import com.ncert7.aitutorandlab.service.analytics.TrackScreenEvent
 
 @Composable
 fun LoginNavigator() {
@@ -69,18 +80,70 @@ fun LoginNavigator() {
             )
         }
         composable("main") {
-            BottomNavBar(
-                onLogout = {
-                    logoutTriggered.value = true
-                    // Reset user ViewModel state
-                    userViewModel.resetLoginState()
-                    userViewModel.resetUserSaveState()
-
-                    navController.navigate("login") {
-                        popUpTo(navController.graph.id) { inclusive = true }
-                    }
+            // First-run gate at the destination itself, so every path into "main" (fresh login and
+            // restored session alike) shows the intro + subject/chapter/world picks exactly once.
+            var onboarded by remember { mutableStateOf(sharedPreferenceUtils.hasCompletedFirstRun()) }
+            if (!onboarded) {
+                TrackScreenEvent(screenName = ScreenName.ONBOARDING)
+                val onboardingViewModel: OnboardingViewModel = hiltViewModel()
+                val chaptersBySubject by onboardingViewModel.chaptersBySubject.collectAsState()
+                // Use the applied app locale (what the student picked at sign-in), not the prefs key
+                // which may still be the default "en" at first run.
+                val languageCode = getCurrentLanguageCode()
+                LaunchedEffect(languageCode) {
+                    onboardingViewModel.refreshChapters(languageCode)
                 }
-            )
+                LaunchedEffect(Unit) {
+                    FunnelAnalyticsTracker.track(FunnelStep.ONBOARDING_START)
+                }
+                EduOnboardingScreen(
+                    languageCode = languageCode,
+                    chaptersBySubject = chaptersBySubject,
+                    onSlideView = { EngagementAnalyticsTracker.onboardingSlideView(it) },
+                    onSlideSkip = { EngagementAnalyticsTracker.onboardingSkip(it) },
+                    onSubjectSelected = { subject ->
+                        FunnelAnalyticsTracker.track(FunnelStep.ONBOARDING_SUBJECT_SELECTED)
+                        EngagementAnalyticsTracker.onboardingSubjectSelected(subject)
+                    },
+                    onChapterSelected = { chapter ->
+                        FunnelAnalyticsTracker.track(FunnelStep.ONBOARDING_CHAPTER_SELECTED)
+                        EngagementAnalyticsTracker.onboardingChapterSelected(chapter)
+                    },
+                    onWorldSelected = { world ->
+                        FunnelAnalyticsTracker.track(FunnelStep.ONBOARDING_WORLD_SELECTED)
+                        EngagementAnalyticsTracker.onboardingWorldSelected(world)
+                    },
+                    onFinish = { result ->
+                        FunnelAnalyticsTracker.track(FunnelStep.ONBOARDING_COMPLETE)
+                        EngagementAnalyticsTracker.onboardingPicks(
+                            subject = result.subject,
+                            chapter = result.chapter,
+                            world = result.world,
+                        )
+                        sharedPreferenceUtils.setFirstRunResult(
+                            subject = result.subject,
+                            chapter = result.chapter,
+                            world = result.world,
+                        )
+                        onboarded = true
+                    },
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .statusBarsPadding()
+                        .navigationBarsPadding(),
+                )
+            } else {
+                BottomNavBar(
+                    onLogout = {
+                        logoutTriggered.value = true
+                        userViewModel.resetUserState()
+
+                        navController.navigate("login") {
+                            popUpTo(navController.graph.id) { inclusive = true }
+                        }
+                    }
+                )
+            }
         }
     }
 }

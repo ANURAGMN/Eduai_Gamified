@@ -1,5 +1,7 @@
 package com.ncert7.aitutorandlab.ui.viewModel
 
+import android.app.Activity
+import android.app.Application
 import android.content.Context
 import android.os.Build
 import android.os.Bundle
@@ -9,6 +11,7 @@ import android.speech.tts.Voice
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.lifecycle.ViewModel
+import com.ncert7.aitutorandlab.config.isNativeTutorAvatarEnabledForContext
 import com.ncert7.aitutorandlab.debug.DebugLogger
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.text.ProcessedText
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -25,9 +28,13 @@ class TextToSpeech @Inject constructor() : ViewModel(), TextToSpeech.OnInitListe
         val isInitialized: Boolean = false,
         val isSpeaking: Boolean = false,
         val selectedLanguage: String = "en-IN",
+        // The app-wide selected language (source of truth from the UI). Used as the
+        // fallback when a spoken chunk has no detectable Indic script, so Kannada
+        // users don't get an English voice by default.
+        val appLanguage: String = "en-IN",
         val detectedLanguage: String = "",
         val selectedCharacter: String = "boy",
-        val speechRate: Float = 0.75f,
+        val speechRate: Float = 1.0f,
         val pitch: Float = 1.0f,
         val statusMessage: String = "",
         val debugMode: Boolean = false,
@@ -36,6 +43,8 @@ class TextToSpeech @Inject constructor() : ViewModel(), TextToSpeech.OnInitListe
         val selectedVoiceDisplayName: String = "Default Voice",
         val currentViseme: String = "rest",
         val voicesFullyLoaded: Boolean = false,
+        val speakingDurationMs: Long = 0,
+        val speakingText: String = "",
     )
 
     private val _state = MutableStateFlow(TTSState())
@@ -43,6 +52,31 @@ class TextToSpeech @Inject constructor() : ViewModel(), TextToSpeech.OnInitListe
 
     private var textToSpeech: TextToSpeech? = null
     private var webView: WebView? = null
+    private var nativeLipSyncEnabled = false
+
+    // Never speak while the app isn't in the foreground (home button, an ad / reward video, a
+    // system dialog, or being sent to the Play Store). We stop the moment the visible activity
+    // pauses and block any speech that's requested while we're away.
+    @Volatile
+    private var appInForeground = true
+    private var application: Application? = null
+    private var lifecycleCallbacksRegistered = false
+    private val activityLifecycleCallbacks = object : Application.ActivityLifecycleCallbacks {
+        override fun onActivityResumed(activity: Activity) {
+            appInForeground = true
+        }
+
+        override fun onActivityPaused(activity: Activity) {
+            appInForeground = false
+            stop()
+        }
+
+        override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {}
+        override fun onActivityStarted(activity: Activity) {}
+        override fun onActivityStopped(activity: Activity) {}
+        override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {}
+        override fun onActivityDestroyed(activity: Activity) {}
+    }
 
     private val languagePatterns = mapOf(
         "hi-IN" to Regex("[\u0900-\u097F]+"),
@@ -74,6 +108,7 @@ class TextToSpeech @Inject constructor() : ViewModel(), TextToSpeech.OnInitListe
     // Setup utterance progress listener
     private val utteranceListener = object : UtteranceProgressListener() {
         override fun onStart(utteranceId: String?) {
+            if (isIgnorableUtterance(utteranceId)) return
             _state.value = _state.value.copy(isSpeaking = true)
             speechStartTime = System.currentTimeMillis()
             updateStatus("Playing")
@@ -81,26 +116,35 @@ class TextToSpeech @Inject constructor() : ViewModel(), TextToSpeech.OnInitListe
         }
 
         override fun onDone(utteranceId: String?) {
-            // RESET
-            _state.value = _state.value.copy(isSpeaking = false)
+            if (isIgnorableUtterance(utteranceId)) return
+            _state.value = _state.value.copy(
+                isSpeaking = false,
+                speakingDurationMs = 0,
+                speakingText = "",
+                statusMessage = "Playback finished",
+            )
             _currentWordIndex.value = -1
             speechStartTime = 0
             totalEstimatedDuration = 0
             stopLipSync()
-            updateStatus("Playback finished")
             DebugLogger.debugLog("TTS", "Utterance done: $utteranceId")
         }
 
         override fun onError(utteranceId: String?) {
-            // RESET
-            _state.value = _state.value.copy(isSpeaking = false)
+            if (isIgnorableUtterance(utteranceId)) return
+            _state.value = _state.value.copy(
+                isSpeaking = false,
+                speakingDurationMs = 0,
+                speakingText = "",
+                statusMessage = "Playback error",
+            )
             _currentWordIndex.value = -1
-            updateStatus("Playback error")
             DebugLogger.errorLog("TTS", "Utterance error: $utteranceId")
         }
 
         // onRangeStart is available API 26+
         override fun onRangeStart(utteranceId: String?, start: Int, end: Int, frame: Int) {
+            if (isIgnorableUtterance(utteranceId)) return
             // Use processedData word positions if available
             val idx = if (currentProcessedData != null) {
                 currentProcessedData?.wordPositions?.indexOfFirst { word ->
@@ -118,12 +162,64 @@ class TextToSpeech @Inject constructor() : ViewModel(), TextToSpeech.OnInitListe
     }
 
     fun initialize(context: Context) {
+        nativeLipSyncEnabled = isNativeTutorAvatarEnabledForContext(context)
+
+        // Register once so TTS stops app-wide whenever the foreground activity pauses.
+        if (!lifecycleCallbacksRegistered) {
+            (context.applicationContext as? Application)?.let { app ->
+                application = app
+                app.registerActivityLifecycleCallbacks(activityLifecycleCallbacks)
+                lifecycleCallbacksRegistered = true
+            }
+        }
+
         //Only skip if the engine instance already exists
         if (textToSpeech != null) return
 
         updateStatus("Initializing Text-to-Speech...")
         DebugLogger.debugLog("TextToSpeech", "Initializing Text-to-Speech...")
         textToSpeech = TextToSpeech(context, this)
+    }
+
+    /** When true, lip sync is driven by [EduTutorAvatarWithLipSync] instead of WebView JS. */
+    fun setNativeLipSyncEnabled(enabled: Boolean) {
+        nativeLipSyncEnabled = enabled
+        if (enabled && _state.value.isInitialized) {
+            applyDefaultsForAvatarLanguage("tutor", _state.value.selectedLanguage)
+        }
+    }
+
+    /** Maps legacy boy/girl to a single warm tutor voice when native avatar is active. */
+    private fun resolveVoiceProfile(avatar: String): String {
+        if (!nativeLipSyncEnabled) return avatar
+        return when (avatar.lowercase()) {
+            "disable" -> "disable"
+            else -> "tutor"
+        }
+    }
+
+    private fun Voice.engineVariantCode(): String? =
+        name.split('-').getOrNull(3)?.lowercase()
+
+    private fun preferredVoiceNames(shortLang: String, profile: String): List<String> =
+        when (Pair(shortLang, profile.lowercase())) {
+            Pair("en", "boy") -> listOf("en-in-x-ene-local", "ene-local", "en-in-x-ene-network", "ene-network")
+            Pair("en", "girl") -> listOf("en-in-x-ena-local", "ena-local", "en-in-x-ena-network", "ena-network")
+            // Default English tutor voice: ENE, offline (local) preferred, network as fallback.
+            Pair("en", "tutor") -> listOf("en-in-x-ene-local", "ene-local", "en-in-x-ene-network", "ene-network")
+            Pair("kn", "boy") -> listOf("kn-in-x-knd-network", "knd-network", "knd-in-x-knd-local", "knd-local")
+            Pair("kn", "girl") -> listOf("kn-in-x-knc-network", "knc-network", "kn-in-x-knc-local", "knc-local")
+            // Default Kannada tutor voice: KND, offline (local) preferred, network as fallback.
+            Pair("kn", "tutor") -> listOf("kn-in-x-knd-local", "knd-local", "kn-in-x-knd-network", "knd-network")
+            else -> emptyList()
+        }
+
+    private fun isIgnorableUtterance(utteranceId: String?): Boolean =
+        utteranceId == PRE_SPEAK_FLUSH_ID || utteranceId?.startsWith(FORCE_VOICE_PREFIX) == true
+
+    companion object {
+        private const val PRE_SPEAK_FLUSH_ID = "pre_speak_flush"
+        private const val FORCE_VOICE_PREFIX = "force_voice_"
     }
 
     fun setupWebView(webView: WebView) {
@@ -186,23 +282,37 @@ class TextToSpeech @Inject constructor() : ViewModel(), TextToSpeech.OnInitListe
                     "TTS",
                     "Initialized with ${sortedVoices.size} Indian voices. Network voices: ${sortedVoices.count { it.isNetworkConnectionRequired }}, Local voices: ${sortedVoices.count { !it.isNetworkConnectionRequired }}"
                 )
+
+                val defaultAvatar = if (nativeLipSyncEnabled) "tutor" else _state.value.selectedCharacter
+                applyDefaultsForAvatarLanguage(defaultAvatar, _state.value.appLanguage)
             }
         }
     }
     fun formatVoiceName(voice: Voice): String {
+        // Build a human-friendly label instead of exposing the raw engine id
+        // (e.g. "en-in-x-ene-local"). Leads with gender + language so a parent can
+        // tell the options apart at a glance. A short variant tag keeps entries
+        // unique when a language has several voices.
         val gender = when {
             voice.features?.contains("male") == true -> "Male"
             voice.features?.contains("female") == true -> "Female"
             else -> ""
         }
-        val network = if (voice.isNetworkConnectionRequired) " (Online)" else ""
+        val language = voice.locale.displayLanguage
+        // The 4th dash-segment of the engine id distinguishes sibling voices.
+        val variant = voice.name.split('-').getOrNull(3)
+            ?.takeIf { it.isNotBlank() }
+            ?.uppercase()
+            ?.let { " (Voice $it)" } ?: ""
         val quality = when (voice.quality) {
-            Voice.QUALITY_VERY_HIGH -> "Best"
-            Voice.QUALITY_HIGH -> "High"
+            Voice.QUALITY_VERY_HIGH -> " • Best"
+            Voice.QUALITY_HIGH -> " • Clear"
             else -> ""
-        }.takeIf { it.isNotEmpty() }?.let { " • $it" } ?: ""
+        }
+        val connectivity = if (voice.isNetworkConnectionRequired) " • Online" else " • Offline"
 
-        return "$gender ${voice.locale.displayLanguage} • ${voice.name}$quality$network".trim()
+        val base = listOf(gender, language).filter { it.isNotBlank() }.joinToString(" ")
+        return "$base$variant$quality$connectivity".trim()
     }
     fun getFilteredVoiceOptions(languageShort: String, avatar: String): List<String> {
         val shortLang = languageShort.split('-', limit = 2)[0].lowercase()
@@ -217,22 +327,9 @@ class TextToSpeech @Inject constructor() : ViewModel(), TextToSpeech.OnInitListe
     }
     fun getDefaultVoiceName(languageShort: String, avatar: String): String {
         val shortLang = languageShort.split('-', limit = 2)[0].lowercase()
-
-        val preferredNames = when (Pair(shortLang, avatar.lowercase())) {
-            Pair("en", "boy") -> listOf("en-in-x-ene-local", "ene-local")
-            Pair("en", "girl") -> listOf("en-in-x-ena-local", "ena-local")
-            Pair("kn", "boy") -> listOf("kn-in-x-knd-network", "knd-network")
-            Pair("kn", "girl") -> listOf("kn-in-x-knc-local", "knc-local")
-            else -> emptyList()
-        }
-
-        val defaultVoice = preferredNames.firstNotNullOfOrNull { prefName ->
-            _state.value.availableVoices.find { voice ->
-                voice.name.contains(prefName, ignoreCase = true)
-            }
-        }
-
-        return defaultVoice?.let { formatVoiceName(it) } ?: "Default Voice"
+        val profile = resolveVoiceProfile(avatar)
+        // Use the same resolver as the actual pick so the label always agrees.
+        return pickDefaultVoice(shortLang, profile)?.let { formatVoiceName(it) } ?: "Default Voice"
     }
     fun setVoice(voice: Voice) {
         textToSpeech?.let { tts ->
@@ -246,7 +343,7 @@ class TextToSpeech @Inject constructor() : ViewModel(), TextToSpeech.OnInitListe
             val utteranceId = "force_voice_${System.currentTimeMillis()}"
             val bundle = Bundle()
             bundle.putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, utteranceId)
-            tts.speak("", TextToSpeech.QUEUE_FLUSH, bundle,utteranceId)
+            tts.speak("", TextToSpeech.QUEUE_FLUSH, bundle, utteranceId)
             _state.value = _state.value.copy(
                 selectedVoice = voice,
                 selectedVoiceDisplayName = formatVoiceName(voice)
@@ -270,10 +367,15 @@ class TextToSpeech @Inject constructor() : ViewModel(), TextToSpeech.OnInitListe
      * Speak the given text with lip sync animation
      */
     fun speak(text: String, processedData: ProcessedText? = null) {
+        // Don't start talking if the app isn't in the foreground (e.g. an async result arrives
+        // while an ad is showing or the app is backgrounded).
+        if (!appInForeground) return
         if (!_state.value.isInitialized || text.isBlank()) {
             updateStatus("Error: Cannot speak - TTS not ready or empty text")
             return
         }
+
+        ensureDefaultVoiceApplied()
 
         currentSpeakingText = text
         currentProcessedData = processedData
@@ -301,9 +403,8 @@ class TextToSpeech @Inject constructor() : ViewModel(), TextToSpeech.OnInitListe
                     tts.voice = preferredVoice
                     // Force the engine to accept the new voice with a silent flush
                     val bundle = Bundle()
-                    val utteranceId = "tts_${System.currentTimeMillis()}"
-                    bundle.putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "pre_speak_flush")
-                    tts.speak("", TextToSpeech.QUEUE_FLUSH, bundle,utteranceId)
+                    bundle.putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, PRE_SPEAK_FLUSH_ID)
+                    tts.speak("", TextToSpeech.QUEUE_FLUSH, bundle, PRE_SPEAK_FLUSH_ID)
                 }
             }
 
@@ -317,12 +418,16 @@ class TextToSpeech @Inject constructor() : ViewModel(), TextToSpeech.OnInitListe
 
             speechStartTime = System.currentTimeMillis()
             totalEstimatedDuration = estimateDuration(cleanedText)
+            _state.value = _state.value.copy(
+                speakingDurationMs = totalEstimatedDuration,
+                speakingText = cleanedText,
+            )
             startLipSync(cleanedText)
 
             val utteranceId = "tts_${System.currentTimeMillis()}"
             val bundle = Bundle()
             bundle.putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, utteranceId)
-            tts.speak(cleanedText, TextToSpeech.QUEUE_FLUSH, bundle,utteranceId)
+            tts.speak(cleanedText, TextToSpeech.QUEUE_FLUSH, bundle, utteranceId)
         }
     }
 
@@ -340,7 +445,9 @@ class TextToSpeech @Inject constructor() : ViewModel(), TextToSpeech.OnInitListe
 
         _state.value = _state.value.copy(
             isSpeaking = false,
-            statusMessage = "Speech stopped"
+            speakingDurationMs = 0,
+            speakingText = "",
+            statusMessage = "Speech stopped",
         )
     }
 
@@ -369,6 +476,30 @@ class TextToSpeech @Inject constructor() : ViewModel(), TextToSpeech.OnInitListe
         )
     }
 
+    /**
+     * Set the app-wide selected language (e.g. from the language picker / chat screen).
+     * This becomes the default voice + language and the fallback used when a spoken
+     * chunk has no detectable script, so a Kannada session speaks Kannada by default
+     * instead of English. Safe to call repeatedly; picks the best default voice once
+     * device voices have loaded.
+     */
+    fun setAppLanguage(avatar: String, languageCode: String) {
+        val normalized = when (languageCode.split('-', limit = 2)[0].lowercase()) {
+            "kn" -> "kn-IN"
+            "hi" -> "hi-IN"
+            "ta" -> "ta-IN"
+            "te" -> "te-IN"
+            else -> "en-IN"
+        }
+        _state.value = _state.value.copy(appLanguage = normalized)
+        // Apply the matching default voice + engine language only once voices exist.
+        if (_state.value.availableVoices.isNotEmpty()) {
+            applyDefaultsForAvatarLanguage(avatar, normalized)
+        } else {
+            setLanguageInternal(normalized)
+        }
+    }
+
     private fun setLanguageInternal(languageCode: String) {
         textToSpeech?.let { tts ->
             val locale = when (languageCode) {
@@ -382,9 +513,12 @@ class TextToSpeech @Inject constructor() : ViewModel(), TextToSpeech.OnInitListe
 
             val result = tts.setLanguage(locale)
             if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-                updateStatus("Warning: Language $languageCode not fully supported, using fallback")
+                // Requested voice data isn't installed on this device. Fall back to
+                // English audio, but keep selectedLanguage honest (was wrongly set to
+                // hi-IN before) and surface a clear, actionable message.
+                updateStatus("Voice data for $languageCode isn't installed on this device — install it in Settings > Text-to-speech to hear this language.")
                 tts.language = createLocale("en", "IN")
-                _state.value = _state.value.copy(selectedLanguage = "hi-IN")
+                _state.value = _state.value.copy(selectedLanguage = "en-IN")
             } else {
                 _state.value = _state.value.copy(selectedLanguage = languageCode)
             }
@@ -454,7 +588,9 @@ class TextToSpeech @Inject constructor() : ViewModel(), TextToSpeech.OnInitListe
      * Switch character in lip sync animation
      */
     fun switchCharacter(character: String) {
-        _state.value = _state.value.copy(selectedCharacter = character)
+        val profile = resolveVoiceProfile(character)
+        _state.value = _state.value.copy(selectedCharacter = profile)
+        if (nativeLipSyncEnabled) return
 
         webView?.post {
             webView?.evaluateJavascript(
@@ -495,6 +631,7 @@ class TextToSpeech @Inject constructor() : ViewModel(), TextToSpeech.OnInitListe
      * Start lip sync animation
      */
     private fun startLipSync(text: String) {
+        if (nativeLipSyncEnabled) return
         val escapedText = text.replace("'", "\\'").replace("\n", "\\n")
         val speechRate = _state.value.speechRate
         webView?.post {
@@ -509,6 +646,7 @@ class TextToSpeech @Inject constructor() : ViewModel(), TextToSpeech.OnInitListe
      * Stop lip sync animation
      */
     private fun stopLipSync() {
+        if (nativeLipSyncEnabled) return
         webView?.post {
             webView?.evaluateJavascript(
                 "window.AndroidLipSyncAPI.stopLipSync()"
@@ -521,15 +659,16 @@ class TextToSpeech @Inject constructor() : ViewModel(), TextToSpeech.OnInitListe
      * Detect language from text
      */
     private fun detectLanguage(text: String): String {
-        if (text.isBlank()) return "en-IN"
+        if (text.isBlank()) return _state.value.appLanguage
         // Check for Indic scripts
         for ((langCode, pattern) in languagePatterns) {
             if (pattern.find(text) != null) {
                 return langCode
             }
         }
-        // Default to English
-        return "en-IN"
+        // No Indic script found — fall back to the app-selected language rather than
+        // hard-defaulting to English, so a Kannada session keeps a Kannada voice.
+        return _state.value.appLanguage
     }
 
     /**
@@ -540,66 +679,78 @@ class TextToSpeech @Inject constructor() : ViewModel(), TextToSpeech.OnInitListe
         DebugLogger.debugLog("TTS", message)
     }
 
-
-    fun applyDefaultsForAvatarLanguage(avatar: String, languageCode: String) {
-        // Normalize to short language code (accept "en" or "en-IN")
-        val shortLang = languageCode.split('-', limit = 2)[0].lowercase()
-
-        val preferredNames = when (Pair(shortLang, avatar.lowercase())) {
-            Pair("en", "boy") -> listOf("en-in-x-ene-local", "ene-local", "en-in-x-ene-network", "ene-network")
-            Pair("en", "girl") -> listOf("en-in-x-ena-local", "ena-local", "en-in-x-ena-network", "ena-network")
-            Pair("kn", "boy") -> listOf("kn-in-x-knd-network", "knd-network", "knd-in-x-knd-local", "knd-local")
-            Pair("kn", "girl") -> listOf("kn-in-x-knc-network", "knc-network", "kn-in-x-knc-local", "knc-local")
-            else -> emptyList()
-        }
-
-        // Filter voices to only Indian accents (en-IN, kn-IN, hi-IN, etc.)
+    /**
+     * Resolve the default voice for a language + avatar profile. Robust to device
+     * voice-name variations: matches on the variant code (ENE for English, KND for
+     * Kannada) and prefers the OFFLINE/local voice, rather than requiring an exact
+     * engine-name string like "en-in-x-ene-local". Falls back to the mapped engine
+     * names, then gender/language/any. Used by both the actual voice pick and the
+     * settings label so they always agree.
+     */
+    private fun pickDefaultVoice(shortLang: String, profile: String): Voice? {
         val indianVoices = _state.value.availableVoices.filter { voice ->
             val localeStr = voice.locale.toString().lowercase()
             localeStr.contains("_in") || localeStr.contains("-in")
         }
+        val langVoices = indianVoices.filter { it.locale.language.equals(shortLang, ignoreCase = true) }
 
-        // Try to find voice by preferred name
-        var chosen: Voice? = preferredNames
-            .firstNotNullOfOrNull { prefName ->
-                indianVoices.find { voice ->
-                    voice.name.contains(prefName, ignoreCase = true)
-                }
-            }
-
-        // Fallback 1: Find by language and gender match
-        if (chosen == null) {
-            chosen = indianVoices.firstOrNull { voice ->
-                val localeMatch = voice.locale.language.equals(shortLang, ignoreCase = true) &&
-                        voice.locale.country.equals("IN", ignoreCase = true)
-
-                val genderMatch = when (avatar.lowercase()) {
-                    "boy" -> {
-                        val features = voice.features?.map { it.lowercase() } ?: emptyList()
-                        features.any { it.contains("male") } && !features.any { it.contains("female") }
+        // 1) Preferred default by variant code + offline preference.
+        val desiredCode =
+            when (profile.lowercase()) {
+                "tutor", "disable", "boy" ->
+                    when (shortLang) {
+                        "en" -> "ene"
+                        "kn" -> "knd"
+                        else -> null
                     }
-                    "girl" -> {
-                        val features = voice.features?.map { it.lowercase() } ?: emptyList()
-                        features.any { it.contains("female") }
+                "girl" ->
+                    when (shortLang) {
+                        "en" -> "ena"
+                        else -> null
                     }
-                    else -> true
-                }
-                localeMatch && genderMatch
+                else -> null
             }
+        if (desiredCode != null) {
+            (langVoices.firstOrNull {
+                !it.isNetworkConnectionRequired && it.engineVariantCode() == desiredCode
+            } ?: langVoices.firstOrNull { it.engineVariantCode() == desiredCode })
+                ?.let { return it }
         }
 
-        // Fallback 2: Any voice in that language with Indian accent
-        if (chosen == null) {
-            chosen = indianVoices.firstOrNull { voice ->
-                voice.locale.language.equals(shortLang, ignoreCase = true) &&
-                        voice.locale.country.equals("IN", ignoreCase = true)
+        // 2) Mapped engine names (falls back to the tutor list for unmapped profiles).
+        val preferredNames = preferredVoiceNames(shortLang, profile)
+            .ifEmpty { preferredVoiceNames(shortLang, "tutor") }
+        preferredNames.firstNotNullOfOrNull { prefName ->
+            indianVoices.find { it.name.contains(prefName, ignoreCase = true) }
+        }?.let { return it }
+
+        // 3) Gender match (for legacy boy/girl), then offline, then any.
+        val genderMatches: (Voice) -> Boolean = { voice ->
+            val features = voice.features?.map { it.lowercase() } ?: emptyList()
+            when (profile.lowercase()) {
+                "boy" -> features.any { it.contains("male") } && !features.any { it.contains("female") }
+                "girl" -> features.any { it.contains("female") }
+                else -> true
             }
         }
+        langVoices.firstOrNull { genderMatches(it) }?.let { return it }
+        langVoices.firstOrNull { !it.isNetworkConnectionRequired }?.let { return it }
+        return langVoices.firstOrNull() ?: indianVoices.firstOrNull()
+    }
 
-        // Last fallback: First available Indian voice
-        if (chosen == null) {
-            chosen = indianVoices.firstOrNull()
-        }
+    private fun ensureDefaultVoiceApplied() {
+        if (!_state.value.voicesFullyLoaded || _state.value.selectedVoice != null) return
+        val defaultAvatar = if (nativeLipSyncEnabled) "tutor" else _state.value.selectedCharacter
+        applyDefaultsForAvatarLanguage(defaultAvatar, _state.value.appLanguage)
+    }
+
+    fun applyDefaultsForAvatarLanguage(avatar: String, languageCode: String) {
+        val shortLang = languageCode.split('-', limit = 2)[0].lowercase()
+        val profile = resolveVoiceProfile(avatar)
+
+        // Resolve the default voice (variant code + offline preference, robust to device
+        // voice-name variations — see pickDefaultVoice).
+        val chosen: Voice? = pickDefaultVoice(shortLang, profile)
 
         // Apply the selected voice
         chosen?.let { voice ->
@@ -625,10 +776,10 @@ class TextToSpeech @Inject constructor() : ViewModel(), TextToSpeech.OnInitListe
         }
         setLanguageInternal(langCode)
 
-        setSpeechRate(0.75f)
+        setSpeechRate(1.0f)
         setPitch(1.0f)
         _state.value = _state.value.copy(
-            speechRate = 0.75f,
+            speechRate = 1.0f,
             pitch = 1.0f,
             statusMessage = "Default voice applied: ${chosen?.let { formatVoiceName(it) } ?: "none"}"
         )
@@ -637,13 +788,18 @@ class TextToSpeech @Inject constructor() : ViewModel(), TextToSpeech.OnInitListe
         DebugLogger.debugLog("TTS", "Applying defaults with ${_state.value.availableVoices.size} filtered voices")
         DebugLogger.debugLog(
             "TTS",
-            "Applied defaults: lang=$shortLang, avatar=$avatar, voice=${chosen?.name ?: "none"},speed=0.75x, pitch=1.0x"
+            "Applied defaults: lang=$shortLang, avatar=$profile, voice=${chosen?.name ?: "none"}, speed=1.0x, pitch=1.0x"
         )
     }
     /**
      * Cleanup resources
      */
     fun cleanup() {
+        if (lifecycleCallbacksRegistered) {
+            application?.unregisterActivityLifecycleCallbacks(activityLifecycleCallbacks)
+            lifecycleCallbacksRegistered = false
+            application = null
+        }
         textToSpeech?.let { tts ->
             tts.stop()
             tts.shutdown()

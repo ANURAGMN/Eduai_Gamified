@@ -1,6 +1,7 @@
 package com.ncert7.aitutorandlab.di
 
 import com.ncert7.aitutorandlab.data.local.dao.ChapterAgentProgressDao
+import com.ncert7.aitutorandlab.data.local.dao.ExamPlanDao
 import com.ncert7.aitutorandlab.data.local.dao.ChapterDao
 import com.ncert7.aitutorandlab.data.local.dao.ConceptDao
 import com.ncert7.aitutorandlab.data.local.dao.ProgressDao
@@ -11,12 +12,22 @@ import com.ncert7.aitutorandlab.data.local.dao.SubjectDao
 import com.ncert7.aitutorandlab.data.local.SharedPreferenceUtils
 import com.ncert7.aitutorandlab.repository.ChapterRepository
 import com.ncert7.aitutorandlab.repository.ConceptRepository
+import com.ncert7.aitutorandlab.data.local.dao.QuestDailyDao
+import com.ncert7.aitutorandlab.domain.gamification.FriendFeedService
+import com.ncert7.aitutorandlab.domain.gamification.StreakFreezeService
+import com.ncert7.aitutorandlab.domain.examplan.PlanFeasibilityAnalyzer
+import com.ncert7.aitutorandlab.domain.examplan.ExamPlanMutationLock
+import com.ncert7.aitutorandlab.domain.examplan.PlanTrialRolloverService
+import com.ncert7.aitutorandlab.repository.ExamPlanRepository
+import com.ncert7.aitutorandlab.repository.PlanTrialRepository
+import com.ncert7.aitutorandlab.repository.QuestRepository
 import com.ncert7.aitutorandlab.repository.FirebaseRepository
 import com.ncert7.aitutorandlab.repository.ProgressRepository
 import com.ncert7.aitutorandlab.repository.SimulationInteractionRepository
 import com.ncert7.aitutorandlab.repository.StreakRepository
 import com.ncert7.aitutorandlab.repository.StudentLocalRepository
 import com.ncert7.aitutorandlab.repository.SubjectRepository
+import com.ncert7.aitutorandlab.repository.TutorConfigRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -70,9 +81,11 @@ object RepositoryModule {
     @Singleton
     fun provideStreakRepository(
         streakDao: StreakDao,
-        firebaseRepository: FirebaseRepository
+        firebaseRepository: FirebaseRepository,
+        friendFeedService: FriendFeedService,
+        streakFreezeService: StreakFreezeService,
     ): StreakRepository {
-        return StreakRepository(streakDao, firebaseRepository)
+        return StreakRepository(streakDao, firebaseRepository, friendFeedService, streakFreezeService)
     }
 
     @Provides
@@ -86,10 +99,63 @@ object RepositoryModule {
 
     @Provides
     @Singleton
+    fun provideExamPlanRepository(
+        examPlanDao: ExamPlanDao,
+        chapterDao: ChapterDao,
+        conceptDao: ConceptDao,
+        progressDao: ProgressDao,
+        planTrialRepository: PlanTrialRepository,
+        planTrialRolloverService: PlanTrialRolloverService,
+        planFeasibilityAnalyzer: PlanFeasibilityAnalyzer,
+        sharedPreferenceUtils: SharedPreferenceUtils,
+        planMutationLock: ExamPlanMutationLock,
+    ): ExamPlanRepository {
+        return ExamPlanRepository(
+            examPlanDao,
+            chapterDao,
+            conceptDao,
+            progressDao,
+            planTrialRepository,
+            planTrialRolloverService,
+            planFeasibilityAnalyzer,
+            sharedPreferenceUtils,
+            planMutationLock,
+        )
+    }
+
+    @Provides
+    @Singleton
+    fun provideQuestRepository(
+        questDailyDao: QuestDailyDao,
+        progressDao: ProgressDao,
+        examPlanDao: ExamPlanDao,
+        planTrialRepository: PlanTrialRepository,
+        sharedPreferenceUtils: SharedPreferenceUtils,
+    ): QuestRepository {
+        return QuestRepository(
+            questDailyDao,
+            progressDao,
+            examPlanDao,
+            planTrialRepository,
+            sharedPreferenceUtils,
+        )
+    }
+
+    @Provides
+    @Singleton
     fun provideSimulationInteractionRepository(
         simulationInteractionDao: SimulationInteractionDao,
         sharedPreferenceUtils: SharedPreferenceUtils
     ): SimulationInteractionRepository {
         return SimulationInteractionRepository(simulationInteractionDao, sharedPreferenceUtils)
+    }
+
+    @Provides
+    @Singleton
+    fun provideTutorConfigRepository(
+        tutorConfigDao: com.ncert7.aitutorandlab.data.local.dao.TutorConfigDao,
+        firebaseRepository: FirebaseRepository,
+    ): TutorConfigRepository {
+        return TutorConfigRepository(tutorConfigDao, firebaseRepository)
     }
 }

@@ -9,6 +9,7 @@ import com.ncert7.aitutorandlab.ui.models.SubjectUiModel
 import com.ncert7.aitutorandlab.ui.theme.BrandPrimary
 import com.ncert7.aitutorandlab.utils.getLocalizedName
 import com.ncert7.aitutorandlab.utils.getCurrentLanguageCode
+import com.ncert7.aitutorandlab.utils.resolveSubjectIconUrl
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -41,7 +42,7 @@ class SubjectViewModel @Inject constructor(
                         name = entity.getLocalizedName(languageCode),
                         color = BrandPrimary,
                         totalChapters = entity.totalChapters,
-                        iconUrl = entity.iconUrl
+                        iconUrl = resolveSubjectIconUrl(entity.subjectId, entity.getLocalizedName(languageCode), entity.iconUrl),
                     )
                 }
 

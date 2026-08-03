@@ -12,17 +12,25 @@ import com.ncert7.aitutorandlab.config.AppConfig
 import com.ncert7.aitutorandlab.repository.FirebaseRepository
 import com.ncert7.aitutorandlab.repository.StreakRepository
 import com.ncert7.aitutorandlab.repository.StudentLocalRepository
+import com.ncert7.aitutorandlab.repository.TutorConfigRepository
 import com.ncert7.aitutorandlab.repository.UserCheckResult
+import com.ncert7.aitutorandlab.service.auth.FirebaseAuthBridge
 import com.ncert7.aitutorandlab.service.auth.PadaamsEmailAuth
 import com.ncert7.aitutorandlab.service.sync.DataSyncService
 import com.ncert7.aitutorandlab.service.sync.FirebaseSyncManager
 import com.ncert7.aitutorandlab.utils.LanguageHelper
+import com.ncert7.aitutorandlab.utils.getCurrentLanguageCode
+import com.ncert7.aitutorandlab.utils.normalizeLanguageCode
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
 import javax.inject.Inject
 
 @HiltViewModel
@@ -31,6 +39,8 @@ class UserViewModel @Inject constructor(
     private val streakRepository: StreakRepository,
     private val studentLocalRepository: StudentLocalRepository,
     private val sharedPreferenceUtils: SharedPreferenceUtils,
+    private val tutorConfigRepository: TutorConfigRepository,
+    @ApplicationContext private val appContext: Context,
 ) : ViewModel() {
 
     private val _loginState = MutableStateFlow<LoginState>(LoginState.Idle)
@@ -47,8 +57,7 @@ class UserViewModel @Inject constructor(
     val existingUserSyncState = _existingUserSyncState.asStateFlow()
 
     private val _selectedLanguage = MutableStateFlow(
-        // Load saved language on initialization, default to "en" if null
-        sharedPreferenceUtils.getLanguagePreference() ?: "en"
+        normalizeLanguageCode(getCurrentLanguageCode()),
     )
     val selectedLanguage: StateFlow<String> = _selectedLanguage.asStateFlow()
 
@@ -133,16 +142,10 @@ class UserViewModel @Inject constructor(
      * Updates UI state, saves to SharedPreferences, and applies to app
      */
     fun setLanguage(langCode: String) {
-        viewModelScope.launch {
-            // Update UI state immediately
-            _selectedLanguage.value = langCode
-
-            // Save to SharedPreferences
-            sharedPreferenceUtils.setLanguagePreference(langCode)
-
-            // Apply language change to app
-            LanguageHelper.setLanguage(langCode)
-        }
+        val normalized = normalizeLanguageCode(langCode)
+        _selectedLanguage.value = normalized
+        sharedPreferenceUtils.setLanguagePreference(normalized)
+        LanguageHelper.setLanguage(normalized)
     }
 
     /**
@@ -153,6 +156,13 @@ class UserViewModel @Inject constructor(
             _loginState.value = LoginState.Loading
             if (!PadaamsEmailAuth.validateCredentials(email, password)) {
                 _loginState.value = LoginState.Error(IllegalArgumentException("Invalid credentials"))
+                return@launch
+            }
+
+            try {
+                FirebaseAuthBridge.signInWithEmailPassword(email.trim().lowercase(), password)
+            } catch (e: Exception) {
+                _loginState.value = LoginState.Error(e)
                 return@launch
             }
 
@@ -181,31 +191,42 @@ class UserViewModel @Inject constructor(
         viewModelScope.launch {
             _loginState.value = LoginState.Loading
             try {
-                // Use the currently selected language from state
-                val currentLanguage = _selectedLanguage.value
+                withTimeout(LOGIN_FIRESTORE_TIMEOUT_MS) {
+                    withContext(Dispatchers.IO) {
+                        // Best-effort; rules need auth_index but login must not hang on quota writes.
+                        try {
+                            repo.ensureAuthIndex(firebaseUser.id)
+                        } catch (e: Exception) {
+                            DebugLogger.warnLog("UserViewModel", "auth_index skipped: ${e.message}")
+                        }
 
-                // Update language for new users
-                updateLanguage(currentLanguage)
+                        val currentLanguage = _selectedLanguage.value
+                        updateLanguage(currentLanguage)
 
-                // Check if user exists in Firebase by email
-                // firebaseUser.id contains the email from GoogleIdTokenCredential
-                when (val result = repo.checkUserExists(firebaseUser.email)) {
-                    is UserCheckResult.Found -> {
-                        _user.value = result.user
-                        _loginState.value = LoginState.ExistingUser(result.user)
-                        DebugLogger.debugLog("UserViewModel", "Existing user found - Email: ${firebaseUser.email}")
-                    }
+                        when (val result = repo.checkUserExists(firebaseUser.email)) {
+                            is UserCheckResult.Found -> {
+                                _user.value = result.user
+                                _loginState.value = LoginState.ExistingUser(result.user)
+                                DebugLogger.debugLog("UserViewModel", "Existing user found - Email: ${firebaseUser.email}")
+                            }
 
-                    is UserCheckResult.NotFound -> {
-                        _user.value = firebaseUser.copy(language = currentLanguage)
-                        DebugLogger.debugLog("UserViewModel", "New user detected - Email: ${firebaseUser.email}")
-                        _loginState.value = LoginState.NewUser
-                    }
+                            is UserCheckResult.NotFound -> {
+                                _user.value = firebaseUser.copy(language = currentLanguage)
+                                DebugLogger.debugLog("UserViewModel", "New user detected - Email: ${firebaseUser.email}")
+                                _loginState.value = LoginState.NewUser
+                            }
 
-                    is UserCheckResult.Error -> {
-                        _loginState.value = LoginState.Error(result.exception)
+                            is UserCheckResult.Error -> {
+                                _loginState.value = LoginState.Error(result.exception)
+                            }
+                        }
                     }
                 }
+            } catch (e: TimeoutCancellationException) {
+                _loginState.value = LoginState.Error(
+                    Exception("Service busy, try again shortly.")
+                )
+                DebugLogger.errorLog("UserViewModel", "Login timed out waiting for Firestore")
             } catch (e: Exception) {
                 _loginState.value = LoginState.Error(e)
                 DebugLogger.debugLog("UserViewModel", "Error during login: ${e.message}")
@@ -233,14 +254,18 @@ class UserViewModel @Inject constructor(
                 val localRepo = StudentLocalRepository(db.studentDao())
                 val sharedPreference = SharedPreferenceUtils(context)
 
-                // Save to local database
+                val preferredLanguage =
+                    normalizeLanguageCode(
+                        _selectedLanguage.value.ifBlank { currentUser.language },
+                    )
+
                 val studentEntity = StudentEntity(
                     studentId = currentUser.id,
                     studentName = currentUser.displayName.orEmpty(),
                     email = currentUser.email,
                     phoneNumber = currentUser.phoneNumber,
                     studentSchool = currentUser.schoolName,
-                    language = currentUser.language,
+                    language = preferredLanguage,
                     classLevel = currentUser.studentClass,
                     profilePhotoUrl = currentUser.profilePictureUri,
                     createdAt = currentUser.createdAt,
@@ -249,44 +274,67 @@ class UserViewModel @Inject constructor(
                 )
                 localRepo.saveStudentLocally(studentEntity)
 
-                // Sync content from Firebase (with all DAOs so full restore is possible)
-                val syncManager = FirebaseSyncManager(
-                    subjectDao = db.subjectDao(),
-                    chapterDao = db.chapterDao(),
-                    conceptDao = db.conceptDao(),
-                    progressDao = db.progressDao(),
-                    streakDao = db.streakDao(),
-                    chapterProgressDao = db.chapterAgentProgressDao(),
-                    context = context
-                )
-
-                // Fresh install / empty DB: pull syllabus before progress sync
-                val existingSubjects = db.subjectDao().getSubjectsForClassSync(currentUser.studentClass)
-                if (existingSubjects.isEmpty()) {
-                    val contentResult = syncManager.syncAllContent()
-                    DebugLogger.debugLog("UserViewModel", "Content sync: ${contentResult.message}")
-                }
-
-                // Sync user progress from Firebase (restores concept/simulation progress rows)
-                val progressResult = syncManager.syncUserProgress(currentUser.id)
-                DebugLogger.debugLog("UserViewModel", "Progress sync: ${progressResult.message}")
-
-                // Sync chapter agent progress (restores chapter-level aggregated progress)
-                val chapterProgressResult = syncManager.syncChapterAgentProgress(currentUser.id)
-                DebugLogger.debugLog("UserViewModel", "Chapter progress sync: ${chapterProgressResult.message}")
-
-                DebugLogger.debugLog("UserViewModel", "Starting streak sync for existing user")
-                streakRepository.syncStreakOnLogin(currentUser.id)
-                DebugLogger.debugLog("UserViewModel", "Streak sync completed")
-
-                // Save preferences
                 sharedPreference.setLoggedIn(true)
-                sharedPreference.setLanguagePreference(currentUser.language)
+                sharedPreference.setLanguagePreference(preferredLanguage)
+                LanguageHelper.setLanguage(preferredLanguage)
                 sharedPreference.setUserId(currentUser.id)
 
-                // Initialize DataSyncService and sync pre-login funnel events
+                tutorConfigRepository.ensureLoaded(appContext, currentUser.id)
+
+                // Cloud restore is best-effort — never block home entry on Firestore quota.
+                try {
+                    withTimeout(LOGIN_SYNC_TIMEOUT_MS) {
+                        withContext(Dispatchers.IO) {
+                            try {
+                                repo.ensureAuthIndex(currentUser.id)
+                            } catch (e: Exception) {
+                                DebugLogger.warnLog("UserViewModel", "auth_index on sync skipped: ${e.message}")
+                            }
+
+                            val syncManager = FirebaseSyncManager(
+                                subjectDao = db.subjectDao(),
+                                chapterDao = db.chapterDao(),
+                                conceptDao = db.conceptDao(),
+                                progressDao = db.progressDao(),
+                                streakDao = db.streakDao(),
+                                chapterProgressDao = db.chapterAgentProgressDao(),
+                                context = context
+                            )
+
+                            val existingSubjects =
+                                db.subjectDao().getSubjectsForClassSync(currentUser.studentClass)
+                            if (existingSubjects.isEmpty()) {
+                                val contentResult = syncManager.syncAllContent()
+                                DebugLogger.debugLog("UserViewModel", "Content sync: ${contentResult.message}")
+                            }
+
+                            val progressResult = syncManager.syncUserProgress(currentUser.id)
+                            DebugLogger.debugLog("UserViewModel", "Progress sync: ${progressResult.message}")
+
+                            val chapterProgressResult =
+                                syncManager.syncChapterAgentProgress(currentUser.id)
+                            DebugLogger.debugLog(
+                                "UserViewModel",
+                                "Chapter progress sync: ${chapterProgressResult.message}"
+                            )
+
+                            streakRepository.syncStreakOnLogin(currentUser.id)
+                        }
+                    }
+                } catch (e: TimeoutCancellationException) {
+                    DebugLogger.warnLog(
+                        "UserViewModel",
+                        "Cloud sync timed out (${LOGIN_SYNC_TIMEOUT_MS}ms); continuing with local login"
+                    )
+                } catch (e: Exception) {
+                    DebugLogger.warnLog("UserViewModel", "Cloud sync failed: ${e.message}")
+                }
+
                 DataSyncService.onUserAuthenticated(currentUser.id)
-                DebugLogger.debugLog("UserViewModel", "DataSyncService initialized with studentId: ${currentUser.id}")
+                DebugLogger.debugLog(
+                    "UserViewModel",
+                    "DataSyncService initialized with studentId: ${currentUser.id}"
+                )
 
                 _existingUserSyncState.value = ExistingUserSyncState.Success
             } catch (e: Exception) {
@@ -305,6 +353,8 @@ class UserViewModel @Inject constructor(
             _userSaveState.value = UserSaveState.Saving
             try {
                 val currentUser = _user.value
+
+                repo.ensureAuthIndex(currentUser.id)
 
                 // Debug logging to verify user ID
                 DebugLogger.debugLog("UserViewModel", "Submitting new user with ID: ${currentUser.id}")
@@ -363,6 +413,8 @@ class UserViewModel @Inject constructor(
                     sharedPreference.setLoggedIn(true)
                     sharedPreference.setLanguagePreference(currentUser.language)
                     sharedPreference.setUserId(currentUser.id)
+
+                    tutorConfigRepository.ensureLoaded(appContext, currentUser.id)
 
                     // Initialize DataSyncService and sync pre-login funnel events
                     DataSyncService.onUserAuthenticated(currentUser.id)
@@ -435,3 +487,6 @@ sealed class ExistingUserSyncState {
     object Success : ExistingUserSyncState()
     data class Error(val exception: Throwable) : ExistingUserSyncState()
 }
+
+private const val LOGIN_FIRESTORE_TIMEOUT_MS = 25_000L
+private const val LOGIN_SYNC_TIMEOUT_MS = 30_000L

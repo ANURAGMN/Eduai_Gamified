@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=1024" />
+  <title>EduAI Feature Graphic (1024×500) — Play compliant</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #111;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      padding: 24px;
+      font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+    }
+    .note {
+      color: #ccc;
+      max-width: 1024px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .canvas {
+      width: 1024px;
+      height: 500px;
+      background: linear-gradient(135deg, #0b1f4d 0%, #132a5c 45%, #0d2248 100%);
+      color: #fff;
+      position: relative;
+      overflow: hidden;
+      border-radius: 8px;
+    }
+    .badge {
+      position: absolute;
+      top: 28px;
+      left: 36px;
+      background: #f5b800;
+      color: #1a1a1a;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 8px 16px;
+      border-radius: 999px;
+      letter-spacing: 0.02em;
+    }
+    .title {
+      position: absolute;
+      top: 78px;
+      left: 36px;
+      font-size: 56px;
+      font-weight: 800;
+      line-height: 1.05;
+    }
+    .title .accent { color: #f5b800; }
+    .subtitle {
+      position: absolute;
+      top: 200px;
+      left: 36px;
+      background: rgba(0,0,0,0.35);
+      border: 2px solid rgba(255,255,255,0.15);
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-size: 26px;
+      font-weight: 700;
+    }
+    .subtitle .amp { color: #f5b800; }
+    .chips {
+      position: absolute;
+      top: 268px;
+      left: 36px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      max-width: 420px;
+    }
+    .chip {
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.2);
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .robot {
+      position: absolute;
+      right: 80px;
+      top: 90px;
+      width: 200px;
+      height: 200px;
+      background: radial-gradient(circle at 30% 30%, #fff 0%, #dbeafe 40%, #93c5fd 100%);
+      border-radius: 40px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.35);
+    }
+    .robot::before {
+      content: "";
+      position: absolute;
+      top: 55px;
+      left: 45px;
+      width: 28px;
+      height: 28px;
+      background: #2563eb;
+      border-radius: 50%;
+      box-shadow: 58px 0 0 #2563eb;
+    }
+    .bubble {
+      position: absolute;
+      right: 260px;
+      top: 70px;
+      background: #fff;
+      color: #1e3a8a;
+      padding: 12px 16px;
+      border-radius: 16px;
+      font-size: 15px;
+      font-weight: 700;
+      max-width: 180px;
+    }
+    .footer {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 72px;
+      background: rgba(0,0,0,0.45);
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      align-items: center;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      border-top: 1px solid rgba(255,255,255,0.12);
+    }
+    .footer span { padding: 0 8px; line-height: 1.25; }
+    .icons {
+      position: absolute;
+      right: 36px;
+      bottom: 96px;
+      display: flex;
+      gap: 10px;
+    }
+    .icon-box {
+      width: 88px;
+      height: 72px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(147,197,253,0.35);
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      gap: 6px;
+    }
+    .icon-box .emoji { font-size: 22px; }
+  </style>
+</head>
+<body>
+  <p class="note">
+    <strong>Play Store feature graphic (1024×500).</strong>
+    Export this page at exact size (browser zoom 100%, screenshot or print to PNG).
+    Footer uses <em>feature facts only</em> — no “trusted by”, rankings, or outcome promises.
+    Replace with your final Canva/Figma art; keep the same compliant footer wording.
+  </p>
+
+  <div class="canvas" id="graphic">
+    <div class="badge">NCERT ALIGNED • CONCEPT BASED LEARNING</div>
+    <div class="title">NCERT <span class="accent">CLASS</span> 7</div>
+    <div class="subtitle">AI TUTOR <span class="amp">&amp;</span> LABS</div>
+    <div class="chips">
+      <div class="chip">MATH</div>
+      <div class="chip">SCIENCE</div>
+      <div class="chip">ENGLISH MEDIUM</div>
+      <div class="chip">ಕನ್ನಡ MEDIUM</div>
+    </div>
+    <div class="bubble">Ask. Learn. Understand.</div>
+    <div class="robot" aria-hidden="true"></div>
+    <div class="icons">
+      <div class="icon-box"><span class="emoji">🧪</span> SIMULATIONS</div>
+      <div class="icon-box"><span class="emoji">💬</span> AI CHAT</div>
+      <div class="icon-box"><span class="emoji">📐</span> MATH LAB</div>
+    </div>
+    <!-- COMPLIANT footer: describe features, not trust/ranking/outcomes -->
+    <div class="footer">
+      <span>NCERT ALIGNED</span>
+      <span>AI TUTOR &amp; LABS</span>
+      <span>INTERACTIVE SIMULATIONS</span>
+      <span>ENGLISH &amp; KANNADA</span>
+    </div>
+  </div>
+</body>
+</html>

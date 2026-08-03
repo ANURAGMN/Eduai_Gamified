@@ -1,7 +1,10 @@
 package com.ncert7.aitutorandlab.ui.screens.setting.components
 
+import android.content.ActivityNotFoundException
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -36,6 +39,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.ncert7.aitutorandlab.R
 import com.ncert7.aitutorandlab.ui.theme.AccentBlue
 import com.ncert7.aitutorandlab.ui.theme.AccentGreen
 import com.ncert7.aitutorandlab.ui.theme.AiMessageBackground
@@ -48,6 +52,26 @@ import com.ncert7.aitutorandlab.ui.theme.TextOnAccent
 import com.ncert7.aitutorandlab.ui.theme.TextPrimary
 import com.ncert7.aitutorandlab.ui.theme.TextSecondary
 
+private fun openUri(context: Context, uri: Uri, errorMessage: String) {
+    val intent = Intent(Intent.ACTION_VIEW, uri)
+    try {
+        context.startActivity(intent)
+    } catch (_: ActivityNotFoundException) {
+        Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
+    }
+}
+
+private fun openEmail(context: Context, emailAddress: String) {
+    val intent = Intent(Intent.ACTION_SENDTO).apply {
+        data = Uri.parse("mailto:$emailAddress")
+    }
+    try {
+        context.startActivity(intent)
+    } catch (_: ActivityNotFoundException) {
+        Toast.makeText(context, "No email app found", Toast.LENGTH_SHORT).show()
+    }
+}
+
 @Composable
 fun ContactSupportCard(
     emailAddress: String,
@@ -57,10 +81,12 @@ fun ContactSupportCard(
     title: String,
     subtitle: String,
     emailButtonText: String,
-    onClose:() -> Unit
+    onClose: () -> Unit
 ) {
     val dimens = LocalDimensions.current
     val context = LocalContext.current
+    val normalizedWebsite = websiteUrl.trim().trimEnd('/')
+        .let { if (it.startsWith("http")) it else "https://$it" }
 
     Column(
         modifier = modifier
@@ -70,7 +96,6 @@ fun ContactSupportCard(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(dimens.spaceLarge)
     ) {
-        // Email Section Card
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(dimens.cornerRadiusLarge),
@@ -84,7 +109,6 @@ fun ContactSupportCard(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(dimens.spaceMedium)
             ) {
-                // Email Icon
                 Box(
                     modifier = Modifier
                         .size(dimens.boxSizeSmall)
@@ -102,7 +126,6 @@ fun ContactSupportCard(
                     )
                 }
 
-                // Title
                 Text(
                     text = title,
                     style = MaterialTheme.typography.headlineSmall,
@@ -111,7 +134,6 @@ fun ContactSupportCard(
                     textAlign = TextAlign.Center
                 )
 
-                // Subtitle
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.bodyMedium,
@@ -119,20 +141,12 @@ fun ContactSupportCard(
                     textAlign = TextAlign.Center
                 )
 
-                // Open Email Button
                 Button(
-                    onClick = {
-                        val intent = Intent(Intent.ACTION_SENDTO).apply {
-                            data = Uri.parse("mailto:$emailAddress")
-                        }
-                        context.startActivity(intent)
-                    },
+                    onClick = { openEmail(context, emailAddress) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(dimens.buttonHeightLarge),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = AccentBlue
-                    ),
+                    colors = ButtonDefaults.buttonColors(containerColor = AccentBlue),
                     shape = RoundedCornerShape(dimens.cornerRadiusMedium)
                 ) {
                     Icon(
@@ -149,7 +163,6 @@ fun ContactSupportCard(
                     )
                 }
 
-                // Email Address
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(dimens.spaceExtraSmall)
@@ -170,7 +183,6 @@ fun ContactSupportCard(
             }
         }
 
-        // Other Ways to Reach Us Section
         Column(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(dimens.spaceMedium)
@@ -182,31 +194,32 @@ fun ContactSupportCard(
                 color = TextPrimary
             )
 
-            // WhatsApp Support
             ContactMethodItem(
                 icon = Icons.Outlined.Message,
                 iconTint = AccentGreen,
                 title = "WhatsApp Support",
                 subtitle = whatsappNumber,
                 onClick = {
-                    val intent = Intent(Intent.ACTION_VIEW).apply {
-                        data = Uri.parse("https://wa.me/${whatsappNumber.replace("+", "").replace(" ", "")}")
-                    }
-                    context.startActivity(intent)
+                    val digits = whatsappNumber.replace("+", "").replace(" ", "")
+                    openUri(
+                        context,
+                        Uri.parse("https://wa.me/$digits"),
+                        context.getString(R.string.error_open_link)
+                    )
                 }
             )
 
-            // Website
             ContactMethodItem(
                 icon = Icons.Outlined.Language,
                 iconTint = AccentBlue,
                 title = "Website",
-                subtitle = websiteUrl,
+                subtitle = normalizedWebsite,
                 onClick = {
-                    val intent = Intent(Intent.ACTION_VIEW).apply {
-                        data = Uri.parse(if (websiteUrl.startsWith("http")) websiteUrl else "https://$websiteUrl")
-                    }
-                    context.startActivity(intent)
+                    openUri(
+                        context,
+                        Uri.parse(normalizedWebsite),
+                        context.getString(R.string.error_open_link)
+                    )
                 }
             )
         }
@@ -239,14 +252,10 @@ private fun ContactMethodItem(
             horizontalArrangement = Arrangement.spacedBy(dimens.spaceMedium),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Icon
             Box(
                 modifier = Modifier
                     .size(dimens.iconExtraLarge + dimens.spaceSmall)
-                    .background(
-                        color = CardBackground,
-                        shape = CircleShape
-                    ),
+                    .background(color = CardBackground, shape = CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -257,10 +266,8 @@ private fun ContactMethodItem(
                 )
             }
 
-            // Text Content
             Column(
-                modifier = Modifier
-                    .weight(1f),
+                modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(dimens.spaceExtraSmall)
             ) {
                 Text(

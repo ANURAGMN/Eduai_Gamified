@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -19,19 +21,26 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
+import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.ncert7.aitutorandlab.domain.examplan.TrialSessionStore
+import com.ncert7.aitutorandlab.ui.components.AgentSessionTimeGate
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ncert7.aitutorandlab.R
+import com.ncert7.aitutorandlab.config.GamificationFeatureFlags
 import com.ncert7.aitutorandlab.debug.DebugLogger
 import com.ncert7.aitutorandlab.service.analytics.ScreenName
 import kotlinx.coroutines.delay
 import com.ncert7.aitutorandlab.service.analytics.TrackScreenEvent
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.AppDialog
+import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.AutoListenAfterAgentTurn
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.ChatEffects
+import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.VoiceInputBar
+import com.ncert7.aitutorandlab.data.local.SharedPreferenceUtils
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.ChatHeaderIcons
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.ConversationView
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.InitialAvatarView
@@ -73,14 +82,67 @@ fun MathAgentScreen(
     val avatarGirlDisplayName = stringResource(R.string.girl)
     val avatarDisableDisplayName = stringResource(R.string.disable)
     val sttState by sttController.state.collectAsState()
+    val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
+    val wordBoundaryIndex by ttsController.currentWordIndex.collectAsState()
     val mathState by mathViewModel.uiState.collectAsState()
     val context = LocalContext.current
+    val useNativeAvatar = GamificationFeatureFlags.isNativeTutorAvatarEnabled(context)
+
+    LaunchedEffect(useNativeAvatar) {
+        ttsController.setNativeLipSyncEnabled(useNativeAvatar)
+    }
     // Local UI state
     var permissionGranted by remember { mutableStateOf(false) }
     var showSettingsMenu by remember { mutableStateOf(false) }
 
     // Settings state
     var settingsState by remember { mutableStateOf(ChatBotSettingsState()) }
+
+    // Hands-free voice: persisted toggle (default on). Mic auto-opens after the tutor speaks.
+    val sharedPrefs = remember { SharedPreferenceUtils(context) }
+    var handsFreeMode by remember { mutableStateOf(sharedPrefs.getHandsFreeMode()) }
+    val handsFreeLabel = if (mathState.isKannada) "ಧ್ವನಿ ಸಂಭಾಷಣೆ" else "Hands-free voice"
+
+    // Input mode: voice dock vs. text keyboard (persisted default).
+    var inputMode by remember { mutableStateOf(if (sharedPrefs.getVoiceFirst()) "voice" else "text") }
+    var focusTextField by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val agentThinking = (mathState.isLoading || mathState.isTyping) && !ttsState.isSpeaking
+
+    LaunchedEffect(mathState.errorMessage) {
+        mathState.errorMessage?.takeIf { it.isNotBlank() }?.let { message ->
+            snackbarHostState.showSnackbar(message)
+        }
+    }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        permissionGranted = isGranted
+        sttController.handlePermissionResult(
+            SpeechToText.RECORD_AUDIO_PERMISSION_REQUEST,
+            if (isGranted) intArrayOf(PackageManager.PERMISSION_GRANTED)
+            else intArrayOf(PackageManager.PERMISSION_DENIED)
+        )
+    }
+
+    LaunchedEffect(Unit) {
+        permissionGranted =
+            androidx.core.content.ContextCompat.checkSelfPermission(
+                context,
+                RECORD_AUDIO,
+            ) == PackageManager.PERMISSION_GRANTED
+    }
+
+    val beginListening: () -> Unit = {
+        mathViewModel.onIntent(MathIntent.HideAutosuggestions)
+        mathViewModel.onIntent(MathIntent.MarkUserActive)
+        if (permissionGranted && sttState.isInitialized) {
+            sttController.startListening(if (mathState.isKannada) "kn-IN" else "en-IN")
+        } else if (!permissionGranted) {
+            permissionLauncher.launch(RECORD_AUDIO)
+        }
+    }
 
     val imageTooLargeMessage = stringResource(R.string.image_too_large)
     val imageProcessingMessage = stringResource(R.string.image_processing_may_take_time)
@@ -196,34 +258,25 @@ fun MathAgentScreen(
         label = "avatarSize"
     )
 
-    // Permission launcher
-    val permissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        permissionGranted = isGranted
-        sttController.handlePermissionResult(
-            SpeechToText.RECORD_AUDIO_PERMISSION_REQUEST,
-            if (isGranted) intArrayOf(PackageManager.PERMISSION_GRANTED)
-            else intArrayOf(PackageManager.PERMISSION_DENIED)
-        )
-    }
-
-    // Auto-start with provided problem ID
-    LaunchedEffect(problemId, mathState.problems) {
+    // Auto-start once the catalog fetch finishes (success or failure).
+    // Do not gate on problems.isNotEmpty() — a failed/empty catalog used to leave the screen stuck on the avatar.
+    var didAutoStart by remember(problemId) { mutableStateOf(false) }
+    LaunchedEffect(problemId, mathState.isLoading, mathState.sessionStarted) {
         DebugLogger.debugLog(
             "MathAgentScreen",
-            "LaunchedEffect triggered - problemId: $problemId, problemsCount: ${mathState.problems.size}"
+            "LaunchedEffect triggered - problemId: $problemId, problemsCount: ${mathState.problems.size}, isLoading: ${mathState.isLoading}, sessionStarted: ${mathState.sessionStarted}"
         )
 
-        if (!problemId.isNullOrEmpty() && problemId != "null") {
-            // Only start when problems have been loaded (so findProblemById can work)
-            if (mathState.problems.isNotEmpty()) {
-                DebugLogger.debugLog("MathAgentScreen", "Auto-starting with provided problemId: $problemId")
-                mathViewModel.onIntent(MathIntent.AutoStartWithProblem(problemId))
-            }
-        } else {
+        if (didAutoStart || mathState.sessionStarted) return@LaunchedEffect
+        if (problemId.isNullOrEmpty() || problemId == "null") {
             DebugLogger.debugLog("MathAgentScreen", "No problemId provided — waiting for concept click")
+            return@LaunchedEffect
         }
+        if (mathState.isLoading) return@LaunchedEffect
+
+        didAutoStart = true
+        DebugLogger.debugLog("MathAgentScreen", "Auto-starting with provided problemId: $problemId")
+        mathViewModel.onIntent(MathIntent.AutoStartWithProblem(problemId))
     }
 
     // Effects
@@ -243,7 +296,36 @@ fun MathAgentScreen(
         onSettingsStateUpdate = { settingsState = it },
         avatarBoyDisplayName = avatarBoyDisplayName,
         avatarGirlDisplayName = avatarGirlDisplayName,
-        avatarDisableDisplayName = avatarDisableDisplayName
+        avatarDisableDisplayName = avatarDisableDisplayName,
+        // Route captured voice to the Math VM (not chatViewModel) and auto-send so
+        // voice is a one-tap flow. Stage instead if busy or an image is attached.
+        onSpeechCaptured = { spoken ->
+            val busy = mathState.isLoading || mathState.isTyping ||
+                    ttsState.isSpeaking || !mathState.sessionStarted
+            if (busy || mathState.selectedImageUri != null) {
+                mathViewModel.onIntent(MathIntent.UpdateInputText(spoken))
+            } else {
+                mathViewModel.onIntent(MathIntent.HideAutosuggestions)
+                mathViewModel.onIntent(MathIntent.SendMessage(spoken))
+                mathViewModel.onIntent(MathIntent.UpdateInputText(""))
+            }
+        }
+    )
+
+    // Hands-free loop: auto-open the mic once the tutor's turn completes (voice mode only).
+    AutoListenAfterAgentTurn(
+        enabled = inputMode == "voice" && handsFreeMode && !showSettingsMenu,
+        turnComplete = !ttsState.isSpeaking &&
+                !mathState.isLoading &&
+                !mathState.isTyping &&
+                mathState.sessionStarted &&
+                lastAIMessage != null &&
+                chatState.resourceCardState is ResourceCardUiState.Hidden,
+        isListening = sttState.isListening,
+        canListen = permissionGranted && sttState.isInitialized,
+        onStartListening = {
+            sttController.startListening(if (mathState.isKannada) "kn-IN" else "en-IN")
+        }
     )
 
     // Background
@@ -256,7 +338,27 @@ fun MathAgentScreen(
             modifier = Modifier.fillMaxSize(),
             containerColor = White,
             contentColor = White,
+            snackbarHost = { SnackbarHost(snackbarHostState) },
             bottomBar = {
+                if (inputMode == "voice") {
+                    VoiceInputBar(
+                        isKannada = mathState.isKannada,
+                        isListening = sttState.isListening,
+                        isSpeaking = ttsState.isSpeaking,
+                        isThinking = agentThinking,
+                        transcript = sttState.resultText,
+                        statusMessage = sttState.statusMessage,
+                        amplitude = sttState.audioAmplitude,
+                        onMicTap = { beginListening() },
+                        onStopListening = { sttController.stopListening() },
+                        onSwitchToType = {
+                            sttController.stopListening()
+                            inputMode = "text"
+                            focusTextField = true
+                        },
+                        modifier = Modifier.imePadding()
+                    )
+                } else {
                 InputSection(
                     chatState = displayChatState,
                     sttState = sttState,
@@ -280,14 +382,10 @@ fun MathAgentScreen(
                         }
                     },
                     onSpeakClick = {
-                        mathViewModel.onIntent(MathIntent.HideAutosuggestions)
-                        mathViewModel.onIntent(MathIntent.MarkUserActive)
-                        if (permissionGranted && sttState.isInitialized) {
-                            val language = if (mathState.isKannada) "kn-IN" else "en-IN"
-                            sttController.startListening(language)
-                        } else if (!permissionGranted) {
-                            permissionLauncher.launch(RECORD_AUDIO)
-                        }
+                        // Text-mode mic → switch to the voice dock and start listening.
+                        focusTextField = false
+                        inputMode = "voice"
+                        beginListening()
                     },
                     onStopListening = { sttController.stopListening() },
                     onSuggestionClick = { },
@@ -298,8 +396,11 @@ fun MathAgentScreen(
                     },
                     selectedImageUri = mathState.selectedImageUri,
                     onRemoveImage = { mathViewModel.onIntent(MathIntent.ClearSelectedImage) },
+                    kannadaKeyboard = mathState.isKannada,
+                    autoFocus = focusTextField,
                     modifier = Modifier.imePadding()
                 )
+                }
             }
         ) { innerPadding ->
             Column(
@@ -331,6 +432,10 @@ fun MathAgentScreen(
                                 ttsController = ttsController,
                                 isLoading = mathState.isLoading,
                                 languageCode = mathState.currentLanguage,
+                                useNativeAvatar = useNativeAvatar,
+                                ttsState = ttsState,
+                                wordBoundaryIndex = wordBoundaryIndex,
+                                isListening = sttState.isListening,
                             )
                         } else {
                             ConversationView(
@@ -344,7 +449,11 @@ fun MathAgentScreen(
                                         isError = mathMsg.isError
                                     )
                                 },
-                                ttsController = ttsController
+                                ttsController = ttsController,
+                                useNativeAvatar = useNativeAvatar,
+                                ttsState = ttsState,
+                                wordBoundaryIndex = wordBoundaryIndex,
+                                isListening = sttState.isListening,
                             )
                         }
                     }
@@ -403,7 +512,25 @@ fun MathAgentScreen(
                     }
                     ttsController.setSpeechRate(speed)
                     settingsState = settingsState.copy(selectedSpeed = label)
-                }
+                },
+                useNativeTutorAvatar = useNativeAvatar,
+                handsFreeMode = handsFreeMode,
+                onHandsFreeChange = {
+                    handsFreeMode = it
+                    sharedPrefs.setHandsFreeMode(it)
+                },
+                handsFreeLabel = handsFreeLabel,
+                showInputModeSetting = true,
+                voiceFirst = inputMode == "voice",
+                onInputModeChange = { voiceFirst ->
+                    sharedPrefs.setVoiceFirst(voiceFirst)
+                    if (!voiceFirst) sttController.stopListening()
+                    focusTextField = false
+                    inputMode = if (voiceFirst) "voice" else "text"
+                },
+                defaultInputLabel = if (mathState.isKannada) "ಡೀಫಾಲ್ಟ್ ಇನ್‌ಪುಟ್" else "Default input",
+                voiceFirstLabel = if (mathState.isKannada) "ಧ್ವನಿ ಮೊದಲು" else "Voice first",
+                textFirstLabel = if (mathState.isKannada) "ಪಠ್ಯ ಮೊದಲು" else "Text first",
             )
         }
 
@@ -427,6 +554,16 @@ fun MathAgentScreen(
                 }
             )
         }
+
+        AgentSessionTimeGate(
+            languageCode = chatState.currentLanguage,
+            inTrialMode = TrialSessionStore.activeTrialItemId != null,
+            onProceed = {
+                chatViewModel.recordTrialProceed()
+                backDispatcher?.onBackPressed()
+            },
+            modifier = Modifier.align(Alignment.BottomCenter),
+        )
     }
 }
 

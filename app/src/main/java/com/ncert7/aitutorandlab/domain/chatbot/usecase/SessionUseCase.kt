@@ -7,6 +7,7 @@ import com.ncert7.aitutorandlab.data.remote.AgenticAIClient
 import com.ncert7.aitutorandlab.debug.DebugLogger
 import com.ncert7.aitutorandlab.domain.chatbot.model.SessionResult
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.dataclass.ChatMessageModel
+import com.ncert7.aitutorandlab.utils.ErrorHandler
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -38,8 +39,8 @@ class SessionUseCase @Inject constructor(
             )
 
             if (result.isSuccess) {
-                val response = result.getOrNull() ?: return SessionResult(false)
-                if (!response.success) return SessionResult(false)
+                val response = result.getOrNull() ?: return sessionFailure(null)
+                if (!response.success) return sessionFailure(null, fallbackStatus = 500)
 
                 saveThreadMapping( concept, response.threadId, response.sessionId)
                 agenticAIClient.setCurrentThreadAndSession(response.threadId, response.sessionId)
@@ -52,11 +53,11 @@ class SessionUseCase @Inject constructor(
                     currentState = response.currentState
                 )
             } else {
-                SessionResult(false)
+                sessionFailure(result.exceptionOrNull())
             }
         } catch (e: Exception) {
             DebugLogger.errorLog("SessionUseCase", "startSession error: ${e.message}")
-            SessionResult(false)
+            sessionFailure(e)
         }
     }
 
@@ -84,11 +85,11 @@ class SessionUseCase @Inject constructor(
                 }
                 SessionResult(success = true, messages = chatMessages)
             } else {
-                SessionResult(false)
+                sessionFailure(histResult.exceptionOrNull())
             }
         } catch (e: Exception) {
             DebugLogger.errorLog("SessionUseCase", "resumeSession error: ${e.message}")
-            SessionResult(false)
+            sessionFailure(e)
         }
     }
 
@@ -107,7 +108,8 @@ class SessionUseCase @Inject constructor(
             )
 
             if (response.isSuccess) {
-                val resp = response.getOrNull() ?: return SessionResult(false)
+                val resp = response.getOrNull() ?: return sessionFailure(null)
+                if (!resp.success) return sessionFailure(null, fallbackStatus = 500)
                 SessionResult(
                     success = true,
                     autosuggestions = resp.autosuggestions,
@@ -116,11 +118,11 @@ class SessionUseCase @Inject constructor(
                     currentState = resp.currentState
                 )
             } else {
-                SessionResult(false)
+                sessionFailure(response.exceptionOrNull())
             }
         } catch (e: Exception) {
             DebugLogger.errorLog("SessionUseCase", "continueSession error: ${e.message}")
-            SessionResult(false)
+            sessionFailure(e)
         }
     }
 
@@ -172,6 +174,14 @@ class SessionUseCase @Inject constructor(
         return repository.loadMapping(concept) != null
     }
 
+
+    private fun sessionFailure(error: Throwable?, fallbackStatus: Int? = null): SessionResult {
+        val status = ErrorHandler.httpStatusFrom(error) ?: fallbackStatus
+        if (status != null) {
+            DebugLogger.errorLog("SessionUseCase", "Session API failed with HTTP $status: ${error?.message}")
+        }
+        return SessionResult(success = false, httpStatusCode = status)
+    }
 
     private fun saveThreadMapping(concept: String, threadId: String, sessionId: String) {
         conceptThreadMap[concept] = threadId

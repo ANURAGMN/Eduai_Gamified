@@ -28,7 +28,42 @@ class SpeechToText @Inject constructor() : ViewModel() {
     companion object {
         const val RECORD_AUDIO_PERMISSION_REQUEST = 100
         private const val CONTINUOUS_RESTART_DELAY_MS = 100L
+        // After the user pauses this long (with something already captured), stop
+        // listening automatically so voice input finishes hands-free.
+        private const val SILENCE_TIMEOUT_MS = 1600L
     }
+
+    // Fires when the user has gone quiet after speaking — auto-stops the session so
+    // the captured text can be sent without tapping the close button.
+    private val silenceRunnable = Runnable {
+        if (_state.value.isListening && fullTranscript.isNotBlank()) {
+            stopListening()
+        }
+    }
+
+    private fun scheduleSilenceAutoStop() {
+        handler.removeCallbacks(silenceRunnable)
+        if (fullTranscript.isNotBlank()) {
+            handler.postDelayed(silenceRunnable, SILENCE_TIMEOUT_MS)
+        }
+    }
+
+    private fun cancelSilenceAutoStop() {
+        handler.removeCallbacks(silenceRunnable)
+    }
+
+    // ---- Localized status strings ----------------------------------------------------
+    // The recognizer status is shown to the learner, so it must match the app language.
+    // (Resource strings aren't reachable from this ViewModel here, so we branch inline.)
+    private fun isKannadaSelected(): Boolean =
+        _state.value.selectedLanguage.startsWith("kn", ignoreCase = true)
+
+    private val msgListening get() = if (isKannadaSelected()) "ಕೇಳುತ್ತಿದೆ…" else "Listening…"
+    private val msgReady get() = if (isKannadaSelected()) "ಮಾತನಾಡಿ…" else "Ready for speech…"
+    private val msgProcessing get() = if (isKannadaSelected()) "ಪ್ರಕ್ರಿಯೆಗೊಳಿಸುತ್ತಿದೆ…" else "Processing speech…"
+    private val msgDidntCatch get() = if (isKannadaSelected()) "ಸರಿಯಾಗಿ ಕೇಳಿಸಲಿಲ್ಲ" else "Didn't catch that"
+    private val msgKeepSpeaking get() = if (isKannadaSelected()) "ಸಿಕ್ಕಿತು! ಮುಂದುವರಿಸಿ…" else "Got it! Keep speaking…"
+    private val msgGenericError get() = if (isKannadaSelected()) "ದೋಷ ಸಂಭವಿಸಿದೆ, ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ" else "Something went wrong, try again"
 
     data class STTState(
         val isInitialized: Boolean = false,
@@ -127,7 +162,7 @@ class SpeechToText @Inject constructor() : ViewModel() {
         fullTranscript.clear()
         _state.value = _state.value.copy(
             resultText = "",
-            statusMessage = "Listening...",
+            statusMessage = msgListening,
             isListening = true
         )
 
@@ -138,6 +173,7 @@ class SpeechToText @Inject constructor() : ViewModel() {
     // Stop the current speech recognition session
     fun stopListening() {
         if (!_state.value.isListening) return
+        cancelSilenceAutoStop()
         try {
             speechRecognizer?.stopListening()
             speechRecognizer?.cancel()
@@ -199,29 +235,29 @@ class SpeechToText @Inject constructor() : ViewModel() {
     private val speechRecognitionListener = object : RecognitionListener {
         override fun onReadyForSpeech(params: Bundle?) {
             DebugLogger.debugLog(TAG, "onReadyForSpeech - Mic is live")
-            _state.value = _state.value.copy(statusMessage = "Ready for speech...")
+            _state.value = _state.value.copy(statusMessage = msgReady)
         }
 
         override fun onBeginningOfSpeech() {
-            _state.value = _state.value.copy(statusMessage = "Listening...")
+            // User resumed talking — cancel any pending auto-stop.
+            cancelSilenceAutoStop()
+            _state.value = _state.value.copy(statusMessage = msgListening)
         }
 
         override fun onBufferReceived(buffer: ByteArray?) {}
 
         override fun onEndOfSpeech() {
-            _state.value = _state.value.copy(statusMessage = "Processing speech...")
+            _state.value = _state.value.copy(statusMessage = msgProcessing)
+            // If we've already captured something, start the silence countdown so the
+            // session ends (and sends) hands-free once the user stops talking.
+            scheduleSilenceAutoStop()
         }
 
         override fun onError(error: Int) {
             val errorMessage = when (error) {
-                SpeechRecognizer.ERROR_NO_MATCH -> "Didn't catch that"
-                SpeechRecognizer.ERROR_CLIENT -> "Client error"
-                SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "Insufficient permissions"
-                SpeechRecognizer.ERROR_NETWORK -> "Network error"
-                SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> "Recognition service busy"
-                SpeechRecognizer.ERROR_SERVER -> "Server error"
-                SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "Didn't catch that"
-                else -> "Unknown error"
+                SpeechRecognizer.ERROR_NO_MATCH,
+                SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> msgDidntCatch
+                else -> msgGenericError
             }
 
             DebugLogger.errorLog(TAG, "onError: $errorMessage ($error)")
@@ -255,7 +291,7 @@ class SpeechToText @Inject constructor() : ViewModel() {
                 DebugLogger.debugLog(TAG, "onResults() - Empty or blank result → stopping")
 
                 // Show "Didn't catch that" and wait before closing
-                _state.value = _state.value.copy(statusMessage = "Didn't catch that")
+                _state.value = _state.value.copy(statusMessage = msgDidntCatch)
 
                 handler.postDelayed({
                     _state.value = _state.value.copy(
@@ -273,11 +309,13 @@ class SpeechToText @Inject constructor() : ViewModel() {
 
             _state.value = _state.value.copy(
                 resultText = fullTranscript.toString(),
-                statusMessage = "Got it! Keep speaking..."
+                statusMessage = msgKeepSpeaking
             )
 
-            // If still in listening mode restart recognition to continue streaming input
+            // If still in listening mode restart recognition to continue streaming input,
+            // and (re)arm the silence auto-stop so a pause ends the session automatically.
             if (_state.value.isListening) {
+                scheduleSilenceAutoStop()
                 handler.postDelayed({ startRecognition() }, CONTINUOUS_RESTART_DELAY_MS)
             }
         }
@@ -287,6 +325,8 @@ class SpeechToText @Inject constructor() : ViewModel() {
         override fun onPartialResults(partialResults: Bundle?) {
             val partial = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
             if (!partial.isNullOrEmpty() && partial[0].trim().isNotEmpty()) {
+                // Speech is actively coming in — hold off the auto-stop.
+                cancelSilenceAutoStop()
                 val current = if (fullTranscript.isEmpty()) partial[0] else fullTranscript.toString() + " " + partial[0]
                 _state.value = _state.value.copy(resultText = current)
             }
@@ -305,9 +345,6 @@ class SpeechToText @Inject constructor() : ViewModel() {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 onPermissionGranted()
             } else {
-                appContext?.let { ctx ->
-                    Toast.makeText(ctx, "Audio permission required", Toast.LENGTH_LONG).show()
-                }
                 _state.value = _state.value.copy(
                     hasPermission = false,
                     statusMessage = "Audio permission denied"

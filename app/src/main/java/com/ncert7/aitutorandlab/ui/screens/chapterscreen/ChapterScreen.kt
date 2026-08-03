@@ -1,9 +1,7 @@
 package com.ncert7.aitutorandlab.ui.screens.chapterscreen
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -19,174 +17,105 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.anurag.eduai.uikit.components.EduChapterPicker
+import com.anurag.eduai.uikit.components.EduChapterPickerItem
+import com.anurag.eduai.uikit.theme.EduAiTheme
 import com.ncert7.aitutorandlab.R
-import com.ncert7.aitutorandlab.debug.DebugLogger
 import com.ncert7.aitutorandlab.data.local.SharedPreferenceUtils
+import com.ncert7.aitutorandlab.debug.DebugLogger
+import com.ncert7.aitutorandlab.domain.mathagent.usecase.MathIntent
 import com.ncert7.aitutorandlab.service.analytics.ScreenName
 import com.ncert7.aitutorandlab.service.analytics.TrackScreenEvent
-import com.ncert7.aitutorandlab.ui.screens.chapterscreen.components.ChapterScreenHeader
-import com.ncert7.aitutorandlab.ui.screens.chapterscreen.components.ChapterCard
-import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.AppDialog
-import com.ncert7.aitutorandlab.ui.theme.BackgroundPrimary
-import com.ncert7.aitutorandlab.ui.theme.LocalDimensions
 import com.ncert7.aitutorandlab.ui.screens.chapterscreen.viewmodel.ChapterViewModel
-import com.ncert7.aitutorandlab.ui.screens.revisionscreen.viewmodel.RevisionViewModel
 import com.ncert7.aitutorandlab.ui.screens.mathagentscreen.viewmodel.MathViewModel
-import com.ncert7.aitutorandlab.domain.mathagent.usecase.MathIntent
+
+private const val MATH_SUBJECT_ID = "5c0a6b6d-7c6b-4f35-9d5b-9fd0fd8e8a01"
 
 /**
- * ChapterScreen displays a list of chapters for a given subject.
- *
- * @param subjectId The ID of the subject whose chapters are to be displayed.
- * @param onBackClick Callback function to be invoked when the back button is clicked.
- * @param onSimulationClick Callback function to be invoked when simulation button is clicked, passing chapter info.
- * @param onRevisionClick Callback function to be invoked when revision button is clicked, passing chapter name.
- * @param onGoHome Callback function to navigate to the home screen.
- * @param onGoSetting Callback function to navigate to the settings screen.
- * @param onProgressClick Callback function to navigate to the progress screen.
- * @param viewModel ChapterViewModel injected by Hilt
+ * Chapter picker — onboarding-style: pick a chapter, then Continue opens it as a trial.
+ * Math chapters keep their existing problem flow.
  */
 @Composable
 fun ChapterScreen(
     subjectId: String,
     onBackClick: () -> Unit = {},
-    onStudyClick: (String, String) -> Unit = {_, _ -> },
-    onSimulationClick: (String, String) -> Unit = {_, _ -> },
-    onRevisionClick: (String) -> Unit = {},
-    onGoHome: () -> Unit = {},
-    onGoSetting: () -> Unit = {},
-    onProgressClick: () -> Unit = {},
+    onOpenChapterTrial: (chapterId: String) -> Unit = {},
+    onStudyClick: (String, String) -> Unit = { _, _ -> },
     viewModel: ChapterViewModel = hiltViewModel(),
     mathViewModel: MathViewModel = hiltViewModel(),
-    revisionViewModel: RevisionViewModel = hiltViewModel()
 ) {
-    // Analytics Tracking
     TrackScreenEvent(screenName = ScreenName.CHAPTER)
 
-    val dimens = LocalDimensions.current
     val state by viewModel.state.collectAsState()
     val mathState by mathViewModel.uiState.collectAsState()
     val configuration = LocalConfiguration.current
     val currentLanguage = configuration.locales[0]?.language ?: "en"
+    val isKannada = currentLanguage.startsWith("kn", ignoreCase = true)
+    val isMathSubject = subjectId == MATH_SUBJECT_ID
 
-    // State for revision dialog
-    var showRevisionDialog by remember { mutableStateOf(false) }
-    var pendingRevisionChapter by remember { mutableStateOf<String?>(null) }
+    var selectedChapterId by remember { mutableStateOf("") }
 
-    // Load chapters when subject or language changes
     LaunchedEffect(subjectId, currentLanguage) {
         viewModel.loadChapters(subjectId, currentLanguage)
     }
 
-    // Initialize MathViewModel if needed
+    LaunchedEffect(state.chapters) {
+        if (selectedChapterId.isEmpty() && state.chapters.isNotEmpty()) {
+            selectedChapterId = state.chapters.first().id
+        }
+    }
+
     val context = LocalContext.current
     LaunchedEffect(subjectId, mathState.problems.isEmpty()) {
-        val isMathSubject = subjectId == "5c0a6b6d-7c6b-4f35-9d5b-9fd0fd8e8a01"
         if (isMathSubject && mathState.problems.isEmpty()) {
-            val sharedPrefs = SharedPreferenceUtils(context)
-            val userId = sharedPrefs.getUserId() ?: ""
+            val userId = SharedPreferenceUtils(context).getUserId() ?: ""
             if (userId.isNotEmpty()) {
-                DebugLogger.debugLog("ChapterScreen", "Initializing MathViewModel with userId: $userId")
                 mathViewModel.onIntent(MathIntent.Initialize(userId))
             }
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(BackgroundPrimary)
-    ) {
-        ChapterScreenHeader(
-            classLevel = state.classLevel,
-            subjectName = state.subjectName,
-            onBackClick = onBackClick,
-            onGoHome = onGoHome,
-            onGoSetting = onGoSetting,
-            onProgressClick = onProgressClick
-        )
-
-        if (state.isLoading) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
-            }
-        } else if (state.error != null) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(text = stringResource(R.string.unable_to_load_chapters))
-            }
-        } else {
-            // Check if this is a Math subject
-            val isMathSubject = subjectId == "5c0a6b6d-7c6b-4f35-9d5b-9fd0fd8e8a01"//subject id of math subject
-
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(dimens.cardPadding),
-                verticalArrangement = Arrangement.spacedBy(dimens.spaceSmall)
-            ) {
-                items(state.chapters, { it.id }) { chapterUiModel ->
-                    ChapterCard(
-                        chapter = chapterUiModel,
-                        onStudyClick = {
-                            if (isMathSubject) {
-                                // For Math: go to ConceptScreen with MATH_PROBLEM type
-                                onStudyClick(chapterUiModel.id, "MATH PROBLEM")
-                            } else {
-                                // For other subjects: go to ConceptScreen with STUDY type
-                                onStudyClick(chapterUiModel.id, "STUDY")
-                            }
-                        },
-                        onSimulationClick = { onSimulationClick(chapterUiModel.id, "SIMULATION") },
-                        onRevisionClick = {
-                            // Check for existing session using revisionId
-                            val revisionId = chapterUiModel.revisionId
-                            DebugLogger.debugLog("ChapterScreen", "Revision button clicked for chapter: ${chapterUiModel.name}, revisionId: $revisionId")
-
-                            if (revisionViewModel.hasExistingSession(revisionId)) {
-                                DebugLogger.debugLog("ChapterScreen", "Existing revision session found, showing dialog")
-                                pendingRevisionChapter = chapterUiModel.id  // Store chapterId for navigation
-                                showRevisionDialog = true
-                            } else {
-                                DebugLogger.debugLog("ChapterScreen", "No existing revision session, navigating directly")
-                                onRevisionClick(chapterUiModel.id)  // Pass chapterId for navigation
-                            }
-                        }
-                    )
+    EduAiTheme {
+        when {
+            state.isLoading && state.chapters.isEmpty() -> {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
                 }
+            }
+            state.error != null -> {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(text = stringResource(R.string.unable_to_load_chapters))
+                }
+            }
+            else -> {
+                EduChapterPicker(
+                    title = "${state.subjectName} · ${if (isKannada) "ಅಧ್ಯಾಯ ಆರಿಸಿ" else "pick a chapter"}",
+                    subtitle = if (isKannada) "ಎಲ್ಲಿಂದ ಪ್ರಾರಂಭಿಸಬೇಕು?" else "Where do you want to start?",
+                    chapters = state.chapters.map { EduChapterPickerItem(id = it.id, label = it.name) },
+                    selectedId = selectedChapterId,
+                    recommendedLabel = if (isKannada) "ಪ್ರಾರಂಭಿಸಲು ಶಿಫಾರಸು" else "Recommended to start",
+                    backLabel = if (isKannada) "ವಿಷಯ" else "Subject",
+                    continueLabel = if (isKannada) "ಮುಂದುವರಿಸಿ" else "Continue",
+                    loadingLabel = if (isKannada) "ಅಧ್ಯಾಯಗಳನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ…" else "Loading chapters…",
+                    emptyLabel =
+                        if (isKannada) {
+                            "ಈ ವಿಷಯಕ್ಕೆ ಯಾವುದೇ ಅಧ್ಯಾಯಗಳು ಲಭ್ಯವಿಲ್ಲ."
+                        } else {
+                            "No chapters available for this subject yet."
+                        },
+                    isLoading = state.isLoading,
+                    onSelect = { selectedChapterId = it },
+                    onBack = onBackClick,
+                    onContinue = {
+                        if (selectedChapterId.isNotEmpty()) {
+                            // All subjects (incl. Math) open the chapter trial; the materializer
+                            // builds Math problems + study + revision for Math chapters.
+                            DebugLogger.debugLog("ChapterScreen", "Chapter → trial: $selectedChapterId")
+                            onOpenChapterTrial(selectedChapterId)
+                        }
+                    },
+                )
             }
         }
-
-        // Revision Session Resume Dialog
-        AppDialog(
-            show = showRevisionDialog,
-            title = stringResource(R.string.existing_session_found),
-            message = stringResource(R.string.resume_or_start_fresh),
-            confirmText = stringResource(R.string.continue_session),
-            dismissText = stringResource(R.string.start_new),
-            onConfirm = {
-                // Resume existing session - navigate to revision with chapterId
-                pendingRevisionChapter?.let { chapterId ->
-                    DebugLogger.debugLog("ChapterScreen", "User chose to resume revision session for chapterId: $chapterId")
-                    onRevisionClick(chapterId)
-                }
-                showRevisionDialog = false
-                pendingRevisionChapter = null
-            },
-            onDismiss = {
-                // Start fresh session - navigate to revision with chapterId
-                pendingRevisionChapter?.let { chapterId ->
-                    DebugLogger.debugLog("ChapterScreen", "User chose to start fresh revision session for chapterId: $chapterId")
-                    onRevisionClick(chapterId)
-                }
-                showRevisionDialog = false
-                pendingRevisionChapter = null
-            }
-        )
     }
 }

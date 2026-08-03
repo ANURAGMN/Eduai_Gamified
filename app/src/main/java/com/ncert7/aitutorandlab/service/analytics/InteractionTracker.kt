@@ -43,6 +43,17 @@ object InteractionTracker {
     private val _totalInteractions = MutableStateFlow(0)
     val totalInteractions: StateFlow<Int> = _totalInteractions.asStateFlow()
 
+    /** Resets when [startSession] is called — use for exam-trial 7-click threshold. */
+    private val _sessionInteractionCount = MutableStateFlow(0)
+    val sessionInteractionCount: StateFlow<Int> = _sessionInteractionCount.asStateFlow()
+
+    /** Trackable click targets reported by injected simulation JS (0 until page reports). */
+    private val _sessionInteractionBudget = MutableStateFlow(0)
+    val sessionInteractionBudget: StateFlow<Int> = _sessionInteractionBudget.asStateFlow()
+
+    /** When false, interactions are logged but do not increment [sessionInteractionCount]. */
+    private var sessionCountingEnabled = true
+
     fun initialize(simulationInteractionRepository: SimulationInteractionRepository) {
         repository = simulationInteractionRepository
         DebugLogger.debugLog(TAG, "Initialized")
@@ -62,6 +73,19 @@ object InteractionTracker {
         sessionStartMs = System.currentTimeMillis()
         sessionTimestamp = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
         isFirstEventOfSession = true
+        _sessionInteractionCount.value = 0
+        _sessionInteractionBudget.value = 0
+        sessionCountingEnabled = true
+    }
+
+    fun reportInteractionBudget(count: Int) {
+        if (count <= 0) return
+        _sessionInteractionBudget.value = count
+        DebugLogger.debugLog(TAG, "HTML interaction budget: $count")
+    }
+
+    fun setSessionCountingEnabled(enabled: Boolean) {
+        sessionCountingEnabled = enabled
     }
 
     fun endSession() {
@@ -151,6 +175,9 @@ object InteractionTracker {
         )
 
         _totalInteractions.value += 1
+        if (sessionCountingEnabled) {
+            _sessionInteractionCount.value += 1
+        }
         _events.value = _events.value + event
         repository?.let { repo ->
             scope.launch {

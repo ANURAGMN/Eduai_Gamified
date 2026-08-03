@@ -49,6 +49,7 @@ fun ChatContentArea(
                     LoadingInsightPanel(
                         statusText = loadingResourceMessage ?: stringResource(R.string.thinking),
                         languageCode = languageCode,
+                        rotateThinking = loadingResourceMessage == null,
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(dimens.spaceMedium),

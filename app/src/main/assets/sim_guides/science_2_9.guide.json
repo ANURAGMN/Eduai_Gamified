@@ -1,0 +1,19 @@
+{
+  "simId": "science_2_9",
+  "lang": "en",
+  "title": "Neutralisation in Agriculture",
+  "steps": [
+    {
+      "text": "Soil can be too acidic or too basic for crops. Farmers fix it with neutralisation: Acid + Base → Salt + Water (neutral)."
+    },
+    {
+      "text": "Look at the pH scale: 0–6 is acidic, 7 is neutral, and 8–14 is basic. Crops grow best near neutral."
+    },
+    {
+      "text": "Explore the controls to treat the soil — add a base to acidic soil (or an acid to basic soil) to bring the pH toward 7."
+    },
+    {
+      "text": "Watch the pH move to the neutral zone. Balanced soil means healthy crops — that's chemistry helping farmers!"
+    }
+  ]
+}
