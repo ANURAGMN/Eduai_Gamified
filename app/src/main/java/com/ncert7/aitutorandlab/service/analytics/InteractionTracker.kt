@@ -5,8 +5,11 @@ import com.ncert7.aitutorandlab.repository.SimulationInteractionRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -50,6 +53,10 @@ object InteractionTracker {
     /** Trackable click targets reported by injected simulation JS (0 until page reports). */
     private val _sessionInteractionBudget = MutableStateFlow(0)
     val sessionInteractionBudget: StateFlow<Int> = _sessionInteractionBudget.asStateFlow()
+
+    /** Emits every time a verdict lands (true = correct, false = wrong). Drives the adaptive coach. */
+    private val _verdicts = MutableSharedFlow<Boolean>(extraBufferCapacity = 16)
+    val verdicts: SharedFlow<Boolean> = _verdicts.asSharedFlow()
 
     /** When false, interactions are logged but do not increment [sessionInteractionCount]. */
     private var sessionCountingEnabled = true
@@ -195,6 +202,7 @@ object InteractionTracker {
         val updated = current.toMutableList()
         updated[lastPendingIndex] = updated[lastPendingIndex].copy(isCorrect = verdict)
         _events.value = updated
+        _verdicts.tryEmit(isCorrect)
         repository?.let { repo ->
             scope.launch {
                 repo.updateLatestPendingVerdict(verdict)

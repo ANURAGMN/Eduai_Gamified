@@ -67,7 +67,7 @@ object TrialCopy {
                 "We'll celebrate and move on once you finish."
         }
 
-    /** Shown ~2 minutes after the learner opens a trial simulation. */
+    /** Shown ~3 minutes after the learner opens a trial simulation. */
     fun simTimeExplorePrompt(languageCode: String): Pair<String, String> =
         if (kn(languageCode)) {
             "ಚೆನ್ನಾಗಿ ಅನ್ವೇಷಿಸಿದ್ದೀರಿ! 🎉" to
@@ -80,12 +80,6 @@ object TrialCopy {
                 "That's exactly how scientists learn. Ready to move on to the next step in your plan, " +
                 "or would you like to keep experimenting here a little longer?"
         }
-
-    /** @deprecated Replaced by [simTimeExplorePrompt] — click-based goal prompt. */
-    fun simGoalPrompt(languageCode: String): Pair<String, String> = simTimeExplorePrompt(languageCode)
-
-    /** @deprecated Replaced by [simTimeExplorePrompt] — click-based second nudge. */
-    fun simExplorationPrompt(languageCode: String): Pair<String, String> = simTimeExplorePrompt(languageCode)
 
     fun simProceedLabel(languageCode: String): String =
         if (kn(languageCode)) "ಮುಂದಿನ ಅಂಶ" else "Next item"

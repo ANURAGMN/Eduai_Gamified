@@ -7,6 +7,7 @@ import com.ncert7.aitutorandlab.data.remote.AgenticAIClient
 import com.ncert7.aitutorandlab.debug.DebugLogger
 import com.ncert7.aitutorandlab.domain.mathagent.model.MathSessionResult
 import com.ncert7.aitutorandlab.ui.screens.mathagentscreen.dataclass.MathMessageModel
+import com.ncert7.aitutorandlab.utils.ErrorHandler
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -33,9 +34,21 @@ class MathSessionUseCase @Inject constructor(
         studentId: String,
         isKannada: Boolean
     ): MathSessionResult {
+        val cleanProblemId = problemId.trim()
+        if (cleanProblemId.isEmpty() || cleanProblemId == "null") {
+            DebugLogger.errorLog(
+                "MathSessionUseCase",
+                "Blocked session start — invalid problemId: '$problemId'"
+            )
+            return MathSessionResult(
+                success = false,
+                agentResponse = context.getString(R.string.math_session_missing_problem)
+            )
+        }
+
         return try {
             val result = agenticAIClient.startMathSession(
-                problemId = problemId,
+                problemId = cleanProblemId,
                 studentId = studentId,
                 isKannada = isKannada
             )
@@ -53,7 +66,7 @@ class MathSessionUseCase @Inject constructor(
             if (result.isSuccess) {
                 val response = result.getOrNull()!!
                 // Save thread mapping for session persistence
-                saveThreadMapping(problemId, response.threadId, response.sessionId)
+                saveThreadMapping(cleanProblemId, response.threadId, response.sessionId)
                 agenticAIClient.setCurrentThreadAndSession(response.threadId, response.sessionId)
 
                 MathSessionResult(
@@ -73,7 +86,10 @@ class MathSessionUseCase @Inject constructor(
             } else {
                 MathSessionResult(
                     success = false,
-                    agentResponse = context.getString(R.string.math_session_failed_start)
+                    agentResponse = mapApiFailure(
+                        result.exceptionOrNull(),
+                        context.getString(R.string.math_session_failed_start)
+                    )
                 )
             }
         } catch (e: Exception) {
@@ -83,7 +99,7 @@ class MathSessionUseCase @Inject constructor(
             )
             MathSessionResult(
                 success = false,
-                agentResponse = context.getString(R.string.math_error_prefix, e.message ?: "")
+                agentResponse = mapApiFailure(e, context.getString(R.string.math_session_failed_start))
             )
         }
     }
@@ -206,7 +222,10 @@ class MathSessionUseCase @Inject constructor(
             } else {
                 MathSessionResult(
                     success = false,
-                    agentResponse = "Failed to continue session"
+                    agentResponse = mapApiFailure(
+                        result.exceptionOrNull(),
+                        context.getString(R.string.math_session_failed_continue)
+                    )
                 )
             }
         } catch (e: Exception) {
@@ -216,7 +235,7 @@ class MathSessionUseCase @Inject constructor(
             )
             MathSessionResult(
                 success = false,
-                agentResponse = "Error: ${e.message ?: "Unknown error"}"
+                agentResponse = mapApiFailure(e, context.getString(R.string.math_session_failed_continue))
             )
         }
     }
@@ -401,6 +420,26 @@ class MathSessionUseCase @Inject constructor(
                 success = false,
                 agentResponse = context.getString(R.string.math_error_prefix, e.message ?: "")
             )
+        }
+    }
+
+    private fun mapApiFailure(error: Throwable?, fallback: String): String {
+        if (error == null) return fallback
+        val status = ErrorHandler.httpStatusFrom(error)
+        return when (status) {
+            401 -> context.getString(R.string.error_please_sign_in_again)
+            422 -> context.getString(R.string.math_session_missing_problem)
+            429, 503 -> context.getString(R.string.error_service_busy_try_again_shortly)
+            in 500..599 -> context.getString(R.string.error_server_try_later)
+            else -> when (error) {
+                is Exception -> ErrorHandler.handleException(
+                    context,
+                    error,
+                    operation = "math session",
+                    tag = "MathSessionUseCase"
+                )
+                else -> fallback
+            }
         }
     }
 }

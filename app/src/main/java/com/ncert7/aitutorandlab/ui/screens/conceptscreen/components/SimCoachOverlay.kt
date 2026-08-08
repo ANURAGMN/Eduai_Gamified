@@ -17,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.TouchApp
+import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -50,6 +51,10 @@ fun SimCoachOverlay(
     modifier: Modifier = Modifier,
     /** Optional lip-syncing tutor avatar; falls back to the School glyph when null. */
     avatar: (@Composable () -> Unit)? = null,
+    /** Go to the previous step (null hides the control, e.g. on the first step). */
+    onBack: (() -> Unit)? = null,
+    /** Re-read the current step aloud. */
+    onReplay: (() -> Unit)? = null,
 ) {
     Column(
         modifier = modifier
@@ -113,6 +118,14 @@ fun SimCoachOverlay(
         Spacer(Modifier.height(12.dp))
 
         Row(verticalAlignment = Alignment.CenterVertically) {
+            if (onBack != null) {
+                CoachChip(text = "‹ Back", onClick = onBack)
+                Spacer(Modifier.size(6.dp))
+            }
+            if (onReplay != null) {
+                CoachChip(text = "↻ Replay", onClick = onReplay)
+                Spacer(Modifier.size(8.dp))
+            }
             if (requireAction) {
                 // The action IS the way forward — do it in the experiment above. "Skip" is
                 // a tiny escape hatch so a stuck learner is never fully trapped.
@@ -169,6 +182,134 @@ fun SimCoachOverlay(
                         fontSize = 13.sp,
                         fontWeight = FontWeight.SemiBold,
                     )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * The free-play adaptive coach bar. Shown after the brief intro walkthrough, it never gates the
+ * learner — it just carries the coach's current line: the mission by default, a "why that's wrong"
+ * explanation after a wrong answer, an unstuck nudge after a lull, or a well-done on a correct
+ * answer. [tone] tints the accent so wrong/stuck/correct read differently at a glance.
+ */
+enum class CoachTone { NEUTRAL, WRONG, STUCK, CORRECT }
+
+/** Small pill button used for Back / Replay / Continue controls in the coach bars. */
+@Composable
+private fun CoachChip(
+    text: String,
+    onClick: () -> Unit,
+    filled: Boolean = false,
+) {
+    Text(
+        text = text,
+        color = if (filled) White else BrandPrimary,
+        fontSize = 12.sp,
+        fontWeight = FontWeight.SemiBold,
+        modifier = Modifier
+            .clip(RoundedCornerShape(16.dp))
+            .background(if (filled) BrandPrimary else BrandPrimary.copy(alpha = 0.12f))
+            .clickable { onClick() }
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+    )
+}
+
+@Composable
+fun SimAdaptiveCoachBar(
+    message: String,
+    mission: String?,
+    tone: CoachTone,
+    onClose: () -> Unit,
+    modifier: Modifier = Modifier,
+    avatar: (@Composable () -> Unit)? = null,
+    /** Re-read the current line aloud. */
+    onReplay: (() -> Unit)? = null,
+    /** Step back (e.g. previous practice step). Null hides the control. */
+    onBack: (() -> Unit)? = null,
+    /** Move forward when the coach is waiting for the learner (null = nothing to confirm now). */
+    onContinue: (() -> Unit)? = null,
+) {
+    val accent = when (tone) {
+        CoachTone.WRONG -> androidx.compose.ui.graphics.Color(0xFFE2574C)
+        CoachTone.CORRECT -> androidx.compose.ui.graphics.Color(0xFF2E9E6B)
+        else -> BrandPrimary
+    }
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(12.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(CardBackground)
+            .padding(14.dp),
+    ) {
+        Row(verticalAlignment = Alignment.Top) {
+            if (avatar != null) {
+                avatar()
+            } else {
+                Box(
+                    modifier = Modifier
+                        .size(34.dp)
+                        .clip(CircleShape)
+                        .background(accent.copy(alpha = 0.12f)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Lightbulb,
+                        contentDescription = null,
+                        tint = accent,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+            }
+            Spacer(Modifier.size(10.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                if (!mission.isNullOrBlank()) {
+                    Text(
+                        text = mission,
+                        color = TextSecondary,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium,
+                    )
+                    Spacer(Modifier.height(2.dp))
+                }
+                Text(
+                    text = message,
+                    color = if (tone == CoachTone.NEUTRAL) TextPrimary else accent,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                )
+            }
+            Box(
+                modifier = Modifier
+                    .size(28.dp)
+                    .clip(CircleShape)
+                    .clickable { onClose() },
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "Close guide",
+                    tint = TextSecondary,
+                    modifier = Modifier.size(18.dp),
+                )
+            }
+        }
+
+        if (onBack != null || onReplay != null || onContinue != null) {
+            Spacer(Modifier.height(12.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (onBack != null) {
+                    CoachChip(text = "‹ Back", onClick = onBack)
+                    Spacer(Modifier.size(6.dp))
+                }
+                if (onReplay != null) {
+                    CoachChip(text = "↻ Replay", onClick = onReplay)
+                }
+                Spacer(Modifier.weight(1f))
+                if (onContinue != null) {
+                    CoachChip(text = "Continue ›", onClick = onContinue, filled = true)
                 }
             }
         }

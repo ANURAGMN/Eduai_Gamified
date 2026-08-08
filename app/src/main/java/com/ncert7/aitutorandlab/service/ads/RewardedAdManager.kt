@@ -14,6 +14,7 @@ import com.ncert7.aitutorandlab.service.analytics.AdAnalyticsTracker
 import com.ncert7.aitutorandlab.service.analytics.AdInteraction
 import com.ncert7.aitutorandlab.service.analytics.AdPlacement
 import com.ncert7.aitutorandlab.service.analytics.AdType
+import com.ncert7.aitutorandlab.ui.viewModel.TextToSpeech
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -117,6 +118,7 @@ class RewardedAdManager @Inject constructor(
                 object : FullScreenContentCallback() {
                     override fun onAdDismissedFullScreenContent() {
                         rewardedAd = null
+                        TextToSpeech.onAdDismissed()
                         preload()
                         AdAnalyticsTracker.track(AdType.REWARDED, AdInteraction.CLOSED, placement)
                         if (continuation.isActive) {
@@ -126,6 +128,7 @@ class RewardedAdManager @Inject constructor(
 
                     override fun onAdFailedToShowFullScreenContent(error: AdError) {
                         rewardedAd = null
+                        TextToSpeech.onAdDismissed()
                         preload()
                         AdAnalyticsTracker.track(
                             AdType.REWARDED,
@@ -139,6 +142,8 @@ class RewardedAdManager @Inject constructor(
                     }
 
                     override fun onAdShowedFullScreenContent() {
+                        // Fullscreen ad is up — mute + stop all TTS so no voice leaks over the ad.
+                        TextToSpeech.onAdShown()
                         AdAnalyticsTracker.track(AdType.REWARDED, AdInteraction.SHOWN, placement)
                     }
                 }

@@ -17,19 +17,25 @@ import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.dataclass.Ch
 import com.ncert7.aitutorandlab.repository.ConceptRepository
 import com.ncert7.aitutorandlab.ui.screens.mathagentscreen.dataclass.MathUiState
 import com.ncert7.aitutorandlab.ui.viewModel.TextToSpeech
+import com.ncert7.aitutorandlab.utils.ErrorHandler
 import com.ncert7.aitutorandlab.utils.isKannada
 import com.ncert7.aitutorandlab.utils.resolveProgressLanguage
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
+import android.content.Context
+import com.ncert7.aitutorandlab.R
 import java.io.File
 import javax.inject.Inject
 
 @HiltViewModel
 class MathViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val mathSessionUseCase: MathSessionUseCase,
     private val mathProblemsUseCase: MathProblemsUseCase,
     private val mathSendMessageUseCase: MathSendMessageUseCase,
@@ -48,6 +54,12 @@ class MathViewModel @Inject constructor(
 
     private var userId = ""
     private var initialized = false
+    /** Prevents duplicate /math/session/start calls for the same or overlapping problems. */
+    private var sessionStartJob: Job? = null
+    private var sessionStartInFlightFor: String? = null
+
+    private fun isValidProblemId(problemId: String): Boolean =
+        problemId.isNotBlank() && problemId != "null"
 
     init {
         // Auto-initialize with userId from SharedPreferences
@@ -123,7 +135,7 @@ class MathViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            errorMessage = exception.message
+                            errorMessage = mapLoadProblemsError(exception)
                         )
                     }
                     DebugLogger.errorLog(
@@ -135,7 +147,7 @@ class MathViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        errorMessage = e.message
+                        errorMessage = mapLoadProblemsError(e)
                     )
                 }
                 DebugLogger.errorLog("MathViewModel", "Exception loading problems: ${e.message}")
@@ -148,47 +160,58 @@ class MathViewModel @Inject constructor(
      * Checks if there's an existing session and shows dialog if found
      */
     private fun autoStartWithProblem(problemId: String) {
-        if (_uiState.value.sessionStarted) {
+        val cleanId = problemId.trim()
+        if (!isValidProblemId(cleanId)) {
+            DebugLogger.errorLog("MathViewModel", "autoStartWithProblem blocked — invalid problemId: '$problemId'")
+            return
+        }
+
+        if (_uiState.value.sessionStarted && _uiState.value.problemId == cleanId) {
             DebugLogger.debugLog("MathViewModel", "autoStartWithProblem skipped — session already started")
             return
         }
 
-        val problem = mathProblemsUseCase.findProblemById(_uiState.value.problems, problemId)
+        if (sessionStartInFlightFor == cleanId && sessionStartJob?.isActive == true) {
+            DebugLogger.debugLog("MathViewModel", "autoStartWithProblem skipped — start already in flight for $cleanId")
+            return
+        }
+
+        val problem = mathProblemsUseCase.findProblemById(_uiState.value.problems, cleanId)
         _uiState.update {
             it.copy(
                 selectedProblem = problem ?: it.selectedProblem,
-                problemId = problemId
+                problemId = cleanId
             )
         }
 
         if (problem == null) {
             DebugLogger.warnLog(
                 "MathViewModel",
-                "Problem '$problemId' not in catalog (${_uiState.value.problems.size} loaded) — starting session with nav problemId anyway"
+                "Problem '$cleanId' not in catalog (${_uiState.value.problems.size} loaded) — starting session with nav problemId anyway"
             )
         }
 
         viewModelScope.launch {
             try {
-                val hasSession = mathSessionUseCase.hasExistingSession(problemId)
+                val hasSession = mathSessionUseCase.hasExistingSession(cleanId)
                 if (hasSession) {
                     _uiState.update {
                         it.copy(
-                            pendingProblemForDialog = problemId,
+                            pendingProblemForDialog = cleanId,
                             showSessionDialog = true
                         )
                     }
-                    DebugLogger.debugLog("MathViewModel", "Existing session found for problem: $problemId, showing dialog")
+                    DebugLogger.debugLog("MathViewModel", "Existing session found for problem: $cleanId, showing dialog")
                 } else {
-                    DebugLogger.debugLog("MathViewModel", "No existing session for problem: $problemId, starting new")
-                    startMathSession(problemId)
+                    DebugLogger.debugLog("MathViewModel", "No existing session for problem: $cleanId, starting new")
+                    startMathSession(cleanId)
                 }
             } catch (e: Exception) {
                 DebugLogger.errorLog(
                     "MathViewModel",
                     "Error checking for existing session: ${e.message}"
                 )
-                startMathSession(problemId)
+                startMathSession(cleanId)
             }
         }
     }
@@ -198,34 +221,37 @@ class MathViewModel @Inject constructor(
      * Checks if there's an existing session and shows dialog if found
      */
     private fun selectProblem(problemId: String) {
-        val problem = mathProblemsUseCase.findProblemById(_uiState.value.problems, problemId)
+        val cleanId = problemId.trim()
+        if (!isValidProblemId(cleanId)) return
+
+        val problem = mathProblemsUseCase.findProblemById(_uiState.value.problems, cleanId)
         if (problem != null) {
-            _uiState.update { it.copy(selectedProblem = problem, problemId = problemId) }
+            _uiState.update { it.copy(selectedProblem = problem, problemId = cleanId) }
 
             // Check for existing session
             viewModelScope.launch {
                 try {
-                    val hasSession = mathSessionUseCase.hasExistingSession(problemId)
+                    val hasSession = mathSessionUseCase.hasExistingSession(cleanId)
                     if (hasSession) {
                         // Show dialog to ask user to continue or start fresh
                         _uiState.update {
                             it.copy(
-                                pendingProblemForDialog = problemId,
+                                pendingProblemForDialog = cleanId,
                                 showSessionDialog = true
                             )
                         }
-                        DebugLogger.debugLog("MathViewModel", "Existing session found for problem: $problemId, showing dialog")
+                        DebugLogger.debugLog("MathViewModel", "Existing session found for problem: $cleanId, showing dialog")
                     } else {
                         // No existing session, start new one
-                        DebugLogger.debugLog("MathViewModel", "No existing session for problem: $problemId, starting new")
-                        startMathSession(problemId)
+                        DebugLogger.debugLog("MathViewModel", "No existing session for problem: $cleanId, starting new")
+                        startMathSession(cleanId)
                     }
                 } catch (e: Exception) {
                     DebugLogger.errorLog(
                         "MathViewModel",
                         "Error checking for existing session: ${e.message}"
                     )
-                    startMathSession(problemId)
+                    startMathSession(cleanId)
                 }
             }
         }
@@ -235,83 +261,142 @@ class MathViewModel @Inject constructor(
      * Start a new math tutoring session
      */
     private fun startMathSession(problemId: String) {
-        DebugLogger.debugLog("MathViewModel", "startMathSession called with problemId: '$problemId'")
-
-        viewModelScope.launch {
-            try {
-                _uiState.update { it.copy(isLoading = true) }
-                val isKannada = isKannada()
-                DebugLogger.debugLog("MathViewModel", "Starting session with isKannada: $isKannada (from app language)")
-
-                val sessionResult = mathSessionUseCase.startSession(
-                    problemId = problemId,
-                    studentId = userId,
-                    isKannada = isKannada
+        val cleanId = problemId.trim()
+        if (!isValidProblemId(cleanId)) {
+            DebugLogger.errorLog("MathViewModel", "startMathSession blocked — invalid problemId: '$problemId'")
+            _uiState.update {
+                it.copy(
+                    isLoading = false,
+                    errorMessage = context.getString(R.string.math_session_missing_problem)
                 )
+            }
+            return
+        }
 
-                if (sessionResult.success) {
-                    DebugLogger.debugLog("MathViewModel", "✓ Session started successfully. Setting state with problemId='$problemId', threadId='${sessionResult.threadId}'")
+        if (_uiState.value.sessionStarted && _uiState.value.problemId == cleanId) {
+            DebugLogger.debugLog("MathViewModel", "startMathSession skipped — already active for $cleanId")
+            return
+        }
 
-                    _uiState.update {
-                        it.copy(
-                            currentState = sessionResult.currentState ?: it.currentState,
-                            sessionStarted = true,
-                            isLoading = false,
-                            metadata = sessionResult.metadata ?: it.metadata,
-                            messages = sessionResult.messages,
-                            threadId = sessionResult.threadId,
-                            problemId = problemId,
-                            // Auto-speak the agent's first message + drive highlight,
-                            // mirroring ChatViewModel's shouldStartTTS/fullTextForTTS pattern
-                            shouldStartTTS = sessionResult.messages.lastOrNull { msg -> msg.role.lowercase() == "assistant" }?.content?.isNotEmpty() == true,
-                            fullTextForTTS = sessionResult.messages.lastOrNull { msg -> msg.role.lowercase() == "assistant" }?.content ?: it.fullTextForTTS
-                        )
-                    }
+        if (sessionStartInFlightFor == cleanId && sessionStartJob?.isActive == true) {
+            DebugLogger.debugLog("MathViewModel", "startMathSession deduped — already starting $cleanId")
+            return
+        }
 
-                    // Track Math Agent progress using conceptId instead of problemId
-                    // markMathAgentCompleted also marks CONCEPT/COMPLETED for the study component
-                    viewModelScope.launch {
-                        try {
-                            val concept = conceptRepository.getConceptByProblemId(problemId)
-                            val actualId = concept?.conceptId ?: problemId
-                            // Use language from uiState (set by SetKannada intent), fallback to SharedPrefs
-                            val lang = resolveProgressLanguage(_uiState.value.currentLanguage.takeIf { it.isNotBlank() })
-                            progressEventTracker.markMathAgentCompleted(userId, actualId, lang)
-                            DebugLogger.debugLog("MathViewModel", "Math agent progress tracked for concept: $actualId (problem: $problemId) [$lang]")
-                        } catch (e: Exception) {
-                            DebugLogger.errorLog("MathViewModel", "Error tracking math progress: ${e.message}")
-                        }
-                    }
+        sessionStartJob?.cancel()
+        sessionStartInFlightFor = cleanId
+        DebugLogger.debugLog("MathViewModel", "startMathSession called with problemId: '$cleanId'")
 
-                    // Verify state was updated
-                    val updatedState = _uiState.value
-                    DebugLogger.debugLog("MathViewModel", "State verified after session start - problemId: '${updatedState.problemId}', threadId: '${updatedState.threadId}', sessionStarted: ${updatedState.sessionStarted}")
-                } else {
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            errorMessage = sessionResult.agentResponse
-                        )
-                    }
-                    DebugLogger.errorLog(
-                        "MathViewModel",
-                        "✗ Failed to start session: ${sessionResult.agentResponse}"
+        sessionStartJob = viewModelScope.launch {
+            try {
+                awaitStartMathSession(cleanId)
+            } finally {
+                if (sessionStartInFlightFor == cleanId) {
+                    sessionStartInFlightFor = null
+                }
+            }
+        }
+    }
+
+    private suspend fun awaitStartMathSession(problemId: String) {
+        try {
+            _uiState.update { it.copy(isLoading = true, problemId = problemId) }
+            val isKannada = isKannada()
+            DebugLogger.debugLog("MathViewModel", "Starting session with isKannada: $isKannada (from app language)")
+
+            val sessionResult = mathSessionUseCase.startSession(
+                problemId = problemId,
+                studentId = userId,
+                isKannada = isKannada
+            )
+
+            if (sessionResult.success) {
+                DebugLogger.debugLog("MathViewModel", "✓ Session started successfully. Setting state with problemId='$problemId', threadId='${sessionResult.threadId}'")
+
+                _uiState.update {
+                    it.copy(
+                        currentState = sessionResult.currentState ?: it.currentState,
+                        sessionStarted = true,
+                        isLoading = false,
+                        metadata = sessionResult.metadata ?: it.metadata,
+                        messages = sessionResult.messages,
+                        threadId = sessionResult.threadId,
+                        problemId = problemId,
+                        // Auto-speak the agent's first message + drive highlight,
+                        // mirroring ChatViewModel's shouldStartTTS/fullTextForTTS pattern
+                        shouldStartTTS = sessionResult.messages.lastOrNull { msg -> msg.role.lowercase() == "assistant" }?.content?.isNotEmpty() == true,
+                        fullTextForTTS = sessionResult.messages.lastOrNull { msg -> msg.role.lowercase() == "assistant" }?.content ?: it.fullTextForTTS
                     )
                 }
-            } catch (e: Exception) {
+
+                // Track Math Agent progress using conceptId instead of problemId
+                // markMathAgentCompleted also marks CONCEPT/COMPLETED for the study component
+                viewModelScope.launch {
+                    try {
+                        val concept = conceptRepository.getConceptByProblemId(problemId)
+                        val actualId = concept?.conceptId ?: problemId
+                        // Use language from uiState (set by SetKannada intent), fallback to SharedPrefs
+                        val lang = resolveProgressLanguage(_uiState.value.currentLanguage.takeIf { it.isNotBlank() })
+                        progressEventTracker.markMathAgentCompleted(userId, actualId, lang)
+                        DebugLogger.debugLog("MathViewModel", "Math agent progress tracked for concept: $actualId (problem: $problemId) [$lang]")
+                    } catch (e: Exception) {
+                        DebugLogger.errorLog("MathViewModel", "Error tracking math progress: ${e.message}")
+                    }
+                }
+
+                // Verify state was updated
+                val updatedState = _uiState.value
+                DebugLogger.debugLog("MathViewModel", "State verified after session start - problemId: '${updatedState.problemId}', threadId: '${updatedState.threadId}', sessionStarted: ${updatedState.sessionStarted}")
+            } else {
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        errorMessage = e.message
+                        errorMessage = sessionResult.agentResponse
                     )
                 }
                 DebugLogger.errorLog(
                     "MathViewModel",
-                    "✗ Exception starting session: ${e.message}\n${e.stackTraceToString()}"
+                    "✗ Failed to start session: ${sessionResult.agentResponse}"
                 )
+            }
+        } catch (e: Exception) {
+            _uiState.update {
+                it.copy(
+                    isLoading = false,
+                    errorMessage = sessionResultFriendlyError(e)
+                )
+            }
+            DebugLogger.errorLog(
+                "MathViewModel",
+                "✗ Exception starting session: ${e.message}\n${e.stackTraceToString()}"
+            )
+        }
+    }
+
+    private fun mapLoadProblemsError(error: Throwable): String {
+        val status = ErrorHandler.httpStatusFrom(error)
+        return when (status) {
+            401 -> context.getString(R.string.error_please_sign_in_again)
+            in 500..599 -> context.getString(R.string.error_server_try_later)
+            else -> when (error) {
+                is Exception -> ErrorHandler.handleException(
+                    context,
+                    error,
+                    operation = "load math problems",
+                    tag = "MathViewModel"
+                )
+                else -> context.getString(R.string.math_session_failed_start)
             }
         }
     }
+
+    private fun sessionResultFriendlyError(error: Exception): String =
+        ErrorHandler.handleException(
+            context,
+            error,
+            operation = "start math session",
+            tag = "MathViewModel"
+        )
 
     /**
      * Send a message with optional image to continue the session
@@ -474,7 +559,11 @@ class MathViewModel @Inject constructor(
      * Loads the stored thread ID and resumes the session with history
      */
     private fun continuePreviousSession(problemId: String) {
-        viewModelScope.launch {
+        val cleanId = problemId.trim()
+        if (!isValidProblemId(cleanId)) return
+
+        sessionStartJob?.cancel()
+        sessionStartJob = viewModelScope.launch {
             try {
                 _uiState.update { it.copy(isLoading = true) }
 
@@ -487,7 +576,7 @@ class MathViewModel @Inject constructor(
                 }
 
                 // Load existing thread mapping
-                val mapping = mathSessionUseCase.loadThreadMapping(problemId)
+                val mapping = mathSessionUseCase.loadThreadMapping(cleanId)
                 if (mapping != null) {
                     val (threadId, sessionId) = mapping
                     DebugLogger.debugLog("MathViewModel", "Resuming session - threadId=$threadId, sessionId=$sessionId")
@@ -501,7 +590,7 @@ class MathViewModel @Inject constructor(
                                 sessionStarted = true,
                                 isLoading = false,
                                 threadId = threadId,
-                                problemId = problemId,
+                                problemId = cleanId,
                                 messages = sessionResult.messages,
                                 currentState = sessionResult.currentState ?: it.currentState,
                                 metadata = sessionResult.metadata ?: it.metadata,
@@ -525,8 +614,8 @@ class MathViewModel @Inject constructor(
                     }
                 } else {
                     // No mapping found, start fresh
-                    DebugLogger.debugLog("MathViewModel", "No session mapping found for problem $problemId")
-                    startMathSession(problemId)
+                    DebugLogger.debugLog("MathViewModel", "No session mapping found for problem $cleanId")
+                    awaitStartMathSession(cleanId)
                 }
             } catch (e: Exception) {
                 _uiState.update {
@@ -548,7 +637,11 @@ class MathViewModel @Inject constructor(
      * Used when user chooses to start new instead of resuming
      */
     private fun startFreshSession(problemId: String) {
-        viewModelScope.launch {
+        val cleanId = problemId.trim()
+        if (!isValidProblemId(cleanId)) return
+
+        sessionStartJob?.cancel()
+        sessionStartJob = viewModelScope.launch {
             try {
                 _uiState.update { it.copy(isLoading = true) }
 
@@ -561,22 +654,23 @@ class MathViewModel @Inject constructor(
                 }
 
                 // Delete existing session mapping
-                mathSessionUseCase.deleteSessionMapping(problemId)
-                DebugLogger.debugLog("MathViewModel", "Deleted existing session for problem: $problemId")
+                mathSessionUseCase.deleteSessionMapping(cleanId)
+                DebugLogger.debugLog("MathViewModel", "Deleted existing session for problem: $cleanId")
 
                 // Reset UI for new session
                 _uiState.update {
                     it.copy(
-                        problemId = problemId,
+                        problemId = cleanId,
                         messages = emptyList(),
                         threadId = null,
+                        sessionStarted = false,
                         currentState = "START",
                         metadata = it.metadata.copy()
                     )
                 }
 
-                // Start new session
-                startMathSession(problemId)
+                // Start new session in the same coroutine (no nested launch)
+                awaitStartMathSession(cleanId)
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(

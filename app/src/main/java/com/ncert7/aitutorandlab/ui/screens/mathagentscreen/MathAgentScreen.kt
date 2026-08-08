@@ -291,7 +291,8 @@ fun MathAgentScreen(
         onPermissionGranted = { permissionGranted = it },
         onSpeechTextProcessed = { },
         lastProcessedSpeechText = "",
-        conceptId = problemId,
+        // Math VM owns session start — do not auto-start study chat with problemId as conceptId.
+        conceptId = null,
         settingsState = settingsState,
         onSettingsStateUpdate = { settingsState = it },
         avatarBoyDisplayName = avatarBoyDisplayName,

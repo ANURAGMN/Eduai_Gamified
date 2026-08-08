@@ -455,8 +455,9 @@ class ChatViewModel @Inject constructor(
         if (openingMessage.isNotEmpty()) {
             handleAgentMessage(openingMessage, result.metadata)
         } else {
+            // Session is alive — don't paint a fake HTTP 500 "Server error." for a blank opener.
             DebugLogger.errorLog("ChatViewModel", "Session started but opening agent message was empty")
-            appendSessionError(500)
+            appendSessionError(null)
         }
         return result
     }

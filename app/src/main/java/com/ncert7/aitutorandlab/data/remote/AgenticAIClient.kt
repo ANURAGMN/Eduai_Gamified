@@ -114,9 +114,23 @@ class AgenticAIClient(
                             }
                             is ErrorHandler.ResponseHandlerResult.ServerError -> {
                                 lastEx = result.exception
-                                // Quota / internal errors return 500 for ~60s — don't chain retries.
-                                if (ErrorHandler.extractStatusCode(result.exception.message.orEmpty()) == 500) {
+                                val errMsg = result.exception.message.orEmpty()
+                                val code = ErrorHandler.extractStatusCode(errMsg)
+                                // Most 500s (quota / hard failures) won't heal on immediate retry.
+                                // Upstream LLM SSL EOF returns 500 with retry=start_new_session — retry those.
+                                val transientSsl500 = code == 500 && (
+                                    errMsg.contains("start_new_session", ignoreCase = true) ||
+                                        errMsg.contains("SSL error", ignoreCase = true) ||
+                                        errMsg.contains("unexpected eof", ignoreCase = true)
+                                )
+                                if (code == 500 && !transientSsl500) {
                                     break
+                                }
+                                if (transientSsl500) {
+                                    DebugLogger.debugLog(
+                                        "AgenticAIClient",
+                                        "Transient SSL/upstream 500 — will retry (attempt=$attempt)"
+                                    )
                                 }
                             }
                             is ErrorHandler.ResponseHandlerResult.ClientError -> {
@@ -517,8 +531,19 @@ class AgenticAIClient(
         sessionLabel: String? = null,
         isKannada: Boolean = false
     ): Result<MathStartSessionResponse> = withContext(Dispatchers.IO) {
+        val cleanProblemId = problemId.trim()
+        if (cleanProblemId.isEmpty() || cleanProblemId == "null") {
+            DebugLogger.errorLog(
+                "AgenticAIClient",
+                "Blocked startMathSession — problem_id is missing or invalid: '$problemId'"
+            )
+            return@withContext Result.failure(
+                IllegalArgumentException("problem_id is required")
+            )
+        }
+
         val req = MathStartSessionRequest(
-            problemId = problemId,
+            problemId = cleanProblemId,
             studentId = studentId,
             sessionLabel = sessionLabel,
             isKannada = isKannada

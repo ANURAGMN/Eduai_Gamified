@@ -55,6 +55,7 @@ fun EmailSignInForm(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var hasNavigated by remember { mutableStateOf(false) }
+    var institutionalSignInActive by remember { mutableStateOf(false) }
 
     val loginState by userViewModel.loginState.collectAsStateWithLifecycle()
     val existingUserSyncState by userViewModel.existingUserSyncState.collectAsStateWithLifecycle()
@@ -63,10 +64,14 @@ fun EmailSignInForm(
         existingUserSyncState is ExistingUserSyncState.Syncing
 
     LaunchedEffect(existingUserSyncState) {
+        if (!institutionalSignInActive && existingUserSyncState !is ExistingUserSyncState.Syncing) {
+            return@LaunchedEffect
+        }
         when (val state = existingUserSyncState) {
             is ExistingUserSyncState.Success -> {
                 if (!hasNavigated) {
                     hasNavigated = true
+                    institutionalSignInActive = false
                     OnboardingDebugHelper.prepareOnboardingReplayAfterSignIn(context)
                     navController.navigate("main") {
                         popUpTo("login") { inclusive = true }
@@ -76,10 +81,12 @@ fun EmailSignInForm(
                 }
             }
             is ExistingUserSyncState.Error -> {
+                if (!institutionalSignInActive) return@LaunchedEffect
                 onError(
                     state.exception.message?.takeIf { it.isNotBlank() }
                         ?: "Sign-in failed. Please try again."
                 )
+                institutionalSignInActive = false
                 userViewModel.resetExistingUserSyncState()
                 userViewModel.resetLoginState()
             }
@@ -88,12 +95,15 @@ fun EmailSignInForm(
     }
 
     LaunchedEffect(loginState) {
+        // Shared loginState is also used by Gmail — ignore errors from the Google flow.
+        if (!institutionalSignInActive) return@LaunchedEffect
         if (loginState is LoginState.Error) {
             val msg = (loginState as LoginState.Error).exception.message
             onError(
                 msg?.takeIf { it.isNotBlank() }
                     ?: "Invalid credentials. Use your @padaams.in account — not Gmail."
             )
+            institutionalSignInActive = false
             userViewModel.resetLoginState()
         }
     }
@@ -164,6 +174,7 @@ fun EmailSignInForm(
                         return@Button
                     }
                     FunnelAnalyticsTracker.track(FunnelStep.INSTITUTIONAL_SIGN_IN)
+                    institutionalSignInActive = true
                     userViewModel.signInWithPadaamsEmail(context, email, password)
                 },
                 enabled = !isLoading && email.isNotBlank() && password.isNotBlank(),
@@ -190,6 +201,7 @@ fun EmailSignInForm(
                         expanded = false
                         email = ""
                         password = ""
+                        institutionalSignInActive = false
                     }
                 },
                 enabled = !isLoading

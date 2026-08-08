@@ -21,6 +21,9 @@ class SharedPreferenceUtils(context: Context) : AppMigrationVersionStore {
         private const val KEY_HANDS_FREE_MODE = "key_hands_free_mode"
         private const val KEY_VOICE_FIRST = "key_input_voice_first"
         private const val KEY_SIMULATION_VOICE_ENABLED = "key_simulation_voice_enabled"
+        private const val KEY_SIM_COACH_MODE = "key_sim_coach_mode"
+        private const val KEY_SIM_COACH_MODE_MIGRATED = "key_sim_coach_mode_migrated_v3"
+        private const val KEY_SIM_COACH_MODE_MIGRATED_V4 = "key_sim_coach_mode_migrated_v4"
         private const val KEY_IS_LOGGED_IN = "key_is_logged_in"
         private const val KEY_SELECTED_SUBJECT = "selected_subject"
         private const val KEY_SELECTED_SUBJECT_ID = "selected_subject_id"
@@ -172,6 +175,45 @@ class SharedPreferenceUtils(context: Context) : AppMigrationVersionStore {
 
     fun setSimulationVoiceEnabled(enabled: Boolean) {
         prefs.edit { putBoolean(KEY_SIMULATION_VOICE_ENABLED, enabled) }
+    }
+
+    /**
+     * Selected guided-sim coaching style (v1–v4). Stored as the enum name; when null the caller's
+     * DEFAULT (now ONE_CLOCK/v4) applies.
+     *
+     * One-time migration: an older default was ADAPTIVE (v2), so early testers may have "ADAPTIVE"
+     * stored. Exactly once, clear a stored ADAPTIVE so those devices pick up the current default.
+     * Anyone who deliberately re-selects v2 afterward keeps it (the migration flag prevents
+     * re-clearing). Fresh installs / uninstalls already land on v4 via [SimCoachMode.DEFAULT].
+     */
+    fun getSimCoachMode(): String? {
+        if (!prefs.getBoolean(KEY_SIM_COACH_MODE_MIGRATED, false)) {
+            if (prefs.getString(KEY_SIM_COACH_MODE, null) == "ADAPTIVE") {
+                prefs.edit { remove(KEY_SIM_COACH_MODE) }
+            }
+            prefs.edit { putBoolean(KEY_SIM_COACH_MODE_MIGRATED, true) }
+        }
+        // v4 rollout: the default moved to ONE_CLOCK (v4). Early testers likely have ADAPTIVE (v2) or
+        // GUIDED (v3) stored — the OLD auto-defaults — which would pin them off v4. Exactly once, clear
+        // those so the device lands on the current default. An explicit re-select afterward sticks
+        // (setSimCoachMode marks both migrations done).
+        if (!prefs.getBoolean(KEY_SIM_COACH_MODE_MIGRATED_V4, false)) {
+            val stored = prefs.getString(KEY_SIM_COACH_MODE, null)
+            if (stored == "ADAPTIVE" || stored == "GUIDED") {
+                prefs.edit { remove(KEY_SIM_COACH_MODE) }
+            }
+            prefs.edit { putBoolean(KEY_SIM_COACH_MODE_MIGRATED_V4, true) }
+        }
+        return prefs.getString(KEY_SIM_COACH_MODE, null)
+    }
+
+    fun setSimCoachMode(modeName: String) {
+        // An explicit choice satisfies BOTH migrations so it's never second-guessed later.
+        prefs.edit {
+            putString(KEY_SIM_COACH_MODE, modeName)
+            putBoolean(KEY_SIM_COACH_MODE_MIGRATED, true)
+            putBoolean(KEY_SIM_COACH_MODE_MIGRATED_V4, true)
+        }
     }
 
     fun setSubjectSelectionId(subjectId: String) {

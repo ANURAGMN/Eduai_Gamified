@@ -144,6 +144,28 @@ fun SimulationIntroTtsController.speakSimulationStep(
     speak(text, dedupeKey = "$simulationKey|step|$stepIndex")
 }
 
+/**
+ * Reads an adaptive-coach line aloud during free-play. Keyed on a monotonically increasing
+ * [seq] so each new line (even a repeated hint) plays instead of being deduped away.
+ */
+fun SimulationIntroTtsController.speakSimulationCoach(
+    text: String,
+    simulationKey: String,
+    seq: Int,
+) {
+    speak(text, dedupeKey = "$simulationKey|coach|$seq")
+}
+
+/** Replays the current line on demand (Replay button); nonce keeps each replay un-deduped. */
+fun SimulationIntroTtsController.speakSimulationReplay(
+    text: String,
+    simulationKey: String,
+    nonce: Int,
+) {
+    stop()
+    speak(text, dedupeKey = "$simulationKey|replay|$nonce")
+}
+
 /** @deprecated Use [speakSimulationIntro] */
 fun SimulationIntroTtsController.speakFromHtml(
     htmlText: String,

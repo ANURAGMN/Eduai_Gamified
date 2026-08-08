@@ -203,7 +203,7 @@ class UserViewModel @Inject constructor(
                         val currentLanguage = _selectedLanguage.value
                         updateLanguage(currentLanguage)
 
-                        when (val result = repo.checkUserExists(firebaseUser.email)) {
+                        when (val result = repo.checkUserExists(firebaseUser.email, firebaseUser.id)) {
                             is UserCheckResult.Found -> {
                                 _user.value = result.user
                                 _loginState.value = LoginState.ExistingUser(result.user)
@@ -237,8 +237,8 @@ class UserViewModel @Inject constructor(
     /**
      * Check if user exists - delegates to repository
      */
-    suspend fun checkUserExists(uid: String): UserCheckResult {
-        return repo.checkUserExists(uid)
+    suspend fun checkUserExists(email: String, studentId: String? = null): UserCheckResult {
+        return repo.checkUserExists(email, studentId)
     }
 
     /**

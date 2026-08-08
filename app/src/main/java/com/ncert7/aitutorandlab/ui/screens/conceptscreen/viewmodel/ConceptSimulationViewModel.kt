@@ -114,26 +114,27 @@ class ConceptSimulationViewModel @Inject constructor(
             _trialThresholds.value = thresholds
             DebugLogger.debugLog(
                 TAG,
-                "Trial sim thresholds — budget=$htmlBudget, complete@${thresholds.completionAt}, " +
-                    "second@${thresholds.secondPromptAt}",
+                "Trial sim thresholds — budget=$htmlBudget, complete@${thresholds.completionAt}",
             )
         }
     }
 
-    fun onTrialSimClickCountChanged(clickCount: Int) {
-        // Clicks still sync knowledge bites; proceed prompt is time-based only.
-        DebugLogger.debugLog(TAG, "Trial sim interactions: $clickCount")
-    }
-
-    /** Called after the simulation has been visible for [SimulationViewerTiming.TRIAL_OVERLAY_MS]. */
+    /** Called only after [SimulationViewerTiming.TRIAL_OVERLAY_MS] on the page — never on click/coach end. */
     fun showTimeBasedExplorePromptIfNeeded() {
         if (timeExplorePromptShown || _trialPrompt.value != null) {
             DebugLogger.debugLog(TAG, "Trial explore prompt skipped — already shown")
             return
         }
+        if (remainingOverlayDelayMs() > 0L) {
+            DebugLogger.debugLog(
+                TAG,
+                "Trial explore prompt skipped — ${remainingOverlayDelayMs() / 1000}s left on time gate",
+            )
+            return
+        }
         timeExplorePromptShown = true
         _trialPrompt.value = SimulationTrialPromptKind.TIME_EXPLORATION
-        DebugLogger.debugLog(TAG, "Trial explore prompt shown after 2 minutes")
+        DebugLogger.debugLog(TAG, "Trial explore prompt shown after 3 minutes")
     }
 
     /** Milliseconds left before the second (footer / description) narration plays (survives rotation). */
@@ -164,6 +165,13 @@ class ConceptSimulationViewModel @Inject constructor(
         val guideDismissed: Boolean = false,
         /** Highest guide step already read aloud — survives rotation so TTS isn't repeated. */
         val narratedStepIdx: Int = -1,
+        /** True once the brief intro walkthrough is done and the coach is in free-play adaptive mode. */
+        val coachAdaptive: Boolean = false,
+        /** True once the learner has done enough (interactions/time) and the coach has eased off. */
+        val coachEasedOff: Boolean = false,
+        /** Wall-clock + interaction baseline captured when adaptive mode began, for the ease-off rule. */
+        val adaptiveStartMs: Long = 0L,
+        val adaptiveStartInteractions: Int = 0,
     )
 
     private val _viewerSession = MutableStateFlow(SimViewerSession())
@@ -232,6 +240,50 @@ class ConceptSimulationViewModel @Inject constructor(
     fun dismissGuide(url: String) {
         if (_viewerSession.value.url != url) return
         _viewerSession.value = _viewerSession.value.copy(guideDismissed = true)
+    }
+
+    /**
+     * Ends the brief intro walkthrough and hands over to free-play adaptive coaching. The
+     * baseline time + interaction count are stamped here so the ease-off rule measures only
+     * what the learner does *after* the intro. No-op once already adaptive (survives rotation).
+     */
+    fun enterAdaptiveCoach(url: String, nowMs: Long, interactions: Int) {
+        val s = _viewerSession.value
+        if (s.url != url || s.coachAdaptive) return
+        _viewerSession.value = s.copy(
+            coachAdaptive = true,
+            adaptiveStartMs = nowMs,
+            adaptiveStartInteractions = interactions,
+        )
+        DebugLogger.debugLog(TAG, "Adaptive coach entered @${nowMs} interactions=$interactions")
+    }
+
+    /** Marks the coach as having eased off (learner has done ~enough); keeps it out of the way. */
+    fun easeOffCoach(url: String) {
+        val s = _viewerSession.value
+        if (s.url != url || s.coachEasedOff) return
+        _viewerSession.value = s.copy(coachEasedOff = true)
+        DebugLogger.debugLog(TAG, "Adaptive coach eased off")
+    }
+
+    /**
+     * Restarts the coach from the top — used when the learner switches coaching style (v1/v2/v3)
+     * so the new style can be observed from the beginning. Keeps the guide unlocked + the harvested
+     * structure so it re-arms immediately.
+     */
+    fun restartCoach(url: String) {
+        val s = _viewerSession.value
+        if (s.url != url) return
+        _viewerSession.value = s.copy(
+            guideStepIdx = 0,
+            guideDismissed = false,
+            narratedStepIdx = -1,
+            coachAdaptive = false,
+            coachEasedOff = false,
+            adaptiveStartMs = 0L,
+            adaptiveStartInteractions = 0,
+        )
+        DebugLogger.debugLog(TAG, "Coach restarted for style switch")
     }
 
     fun clearViewerSession() {

@@ -27,7 +27,7 @@ import com.ncert7.aitutorandlab.ui.theme.TextSecondary
 import com.ncert7.aitutorandlab.ui.theme.White
 
 enum class SimulationTrialPromptKind {
-    /** Shown ~2 minutes after the learner opens a simulation in the viewer. */
+    /** Shown ~3 minutes after the learner opens a simulation in the viewer. */
     TIME_EXPLORATION,
 }
 

@@ -114,7 +114,12 @@ object SimulationIntroTtsSanitizer {
             .replace("\u221A", " square root of ")
             .replace("\u03C0", " pi ")
             .replace(Regex("(?<![a-zA-Z])-(\\d+(?:[.,]\\d+)?)"), "minus $1")
-            .replace(Regex("(?<=\\d),(?=\\d{3}\\b)"), "")
+            // Strip ANY digit-grouping comma — both Western 3-digit (30,000) AND Indian 2-2-3
+            // (3,00,000 / 3,87,69,957). The old pattern only matched a comma followed by exactly 3
+            // digits, so Indian-grouped numbers kept a stray comma and the TTS read them digit-by-
+            // digit ("3 zero zero zero zero zero"). A comma between two digits is always a grouping
+            // separator here (decimals use "."), so removing it lets the engine read a real number.
+            .replace(Regex("(?<=\\d),(?=\\d)"), "")
     }
 
     private fun expandVulgarFractions(text: String): String {

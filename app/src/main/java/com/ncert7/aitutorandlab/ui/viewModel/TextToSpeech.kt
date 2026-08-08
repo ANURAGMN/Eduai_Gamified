@@ -5,7 +5,7 @@ import android.app.Application
 import android.content.Context
 import android.os.Build
 import android.os.Bundle
-import android.speech.tts.TextToSpeech
+import android.speech.tts.TextToSpeech as AndroidTextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import android.speech.tts.Voice
 import android.webkit.WebView
@@ -22,7 +22,7 @@ import java.util.Locale
 import javax.inject.Inject
 
 @HiltViewModel
-class TextToSpeech @Inject constructor() : ViewModel(), TextToSpeech.OnInitListener {
+class TextToSpeech @Inject constructor() : ViewModel(), AndroidTextToSpeech.OnInitListener {
 
     data class TTSState(
         val isInitialized: Boolean = false,
@@ -50,7 +50,7 @@ class TextToSpeech @Inject constructor() : ViewModel(), TextToSpeech.OnInitListe
     private val _state = MutableStateFlow(TTSState())
     val state: StateFlow<TTSState> = _state.asStateFlow()
 
-    private var textToSpeech: TextToSpeech? = null
+    private var textToSpeech: AndroidTextToSpeech? = null
     private var webView: WebView? = null
     private var nativeLipSyncEnabled = false
 
@@ -172,13 +172,14 @@ class TextToSpeech @Inject constructor() : ViewModel(), TextToSpeech.OnInitListe
                 lifecycleCallbacksRegistered = true
             }
         }
+        register(this)
 
         //Only skip if the engine instance already exists
         if (textToSpeech != null) return
 
         updateStatus("Initializing Text-to-Speech...")
         DebugLogger.debugLog("TextToSpeech", "Initializing Text-to-Speech...")
-        textToSpeech = TextToSpeech(context, this)
+        textToSpeech = AndroidTextToSpeech(context, this)
     }
 
     /** When true, lip sync is driven by [EduTutorAvatarWithLipSync] instead of WebView JS. */
@@ -220,6 +221,37 @@ class TextToSpeech @Inject constructor() : ViewModel(), TextToSpeech.OnInitListe
     companion object {
         private const val PRE_SPEAK_FLUSH_ID = "pre_speak_flush"
         private const val FORCE_VOICE_PREFIX = "force_voice_"
+
+        // Fullscreen ads (rewarded/interstitial) may NOT pause the host activity, and the WebView
+        // speech engine isn't governed by the activity lifecycle — so a playing utterance can leak
+        // over an ad. The ad manager flips this flag around show/dismiss; every live engine mutes
+        // and no new speech starts while it's set.
+        @Volatile
+        var adShowing: Boolean = false
+            private set
+
+        private val liveInstances =
+            java.util.Collections.newSetFromMap(java.util.WeakHashMap<TextToSpeech, Boolean>())
+
+        private fun register(t: TextToSpeech) {
+            synchronized(liveInstances) { liveInstances.add(t) }
+        }
+
+        private fun unregister(t: TextToSpeech) {
+            synchronized(liveInstances) { liveInstances.remove(t) }
+        }
+
+        /** Call when a fullscreen ad becomes visible: mute and hard-stop every live TTS engine. */
+        fun onAdShown() {
+            adShowing = true
+            val snapshot = synchronized(liveInstances) { liveInstances.toList() }
+            snapshot.forEach { runCatching { it.stop() } }
+        }
+
+        /** Call when the ad is dismissed/failed so speech is allowed again. */
+        fun onAdDismissed() {
+            adShowing = false
+        }
     }
 
     fun setupWebView(webView: WebView) {
@@ -247,7 +279,7 @@ class TextToSpeech @Inject constructor() : ViewModel(), TextToSpeech.OnInitListe
     }
 
     override fun onInit(status: Int) {
-        if (status == TextToSpeech.SUCCESS) {
+        if (status == AndroidTextToSpeech.SUCCESS) {
             textToSpeech?.let { tts ->
                 // register listener so we can update current word / speaking state
                 tts.setOnUtteranceProgressListener(utteranceListener)
@@ -342,8 +374,8 @@ class TextToSpeech @Inject constructor() : ViewModel(), TextToSpeech.OnInitListe
             //  FORCE the engine to accept the new voice with a silent flush
             val utteranceId = "force_voice_${System.currentTimeMillis()}"
             val bundle = Bundle()
-            bundle.putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, utteranceId)
-            tts.speak("", TextToSpeech.QUEUE_FLUSH, bundle, utteranceId)
+            bundle.putString(AndroidTextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, utteranceId)
+            tts.speak("", AndroidTextToSpeech.QUEUE_FLUSH, bundle, utteranceId)
             _state.value = _state.value.copy(
                 selectedVoice = voice,
                 selectedVoiceDisplayName = formatVoiceName(voice)
@@ -367,9 +399,9 @@ class TextToSpeech @Inject constructor() : ViewModel(), TextToSpeech.OnInitListe
      * Speak the given text with lip sync animation
      */
     fun speak(text: String, processedData: ProcessedText? = null) {
-        // Don't start talking if the app isn't in the foreground (e.g. an async result arrives
-        // while an ad is showing or the app is backgrounded).
-        if (!appInForeground) return
+        // Don't start talking if the app isn't in the foreground, or while a fullscreen ad is up
+        // (e.g. an async result arrives while an ad is showing or the app is backgrounded).
+        if (!appInForeground || adShowing) return
         if (!_state.value.isInitialized || text.isBlank()) {
             updateStatus("Error: Cannot speak - TTS not ready or empty text")
             return
@@ -403,8 +435,8 @@ class TextToSpeech @Inject constructor() : ViewModel(), TextToSpeech.OnInitListe
                     tts.voice = preferredVoice
                     // Force the engine to accept the new voice with a silent flush
                     val bundle = Bundle()
-                    bundle.putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, PRE_SPEAK_FLUSH_ID)
-                    tts.speak("", TextToSpeech.QUEUE_FLUSH, bundle, PRE_SPEAK_FLUSH_ID)
+                    bundle.putString(AndroidTextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, PRE_SPEAK_FLUSH_ID)
+                    tts.speak("", AndroidTextToSpeech.QUEUE_FLUSH, bundle, PRE_SPEAK_FLUSH_ID)
                 }
             }
 
@@ -426,8 +458,8 @@ class TextToSpeech @Inject constructor() : ViewModel(), TextToSpeech.OnInitListe
 
             val utteranceId = "tts_${System.currentTimeMillis()}"
             val bundle = Bundle()
-            bundle.putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, utteranceId)
-            tts.speak(cleanedText, TextToSpeech.QUEUE_FLUSH, bundle, utteranceId)
+            bundle.putString(AndroidTextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, utteranceId)
+            tts.speak(cleanedText, AndroidTextToSpeech.QUEUE_FLUSH, bundle, utteranceId)
         }
     }
 
@@ -512,7 +544,7 @@ class TextToSpeech @Inject constructor() : ViewModel(), TextToSpeech.OnInitListe
             }
 
             val result = tts.setLanguage(locale)
-            if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+            if (result == AndroidTextToSpeech.LANG_MISSING_DATA || result == AndroidTextToSpeech.LANG_NOT_SUPPORTED) {
                 // Requested voice data isn't installed on this device. Fall back to
                 // English audio, but keep selectedLanguage honest (was wrongly set to
                 // hi-IN before) and surface a clear, actionable message.
@@ -795,6 +827,7 @@ class TextToSpeech @Inject constructor() : ViewModel(), TextToSpeech.OnInitListe
      * Cleanup resources
      */
     fun cleanup() {
+        unregister(this)
         if (lifecycleCallbacksRegistered) {
             application?.unregisterActivityLifecycleCallbacks(activityLifecycleCallbacks)
             lifecycleCallbacksRegistered = false

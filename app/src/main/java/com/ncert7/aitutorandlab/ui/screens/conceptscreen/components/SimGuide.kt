@@ -14,12 +14,137 @@ data class SimGuideStep(
     val autoAdvance: Boolean = true,
 )
 
+/**
+ * Which coaching style the guided-sim coach uses. Selectable at runtime (per the header selector)
+ * so the three can be compared side by side on the same simulation:
+ *  - [SCRIPTED] (v1): the original linear walkthrough — every step, start to finish, then done.
+ *  - [ADAPTIVE] (v2): a brief intro walkthrough, then hands-off; coaches only on wrong/stuck and
+ *    eases off after enough interactions/time.
+ *  - [GUIDED] (v3): fully guided to the end — walks every step, then keeps suggesting and
+ *    highlighting the next action round after round, reacting to wrong answers AND to off-path
+ *    detours, until the mission's rounds are done or every control has been explored.
+ */
+enum class SimCoachMode(val short: String, val label: String, val blurb: String) {
+    SCRIPTED("V1", "Scripted walkthrough", "Original step-by-step guide, start to finish."),
+    ADAPTIVE("V2", "Brief intro, then adaptive", "Short intro, then hands-off — helps on wrong/stuck, then eases off."),
+    GUIDED("V3", "Fully guided", "Guides every round to the end, reacting to wrong answers and detours."),
+    ONE_CLOCK("V4", "One-clock coach", "Page-side loop owns glow + text + voice on one clock — never out of sync."),
+    ;
+
+    companion object {
+        // v4 is the one-clock coach: a single page-side loop reads each round and renders glow + text
+        // + voice together (Kotlin is a passive mirror), so nothing can drift out of sync. Default to
+        // it; V1/V2/V3 remain selectable for comparison.
+        val DEFAULT = ONE_CLOCK
+        fun fromKey(key: String?): SimCoachMode =
+            values().firstOrNull { it.name == key } ?: DEFAULT
+    }
+}
+
 /** A pre-authored, hosted guide for a simulation (one per sim, model-generated + reviewed). */
 data class SimGuideDoc(
     val simId: String,
     val lang: String,
     val steps: List<GuideStepDoc>,
+    val coach: SimCoachData? = null,
+    val practice: SimPracticeDoc? = null,
 )
+
+/**
+ * Authored, repeatable practice rounds for v3 on scoring/puzzle sims (Math especially). After the
+ * lesson is taught, the coach runs [rounds] rounds of this short guided sequence: it walks the
+ * [steps] (highlighting each control, gating on the tap, auto-advancing pure guidance), then the
+ * learner's Check/Submit produces a verdict. On a correct verdict it says an [onCorrect] line
+ * (the observation/inference) and starts the next round; on a wrong one it says [onWrong] (why +
+ * how to fix) and lets them retry. After [rounds] wins it plays [done].
+ */
+data class SimPracticeDoc(
+    val rounds: Int,
+    val steps: List<GuideStepDoc>,
+    val onCorrect: List<String>,
+    val onWrong: List<String>,
+    val done: String?,
+)
+
+/**
+ * Authored per-simulation coaching for the "fully guided" adaptive mode. After a brief intro
+ * walkthrough (the first few [SimGuideDoc.steps]) the coach goes hands-off: the learner tries
+ * things freely, and the coach only speaks up to (a) explain *why* an answer was wrong,
+ * (b) nudge when the learner is stuck, or (c) celebrate a correct answer. It eases off once the
+ * learner has done enough — [easeOffAfterInteractions] taps or [easeOffAfterSeconds] seconds of
+ * active play (a proxy for finishing ~75% of the mission).
+ *
+ * All banks are cycled through in order and then repeat, so authoring 2–4 lines each is plenty.
+ * When a sim ships no `coach` block, [SimCoachData.default] fills in generic-but-usable copy.
+ */
+data class SimCoachData(
+    val mission: String?,
+    val whenStuck: List<String>,
+    val whenWrong: List<String>,
+    val whenCorrect: List<String>,
+    val doneMessage: String,
+    /** Gentle redirects (v3) when the learner taps something other than the suggested control. */
+    val whenDeviate: List<String> = emptyList(),
+    /**
+     * Per-element inference lines for v3 exploration, keyed by (lowercased) control label. Lets the
+     * coach say the actual result for EACH option — "Vinegar is an acid — it turns blue litmus red."
+     * — not just the two the guide scripts. Matched by substring so "lemon" hits "Lemon Juice".
+     */
+    val elements: Map<String, String> = emptyMap(),
+    val introSteps: Int = 2,
+    val stuckAfterSeconds: Int = 22,
+    val easeOffAfterInteractions: Int = 8,
+    val easeOffAfterSeconds: Int = 180,
+    /** v3 only: how many correct rounds count as "done" when the sim reports verdicts. */
+    val roundsToComplete: Int = 5,
+) {
+    fun stuckLine(i: Int): String? = whenStuck.cycle(i)
+    fun wrongLine(i: Int): String? = whenWrong.cycle(i)
+    fun correctLine(i: Int): String? = whenCorrect.cycle(i)
+    fun deviateLine(i: Int): String? = whenDeviate.cycle(i)
+
+    /** The authored inference for an option's label, matched leniently (either contains the other). */
+    fun inferenceFor(label: String): String? {
+        if (elements.isEmpty() || label.isBlank()) return null
+        val l = label.trim().lowercase()
+        elements[l]?.let { return it }
+        // Longest keys first so "baking soda" wins over "soda".
+        return elements.entries
+            .sortedByDescending { it.key.length }
+            .firstOrNull { (k, _) -> l.contains(k) || k.contains(l) }
+            ?.value
+    }
+
+    private fun List<String>.cycle(i: Int): String? =
+        if (isEmpty()) null else this[((i % size) + size) % size]
+
+    companion object {
+        /** Generic coach used when a sim ships no authored `coach` block. */
+        fun default(mission: String?): SimCoachData = SimCoachData(
+            mission = mission,
+            whenStuck = listOf(
+                "Give it a try — tap one of the controls and watch what happens.",
+                "Not sure where to start? Try the highlighted control, then check the result.",
+                "Take your best guess — you can always try again.",
+            ),
+            whenWrong = listOf(
+                "Not quite — take another look and try again.",
+                "Close! Think about what the question is really asking, then give it another go.",
+            ),
+            whenCorrect = listOf(
+                "Nice — that's right! Keep going.",
+                "Great work! Try the next one.",
+                "You've got it. See if you can do it again.",
+            ),
+            whenDeviate = listOf(
+                "Nice curiosity! For this round, try the glowing control.",
+                "Good to explore — when you're ready, tap the highlighted one to continue.",
+            ),
+            doneMessage = "You've got the hang of this! Keep exploring on your own, " +
+                "or move on whenever you're ready.",
+        )
+    }
+}
 
 /** A hosted step: the instruction, and the label of the control it points at (null = observe). */
 data class GuideStepDoc(
@@ -39,6 +164,19 @@ private data class HarvestedControl(
             tag.equals("textarea", ignoreCase = true)
     val needsNext: Boolean get() = isSlider || isTextInput
 }
+
+/**
+ * A single interactive control the page exposed, classified so the v3 tutor can guide a
+ * select → act → observe loop over *every* element (e.g. try each solution, then dip):
+ *  - [isAction] controls trigger a result ("Dip", "Add", "Mix", "Check"…).
+ *  - the rest are options you pick first (lemon, soap, water…).
+ */
+data class SimControl(
+    val index: Int,
+    val label: String,
+    val isAction: Boolean,
+    val needsNext: Boolean,
+)
 
 /**
  * Turns the harvested control structure (from the injected DOM harvester) into a short,
@@ -131,9 +269,17 @@ object SimGuideBuilder {
      * DOM). Steps whose target isn't found become plain "observe" steps rather than gating
      * on a missing element.
      */
-    fun buildFromDoc(doc: SimGuideDoc, structureJson: String): List<SimGuideStep> {
+    fun buildFromDoc(doc: SimGuideDoc, structureJson: String): List<SimGuideStep> =
+        buildSteps(doc.steps, structureJson)
+
+    /**
+     * Maps a list of authored [GuideStepDoc]s to live [SimGuideStep]s (label → data-edu-step index),
+     * so highlight + tap-gating work against the real DOM. Shared by the scripted guide and the
+     * repeatable practice rounds.
+     */
+    fun buildSteps(steps: List<GuideStepDoc>, structureJson: String): List<SimGuideStep> {
         val controls = parse(structureJson)
-        return doc.steps
+        return steps
             .filter { it.text.isNotBlank() }
             .map { s ->
                 val control = s.target?.takeIf { it.isNotBlank() }?.let { matchControl(controls, it) }
@@ -144,6 +290,21 @@ object SimGuideBuilder {
                 )
             }
     }
+
+    /**
+     * All interactive controls the page harvested, classified into options vs. action triggers.
+     * Powers the v3 "cover every element" exploration after the scripted lesson.
+     */
+    fun harvestedControls(structureJson: String): List<SimControl> =
+        parse(structureJson).map { c ->
+            val l = c.label.lowercase()
+            SimControl(
+                index = c.index,
+                label = c.label,
+                isAction = ACTION_HINTS.any { l.contains(it) },
+                needsNext = c.needsNext,
+            )
+        }
 
     /** Parse a hosted guide JSON document. */
     fun parseDoc(json: String): SimGuideDoc? =
@@ -164,11 +325,70 @@ object SimGuideBuilder {
                 simId = o.optString("simId"),
                 lang = o.optString("lang", "en"),
                 steps = steps,
+                coach = parseCoach(o.optJSONObject("coach")),
+                practice = parsePractice(o.optJSONObject("practice")),
             )
         } catch (e: Exception) {
             DebugLogger.errorLog("SimGuide", "parseDoc failed: ${e.message}")
             null
         }
+
+    private fun parsePractice(o: JSONObject?): SimPracticeDoc? {
+        if (o == null) return null
+        val arr = o.optJSONArray("steps") ?: return null
+        val steps = (0 until arr.length()).mapNotNull { i ->
+            val so = arr.optJSONObject(i) ?: return@mapNotNull null
+            val text = so.optString("text").trim()
+            if (text.isEmpty()) null
+            else GuideStepDoc(text = text, target = so.optString("target").trim().ifEmpty { null })
+        }
+        if (steps.isEmpty()) return null
+        fun bank(key: String): List<String> {
+            val a = o.optJSONArray(key) ?: return emptyList()
+            return (0 until a.length()).mapNotNull { a.optString(it).trim().ifEmpty { null } }
+        }
+        return SimPracticeDoc(
+            rounds = o.optInt("rounds", 3).coerceIn(1, 20),
+            steps = steps,
+            onCorrect = bank("onCorrect"),
+            onWrong = bank("onWrong"),
+            done = o.optString("done").trim().ifEmpty { null },
+        )
+    }
+
+    private fun parseCoach(o: JSONObject?): SimCoachData? {
+        if (o == null) return null
+        fun bank(key: String): List<String> {
+            val arr = o.optJSONArray(key) ?: return emptyList()
+            return (0 until arr.length())
+                .mapNotNull { arr.optString(it).trim().ifEmpty { null } }
+        }
+        val elements = o.optJSONObject("elements")?.let { eo ->
+            buildMap {
+                eo.keys().forEach { k ->
+                    val v = eo.optString(k).trim()
+                    if (k.isNotBlank() && v.isNotEmpty()) put(k.trim().lowercase(), v)
+                }
+            }
+        } ?: emptyMap()
+        val base = SimCoachData.default(o.optString("mission").trim().ifEmpty { null })
+        return base.copy(
+            mission = o.optString("mission").trim().ifEmpty { base.mission },
+            whenStuck = bank("whenStuck").ifEmpty { base.whenStuck },
+            whenWrong = bank("whenWrong").ifEmpty { base.whenWrong },
+            whenCorrect = bank("whenCorrect").ifEmpty { base.whenCorrect },
+            whenDeviate = bank("whenDeviate").ifEmpty { base.whenDeviate },
+            elements = elements,
+            doneMessage = o.optString("done").trim().ifEmpty { base.doneMessage },
+            introSteps = o.optInt("introSteps", base.introSteps).coerceAtLeast(0),
+            stuckAfterSeconds = o.optInt("stuckAfterSeconds", base.stuckAfterSeconds).coerceAtLeast(6),
+            easeOffAfterInteractions =
+                o.optInt("easeOffAfterInteractions", base.easeOffAfterInteractions).coerceAtLeast(1),
+            easeOffAfterSeconds =
+                o.optInt("easeOffAfterSeconds", base.easeOffAfterSeconds).coerceAtLeast(30),
+            roundsToComplete = o.optInt("roundsToComplete", base.roundsToComplete).coerceAtLeast(1),
+        )
+    }
 
     private fun matchControl(controls: List<HarvestedControl>, target: String): HarvestedControl? {
         val t = target.trim().lowercase()

@@ -47,65 +47,65 @@ class FirebaseRepository(
     }
 
     /**
-     * Check if a user exists in Firestore by email and appName
-     * If user exists with email but no appName field, update it with the current app
-     * @return UserCheckResult indicating Found, NotFound, or Error
+     * Check if a user exists in Firestore by email (and optional Google subject id).
+     * Tries direct document lookup first — legacy profiles are stored at users/{googleSubId}.
+     * Migrates missing appName for pre-rebrand accounts.
      */
-    suspend fun checkUserExists(userId: String): UserCheckResult {
+    suspend fun checkUserExists(email: String, studentId: String? = null): UserCheckResult {
         return try {
-            // Validate user ID (email) is not empty
-            if (userId.isBlank()) {
-                DebugLogger.errorLog("FirebaseRepository", "Cannot check user: User ID is empty")
-                return UserCheckResult.Error(IllegalArgumentException("User ID cannot be empty"))
+            if (email.isBlank()) {
+                DebugLogger.errorLog("FirebaseRepository", "Cannot check user: email is empty")
+                return UserCheckResult.Error(IllegalArgumentException("User email cannot be empty"))
             }
 
-            // Query by email and appName to handle multi-app scenario
+            if (!studentId.isNullOrBlank()) {
+                val direct = usersCollection.document(studentId).get().await()
+                if (direct.exists()) {
+                    val user = direct.toObject(User::class.java)
+                    if (user != null) {
+                        DebugLogger.debugLog("FirebaseRepository", "User found by studentId: $studentId")
+                        return UserCheckResult.Found(migrateAppNameIfNeeded(direct.reference, user))
+                    }
+                }
+            }
+
             val query = usersCollection
-                .whereEqualTo("email", userId)
+                .whereEqualTo("email", email)
                 .whereEqualTo("appName", AppConfig.APP_NAME)
                 .get()
                 .await()
 
-            if (query.documents.isEmpty()) {
-                // Check if user exists with this email but without appName field
-                // This handles the migration case where old users don't have appName
-                val emailQuery = usersCollection
-                    .whereEqualTo("email", userId)
-                    .get()
-                    .await()
-
-                if (emailQuery.documents.isNotEmpty()) {
-                    val existingDoc = emailQuery.documents.first()
-                    val user = existingDoc.toObject(User::class.java)
-
-                    if (user != null && user.appName.isBlank()) {
-                        // User exists but has no appName - add it
-                        DebugLogger.debugLog("FirebaseRepository", "Found user without appName for email: $userId, updating with current app")
-                        existingDoc.reference.update("appName", AppConfig.APP_NAME).await()
-
-                        // Return the user with updated appName
-                        val updatedUser = user.copy(appName = AppConfig.APP_NAME)
-                        UserCheckResult.Found(updatedUser)
-                    } else {
-                        // User exists but belongs to a different app
-                        DebugLogger.debugLog("FirebaseRepository", "User found with email but different app: $userId")
-                        UserCheckResult.NotFound
-                    }
-                } else {
-                    DebugLogger.debugLog("FirebaseRepository", "User not found: $userId")
-                    UserCheckResult.NotFound
-                }
-            } else {
-                val snapshot = query.documents.first()
-                val user = snapshot.toObject(User::class.java)
+            if (query.documents.isNotEmpty()) {
+                val user = query.documents.first().toObject(User::class.java)
                 if (user != null) {
-                    DebugLogger.debugLog("FirebaseRepository", "User found for app: $userId - ${AppConfig.APP_NAME}")
-                    UserCheckResult.Found(user)
-                } else {
-                    DebugLogger.errorLog("FirebaseRepository", "Failed to parse user data for: $userId")
-                    UserCheckResult.Error(Exception("Failed to parse user data"))
+                    DebugLogger.debugLog("FirebaseRepository", "User found for app: $email - ${AppConfig.APP_NAME}")
+                    return UserCheckResult.Found(user)
+                }
+                return UserCheckResult.Error(Exception("Failed to parse user data"))
+            }
+
+            val emailQuery = usersCollection
+                .whereEqualTo("email", email)
+                .get()
+                .await()
+
+            if (emailQuery.documents.isNotEmpty()) {
+                val existingDoc = emailQuery.documents.first()
+                val user = existingDoc.toObject(User::class.java)
+                if (user != null) {
+                    if (user.appName.isBlank() || user.appName == AppConfig.APP_NAME) {
+                        DebugLogger.debugLog(
+                            "FirebaseRepository",
+                            "Found legacy user without appName for email: $email, migrating"
+                        )
+                        return UserCheckResult.Found(migrateAppNameIfNeeded(existingDoc.reference, user))
+                    }
+                    DebugLogger.debugLog("FirebaseRepository", "User found with email but different app: $email")
                 }
             }
+
+            DebugLogger.debugLog("FirebaseRepository", "User not found: $email")
+            UserCheckResult.NotFound
         } catch (e: FirebaseNetworkException) {
             DebugLogger.errorLog("FirebaseRepository", "Network error checking user: ${e.message}")
             UserCheckResult.Error(NetworkException("Network error. Please check your connection and try again.", e))
@@ -114,6 +114,9 @@ class FirebaseRepository(
             when {
                 isQuotaExceeded(e) -> UserCheckResult.Error(
                     Exception("Service busy, try again shortly.")
+                )
+                isPermissionDenied(e) -> UserCheckResult.Error(
+                    Exception("Sign-in blocked by server permissions. Please update the app or try again shortly.")
                 )
                 isNetworkError(e) -> UserCheckResult.Error(
                     NetworkException("Network error. Please check your connection and try again.", e)
@@ -133,6 +136,15 @@ class FirebaseRepository(
             DebugLogger.errorLog("FirebaseRepository", "Unexpected error checking user: ${e.message}")
             UserCheckResult.Error(e)
         }
+    }
+
+    private suspend fun migrateAppNameIfNeeded(
+        docRef: com.google.firebase.firestore.DocumentReference,
+        user: User,
+    ): User {
+        if (user.appName.isNotBlank()) return user
+        docRef.update("appName", AppConfig.APP_NAME).await()
+        return user.copy(appName = AppConfig.APP_NAME)
     }
 
     suspend fun createNewUser(user: User): Boolean {
@@ -303,6 +315,10 @@ class FirebaseRepository(
                         message.contains("quota")
             }
         }
+    }
+
+    private fun isPermissionDenied(exception: FirebaseFirestoreException): Boolean {
+        return exception.code == FirebaseFirestoreException.Code.PERMISSION_DENIED
     }
 
     private fun isQuotaExceeded(exception: FirebaseFirestoreException): Boolean {
