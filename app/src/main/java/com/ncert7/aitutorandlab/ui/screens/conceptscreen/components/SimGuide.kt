@@ -41,6 +41,27 @@ enum class SimCoachMode(val short: String, val label: String, val blurb: String)
     }
 }
 
+/**
+ * How the coach delivers help within the one-clock coach. Student-switchable, fixed (no adaptivity).
+ * The `id` is what the page-side engine reads via window.__eduHintMode.
+ *  - [ASK]      Try-first: state the problem, wait; Hint gives a nudge, then the answer.
+ *  - [GUIDED]   Step-by-step: reveal the next move + glow right away.
+ *  - [SELF]     Self-explain: pose the reasoning first; reveal on request.
+ *  - [ONDEMAND] Answer-on-tap: stay quiet; one Show-answer reveals.
+ */
+enum class HintMode(val id: String, val label: String) {
+    ASK("ask", "Try first"),
+    GUIDED("guided", "Step-by-step"),
+    SELF("self", "Self-explain"),
+    ONDEMAND("ondemand", "Answer on tap"),
+    ;
+
+    companion object {
+        val DEFAULT = ASK
+        fun fromId(id: String?): HintMode = values().firstOrNull { it.id == id } ?: DEFAULT
+    }
+}
+
 /** A pre-authored, hosted guide for a simulation (one per sim, model-generated + reviewed). */
 data class SimGuideDoc(
     val simId: String,

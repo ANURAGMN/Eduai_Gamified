@@ -2,6 +2,8 @@ package com.ncert7.aitutorandlab.ui.screens.conceptscreen.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -230,6 +232,14 @@ fun SimAdaptiveCoachBar(
     onBack: (() -> Unit)? = null,
     /** Move forward when the coach is waiting for the learner (null = nothing to confirm now). */
     onContinue: (() -> Unit)? = null,
+    /** Open the detailed explanation panel (page-side). Null hides the chip. */
+    onExplain: (() -> Unit)? = null,
+    /** Current hint model id ("ask" | "guided" | "self" | "ondemand"). */
+    hintMode: String = "ask",
+    /** Advance the hint (nudge → reveal). Null hides the chip. */
+    onHint: (() -> Unit)? = null,
+    /** Change the hint model. Null hides the mode selector. */
+    onHintModeChange: ((String) -> Unit)? = null,
 ) {
     val accent = when (tone) {
         CoachTone.WRONG -> androidx.compose.ui.graphics.Color(0xFFE2574C)
@@ -297,19 +307,53 @@ fun SimAdaptiveCoachBar(
             }
         }
 
-        if (onBack != null || onReplay != null || onContinue != null) {
+        if (onBack != null || onReplay != null || onContinue != null || onExplain != null || onHint != null) {
             Spacer(Modifier.height(12.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (onBack != null) {
                     CoachChip(text = "‹ Back", onClick = onBack)
                     Spacer(Modifier.size(6.dp))
                 }
+                if (onHint != null && hintMode != "guided") {
+                    CoachChip(text = if (hintMode == "ondemand") "Show answer" else "Hint", onClick = onHint)
+                    Spacer(Modifier.size(6.dp))
+                }
                 if (onReplay != null) {
                     CoachChip(text = "↻ Replay", onClick = onReplay)
+                    Spacer(Modifier.size(6.dp))
+                }
+                if (onExplain != null) {
+                    CoachChip(text = "ⓘ Explain", onClick = onExplain)
                 }
                 Spacer(Modifier.weight(1f))
                 if (onContinue != null) {
                     CoachChip(text = "Continue ›", onClick = onContinue, filled = true)
+                }
+            }
+        }
+
+        // Hint-model selector (student-switchable). Short labels so all four fit one scrollable row.
+        if (onHintModeChange != null) {
+            Spacer(Modifier.height(10.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.horizontalScroll(rememberScrollState()),
+            ) {
+                Text(
+                    text = "Coach",
+                    color = TextSecondary,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Medium,
+                )
+                Spacer(Modifier.size(8.dp))
+                listOf(
+                    "ask" to "Try first",
+                    "guided" to "Step-by-step",
+                    "self" to "Self-explain",
+                    "ondemand" to "Answer on tap",
+                ).forEach { (id, label) ->
+                    CoachChip(text = label, onClick = { onHintModeChange(id) }, filled = id == hintMode)
+                    Spacer(Modifier.size(6.dp))
                 }
             }
         }

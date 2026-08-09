@@ -817,8 +817,8 @@ class HomeViewModel @Inject constructor(
             if (userId.isEmpty()) return@launch
             var previous: Int? = null
             streakRepository.getStreakFlow(userId).collectLatest { streak ->
-                // Default to 1 as requested for a better new user experience
-                val count = streak?.streakCount ?: 1
+                // New user (null row) → 1; expired lastStreakDate → 0 until next activity.
+                val count = streakRepository.effectiveDisplayStreak(streak)
                 _streakCount.value = count
 
                 // Triumphant "streak extended" beat: a genuine increment observed during the session

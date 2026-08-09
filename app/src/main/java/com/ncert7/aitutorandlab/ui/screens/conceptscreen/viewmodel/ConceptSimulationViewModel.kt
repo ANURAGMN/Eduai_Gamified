@@ -79,13 +79,15 @@ class ConceptSimulationViewModel @Inject constructor(
 
     fun markSimulationUrlCompleted(conceptId: String) {
         if (conceptId.isBlank()) return
-        if (TrialSessionStore.activeTrialItemId != null) {
-            DebugLogger.debugLog(TAG, "Trial mode — URL completion tracked via click count")
-            return
-        }
         viewModelScope.launch {
             val studentId = sharedPrefs.getUserId() ?: run {
                 DebugLogger.errorLog(TAG, "No studentId — cannot mark simulation URL completed")
+                return@launch
+            }
+            // Trial sims skip chapter progress / XP, but still count for the daily streak.
+            if (TrialSessionStore.activeTrialItemId != null) {
+                DebugLogger.debugLog(TAG, "Trial mode — streak only (URL completion via click count)")
+                streakManager.recordLearningActivityForUser(studentId)
                 return@launch
             }
             val language = getCurrentLanguageCode()
@@ -382,10 +384,6 @@ class ConceptSimulationViewModel @Inject constructor(
     }
 
     fun markSimulationCompleted(conceptId: String) {
-        if (TrialSessionStore.activeTrialItemId != null) {
-            DebugLogger.debugLog(TAG, "Trial mode — skipping URL completion on page load")
-            return
-        }
         viewModelScope.launch {
             try {
                 val studentId = sharedPrefs.getUserId() ?: ""
@@ -396,45 +394,53 @@ class ConceptSimulationViewModel @Inject constructor(
                     "🔄 markSimulationCompleted called for conceptId: $conceptId, studentId: $studentId [$language]"
                 )
 
-                if (studentId.isNotEmpty() && conceptId.isNotEmpty()) {
-                    DebugLogger.debugLog(TAG, "📍 About to call progressEventTracker.markSimulationUrlCompleted with language=$language")
-                    progressEventTracker.markSimulationUrlCompleted(studentId, conceptId, language)
-
-                    DebugLogger.debugLog(
-                        TAG,
-                        "✅ Simulation URL marked as COMPLETED for concept: $conceptId [$language] - Progress bars should update!"
-                    )
-
-                    val progress = conceptRepository.getProgress(studentId, "SIMULATION", conceptId, language)
-                    DebugLogger.debugLog(
-                        TAG,
-                        "🔍 Verification: Progress for SIMULATION/$conceptId/$language = ${progress?.status ?: "NOT FOUND"} (progress was ${if (progress != null) "FOUND" else "NOT FOUND"})"
-                    )
-
-                    streakManager.onConceptOpened { newStreak ->
-                        DebugLogger.debugLog(TAG, "Streak updated to: $newStreak on simulation completion")
-                    }
-
-                    SimulationAnalyticsTracker.trackSimulationComplete(
-                        conceptId = conceptId,
-                        interaction = SimulationInteraction.URL
-                    )
-
-                    if (progress != null) {
-                        DebugLogger.debugLog(TAG, "📤 Syncing progress to Firestore for progressId=${progress.progressId}")
-                        DataSyncService.syncProgressUpdate(progress.progressId, studentId)
-                    } else {
-                        DebugLogger.errorLog(TAG, "⚠️ Progress was null after marking - sync skipped")
-                    }
-
-                    _progressUpdateTrigger.value = _progressUpdateTrigger.value + 1
-                    DebugLogger.debugLog(TAG, "🔄 UI recomposition triggered: ${_progressUpdateTrigger.value}")
-                } else {
+                if (studentId.isEmpty() || conceptId.isEmpty()) {
                     DebugLogger.errorLog(
                         TAG,
                         " Failed to mark simulation completed - studentId: $studentId, conceptId: $conceptId"
                     )
+                    return@launch
                 }
+
+                // Trial: no chapter progress / XP, but opening a trial sim still counts for streak.
+                // Same-day recordActivity is a no-op (no local write, no Firestore schedule).
+                if (TrialSessionStore.activeTrialItemId != null) {
+                    DebugLogger.debugLog(TAG, "Trial mode — recording streak only on page load")
+                    streakManager.recordLearningActivityForUser(studentId) { newStreak ->
+                        DebugLogger.debugLog(TAG, "Trial streak touch → $newStreak")
+                    }
+                    return@launch
+                }
+
+                DebugLogger.debugLog(TAG, "📍 About to call progressEventTracker.markSimulationUrlCompleted with language=$language")
+                // ProgressEventTracker already calls streakRepository.recordActivity — no second streak path.
+                progressEventTracker.markSimulationUrlCompleted(studentId, conceptId, language)
+
+                DebugLogger.debugLog(
+                    TAG,
+                    "✅ Simulation URL marked as COMPLETED for concept: $conceptId [$language] - Progress bars should update!"
+                )
+
+                val progress = conceptRepository.getProgress(studentId, "SIMULATION", conceptId, language)
+                DebugLogger.debugLog(
+                    TAG,
+                    "🔍 Verification: Progress for SIMULATION/$conceptId/$language = ${progress?.status ?: "NOT FOUND"} (progress was ${if (progress != null) "FOUND" else "NOT FOUND"})"
+                )
+
+                SimulationAnalyticsTracker.trackSimulationComplete(
+                    conceptId = conceptId,
+                    interaction = SimulationInteraction.URL
+                )
+
+                if (progress != null) {
+                    DebugLogger.debugLog(TAG, "📤 Syncing progress to Firestore for progressId=${progress.progressId}")
+                    DataSyncService.syncProgressUpdate(progress.progressId, studentId)
+                } else {
+                    DebugLogger.errorLog(TAG, "⚠️ Progress was null after marking - sync skipped")
+                }
+
+                _progressUpdateTrigger.value = _progressUpdateTrigger.value + 1
+                DebugLogger.debugLog(TAG, "🔄 UI recomposition triggered: ${_progressUpdateTrigger.value}")
             } catch (e: Exception) {
                 DebugLogger.errorLog(
                     TAG,

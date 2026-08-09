@@ -115,48 +115,36 @@ class StreakManager(
      *
      * @return The current streak count after update
      */
+    /**
+     * Records a Concept / simulation open via [StreakRepository.recordActivity]
+     * (same-day no-op, freeze-aware miss handling, deferred Firestore upload).
+     */
     fun onConceptOpened(onStreakUpdated: (Int) -> Unit = {}) {
         scope.launch {
             try {
-                val now = System.currentTimeMillis()
-                val today = getDayIdentifier(now)
-
-                // Get current streak from repository
-                val currentStreak = streakRepository.getUserStreak(userId)
-
-                val newStreak = when {
-                    // First ever streak event for this user
-                    currentStreak == null -> {
-                        DebugLogger.debugLog("StreakManager", "First streak event - starting at 1")
-                        streakRepository.createStreakForUser(userId)
-                        1
-                    }
-
-                    // Same calendar day → do NOT increment
-                    isSameDay(currentStreak.lastStreakDate, now) -> {
-                        DebugLogger.debugLog("StreakManager", "Same day - streak remains ${currentStreak.streakCount}")
-                        currentStreak.streakCount
-                    }
-
-                    // Next consecutive day → continue streak
-                    isConsecutiveDay(currentStreak.lastStreakDate, now) -> {
-                        val newCount = currentStreak.streakCount + 1
-                        DebugLogger.debugLog("StreakManager", "Consecutive day - streak increased to $newCount")
-                        streakRepository.updateStreak(userId, newCount, today)
-                        newCount
-                    }
-
-                    // Days were skipped → reset streak
-                    else -> {
-                        DebugLogger.debugLog("StreakManager", "Day(s) skipped - streak reset to 1 (was ${currentStreak.streakCount})")
-                        streakRepository.updateStreak(userId, 1, today)
-                        1
-                    }
+                if (userId.isBlank()) {
+                    DebugLogger.errorLog(TAG, "onConceptOpened skipped — empty userId")
+                    return@launch
                 }
-
+                val newStreak = streakRepository.recordActivity(userId)
                 onStreakUpdated(newStreak)
             } catch (e: Exception) {
-                DebugLogger.errorLog("StreakManager", "Error updating streak: ${e.message}")
+                DebugLogger.errorLog(TAG, "Error updating streak: ${e.message}")
+            }
+        }
+    }
+
+    /**
+     * Async streak touch for paths that already have a concrete student id
+     * (avoids relying on the DI-captured [userId], which can be empty pre-login).
+     */
+    fun recordLearningActivityForUser(studentId: String, onStreakUpdated: (Int) -> Unit = {}) {
+        scope.launch {
+            try {
+                if (studentId.isBlank()) return@launch
+                onStreakUpdated(streakRepository.recordActivity(studentId))
+            } catch (e: Exception) {
+                DebugLogger.errorLog(TAG, "Error recording learning activity: ${e.message}")
             }
         }
     }

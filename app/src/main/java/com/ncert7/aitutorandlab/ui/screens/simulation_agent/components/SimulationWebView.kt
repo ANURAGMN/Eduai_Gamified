@@ -53,6 +53,9 @@ fun SimulationWebView(
     onCoachText: (String) -> Unit = {},
     onCoachSpeak: (String) -> Unit = {},
     onCoachStop: () -> Unit = {},
+    explainSignal: Int = 0,
+    hintMode: String = "ask",
+    hintSignal: Int = 0,
 ) {
     val mainHandler = remember { Handler(Looper.getMainLooper()) }
     val bridge = remember { SimulationWebViewBridge(mainHandler) }
@@ -64,6 +67,30 @@ fun SimulationWebView(
             "if(window.__eduHighlight){window.__eduHighlight(${highlightStepIndex ?: -1}, '$highlightKind');}",
             null,
         )
+    }
+
+    // Coach-card "Explain" chip → open the page-side detail panel.
+    LaunchedEffect(explainSignal) {
+        if (explainSignal > 0) {
+            webViewRef.value?.evaluateJavascript(
+                "if(window.__eduExplain){window.__eduExplain();}",
+                null,
+            )
+        }
+    }
+
+    // Student-chosen hint model → tell the page-side engine which behavior to use.
+    LaunchedEffect(hintMode) {
+        webViewRef.value?.evaluateJavascript(
+            "window.__eduHintMode='$hintMode';if(window.__eduSetHintMode){window.__eduSetHintMode('$hintMode');}",
+            null,
+        )
+    }
+    // Coach-card "Hint" / "Show answer" chip → advance the page-side disclosure level.
+    LaunchedEffect(hintSignal) {
+        if (hintSignal > 0) {
+            webViewRef.value?.evaluateJavascript("if(window.__eduHint){window.__eduHint();}", null)
+        }
     }
 
     // Toggle the continuous glow loop on/off and its reteach colour.
@@ -172,6 +199,7 @@ fun SimulationWebView(
             bridge.onCoachText = onCoachText
             bridge.onCoachSpeak = onCoachSpeak
             bridge.onCoachStop = onCoachStop
+            // hintMode / hintSignal are handled by LaunchedEffects above (no bridge state needed)
             webViewRef.value = webView
             if (webView.url != url) {
                 webView.loadUrl(url)

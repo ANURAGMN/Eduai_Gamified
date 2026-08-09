@@ -181,8 +181,7 @@ class ProgressScreenViewModel @Inject constructor(
             if (userId.isEmpty()) return@launch
             // Use Flow for seamless sync - UI updates immediately when DB updates
             streakRepository.getStreakFlow(userId).collectLatest { streak ->
-                // Default to 1 as requested for better initial experience
-                _streakCount.value = streak?.streakCount ?: 1
+                _streakCount.value = streakRepository.effectiveDisplayStreak(streak)
                 DebugLogger.debugLog("ProgressVM", "Streak updated: ${_streakCount.value}")
             }
         }

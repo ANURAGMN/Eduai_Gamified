@@ -12,6 +12,7 @@ import com.google.firebase.FirebaseNetworkException
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.Query
+import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.tasks.await
 import java.io.IOException
 import java.net.SocketTimeoutException
@@ -358,20 +359,22 @@ class FirebaseRepository(
             }
 
             val studentAppDocId = "${AppConfig.APP_NAME}_$userId"
-            val streak = Streak(
-                userId = userId,
-                streakCount = streakCount,
-                lastStreakDate = lastStreakDate,
-                updatedAt = System.currentTimeMillis(),
-                appName = AppConfig.APP_NAME
+            val now = System.currentTimeMillis()
+            // Merge so we don't clobber createdAt / other fields on every deferred flush.
+            val payload = mapOf(
+                "userId" to userId,
+                "streakCount" to streakCount,
+                "lastStreakDate" to lastStreakDate,
+                "updatedAt" to now,
+                "appName" to AppConfig.APP_NAME,
             )
 
             streakCollection.document(studentAppDocId)
                 .collection("data")
                 .document("current")
-                .set(streak)
+                .set(payload, SetOptions.merge())
                 .await()
-            
+
             DebugLogger.debugLog("FirebaseRepository", "Streak updated for $studentAppDocId: count=$streakCount")
             true
         } catch (e: FirebaseNetworkException) {

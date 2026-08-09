@@ -5,6 +5,7 @@ import com.ncert7.aitutorandlab.domain.gamification.StreakFreezeService
 import com.ncert7.aitutorandlab.service.analytics.GamificationAnalyticsTracker
 import com.ncert7.aitutorandlab.service.analytics.StreakMilestone
 import com.ncert7.aitutorandlab.config.AppConfig
+import com.ncert7.aitutorandlab.data.firebase.model.Streak
 import com.ncert7.aitutorandlab.data.local.dao.StreakDao
 import com.ncert7.aitutorandlab.data.local.entities.StreakEntity
 import com.ncert7.aitutorandlab.debug.DebugLogger
@@ -117,7 +118,9 @@ class StreakRepository(
         return try {
             val now = System.currentTimeMillis()
             val today = getDayIdentifier(now)
-            val currentStreak = getUserStreak(userId)
+            // Local-only: avoid a Firestore read on the hot learning path.
+            // Login sync / getUserStreak hydrate Room; same-day returns without any write.
+            val currentStreak = streakDao.getStreakByUserId(userId)
 
             val newStreakCount = when {
                 // First ever streak event for this user
@@ -126,7 +129,7 @@ class StreakRepository(
                     1
                 }
 
-                // Same calendar day → do NOT increment
+                // Same calendar day → do NOT increment (no Room write, no deferred upload)
                 isSameDay(currentStreak.lastStreakDate, now) -> {
                     DebugLogger.debugLog("StreakRepository", "Same day activity for $userId - streak remains ${currentStreak.streakCount}")
                     return currentStreak.streakCount
@@ -182,7 +185,7 @@ class StreakRepository(
     }
 
     /**
-     * Create initial streak for new user
+     * Create initial streak for new user (local + deferred Firestore upload).
      */
     suspend fun createStreakForUser(userId: String): Boolean {
         return try {
@@ -201,13 +204,26 @@ class StreakRepository(
 
             streakDao.insertStreak(streakEntity)
             DebugLogger.debugLog("StreakRepository", "Initial streak created for user: $userId")
-
-            // Try to sync with Firestore
-            firebaseRepository.updateStreak(userId, 1, dayIdentifier)
+            com.ncert7.aitutorandlab.service.sync.DataSyncService.scheduleDeferredUpload()
             true
         } catch (e: Exception) {
             DebugLogger.errorLog("StreakRepository", "Error creating streak: ${e.message}")
             false
+        }
+    }
+
+    /**
+     * Display streak for UI: keep new-user default of 1 when no row exists;
+     * show 0 when the stored streak has expired (missed day(s) without freeze yet).
+     */
+    fun effectiveDisplayStreak(streak: StreakEntity?): Int {
+        if (streak == null) return 1
+        if (streak.lastStreakDate == 0L) return 0
+        val now = System.currentTimeMillis()
+        return if (isSameDay(streak.lastStreakDate, now) || isConsecutiveDay(streak.lastStreakDate, now)) {
+            streak.streakCount
+        } else {
+            0
         }
     }
 
@@ -347,74 +363,86 @@ class StreakRepository(
     }
 
     /**
-     * Sync streak when user logs in
-     * - For new users: Initializes streak = 1 if doesn't exist
-     * - For existing users: Fetches from Firestore and validates
-     * - Handles consecutive day logic automatically
+     * Sync streak when user logs in.
+     * Offline-first merge: never blindly overwrite a newer / higher local streak with remote.
+     * New users get a local streak=1 and a deferred Firestore upload (no eager write).
      */
     suspend fun syncStreakOnLogin(userId: String): StreakEntity {
         return try {
             DebugLogger.debugLog("StreakRepository", "Syncing streak on login for user: $userId")
 
-            // Try to get user's existing streak from Firestore
+            val local = streakDao.getStreakByUserId(userId)
             val remoteStreak = firebaseRepository.getStreak(userId)
 
-            if (remoteStreak != null) {
-                // EXISTING USER - Fetch their streak
-                DebugLogger.debugLog("StreakRepository", "Existing user found with streak: ${remoteStreak.streakCount}")
-
-                val streakEntity = StreakEntity(
-                    userId = remoteStreak.userId,
-                    streakCount = remoteStreak.streakCount,
-                    lastStreakDate = remoteStreak.lastStreakDate,
-                    createdAt = remoteStreak.createdAt,
-                    updatedAt = remoteStreak.updatedAt,
-                    appName = remoteStreak.appName,
-                    isSynced = true
-                )
-
-                // Cache locally
-                streakDao.insertStreak(streakEntity)
-                DebugLogger.debugLog("StreakRepository", "Existing user streak cached locally")
-
-                return streakEntity
-            } else {
-                // NEW USER - Create initial streak
-                val now = System.currentTimeMillis()
-                val dayIdentifier = getDayIdentifier(now)
-
-                val newStreak = StreakEntity(
-                    userId = userId,
-                    streakCount = 1,
-                    lastStreakDate = dayIdentifier,
-                    createdAt = now,
-                    updatedAt = now,
-                    appName = AppConfig.APP_NAME,
-                    isSynced = false
-                )
-
-                // Save to local DB
-                streakDao.insertStreak(newStreak)
-                DebugLogger.debugLog("StreakRepository", "New user streak created and saved locally (count=1)")
-
-                // Try to sync to Firestore (if online)
-                try {
-                    firebaseRepository.updateStreak(userId, 1, dayIdentifier)
-                    streakDao.markStreakAsSynced(userId)
-                    DebugLogger.debugLog("StreakRepository", "New user streak synced to Firestore")
-                } catch (e: Exception) {
-                    DebugLogger.errorLog("StreakRepository", "New user streak sync error: ${e.message}")
+            when {
+                remoteStreak == null && local == null -> {
+                    val now = System.currentTimeMillis()
+                    val dayIdentifier = getDayIdentifier(now)
+                    val newStreak = StreakEntity(
+                        userId = userId,
+                        streakCount = 1,
+                        lastStreakDate = dayIdentifier,
+                        createdAt = now,
+                        updatedAt = now,
+                        appName = AppConfig.APP_NAME,
+                        isSynced = false
+                    )
+                    streakDao.insertStreak(newStreak)
+                    com.ncert7.aitutorandlab.service.sync.DataSyncService.scheduleDeferredUpload()
+                    DebugLogger.debugLog("StreakRepository", "New user streak created locally (deferred upload)")
+                    newStreak
                 }
 
-                return newStreak
+                remoteStreak == null && local != null -> {
+                    if (!local.isSynced) {
+                        com.ncert7.aitutorandlab.service.sync.DataSyncService.scheduleDeferredUpload()
+                    }
+                    DebugLogger.debugLog(
+                        "StreakRepository",
+                        "No remote streak — keeping local count=${local.streakCount}",
+                    )
+                    local
+                }
+
+                remoteStreak != null && local == null -> {
+                    val cached = StreakEntity(
+                        userId = remoteStreak.userId,
+                        streakCount = remoteStreak.streakCount,
+                        lastStreakDate = remoteStreak.lastStreakDate,
+                        createdAt = remoteStreak.createdAt,
+                        updatedAt = remoteStreak.updatedAt,
+                        appName = remoteStreak.appName,
+                        isSynced = true
+                    )
+                    streakDao.insertStreak(cached)
+                    DebugLogger.debugLog(
+                        "StreakRepository",
+                        "Remote streak cached locally: ${cached.streakCount}",
+                    )
+                    cached
+                }
+
+                else -> {
+                    val merged = mergeStreakForLogin(local!!, remoteStreak!!)
+                    streakDao.insertStreak(merged)
+                    if (!merged.isSynced) {
+                        com.ncert7.aitutorandlab.service.sync.DataSyncService.scheduleDeferredUpload()
+                    }
+                    DebugLogger.debugLog(
+                        "StreakRepository",
+                        "Login merge → count=${merged.streakCount}, synced=${merged.isSynced}",
+                    )
+                    merged
+                }
             }
         } catch (e: Exception) {
             DebugLogger.errorLog("StreakRepository", "Error syncing streak on login: ${e.message}")
 
-            // Fallback: Create initial streak locally for safety
+            val existing = streakDao.getStreakByUserId(userId)
+            if (existing != null) return existing
+
             val now = System.currentTimeMillis()
             val dayIdentifier = getDayIdentifier(now)
-
             val fallbackStreak = StreakEntity(
                 userId = userId,
                 streakCount = 1,
@@ -424,9 +452,50 @@ class StreakRepository(
                 appName = AppConfig.APP_NAME,
                 isSynced = false
             )
-
             streakDao.insertStreak(fallbackStreak)
-            return fallbackStreak
+            com.ncert7.aitutorandlab.service.sync.DataSyncService.scheduleDeferredUpload()
+            fallbackStreak
+        }
+    }
+
+    /**
+     * Prefer unsynced local when it is at least as fresh as remote.
+     * Same activity day → max(count). Otherwise more recent [StreakEntity.lastStreakDate] wins.
+     */
+    private fun mergeStreakForLogin(
+        local: StreakEntity,
+        remote: Streak,
+    ): StreakEntity {
+        val remoteEntity = StreakEntity(
+            userId = remote.userId,
+            streakCount = remote.streakCount,
+            lastStreakDate = remote.lastStreakDate,
+            createdAt = minOf(local.createdAt, remote.createdAt),
+            updatedAt = remote.updatedAt,
+            appName = remote.appName.ifBlank { local.appName },
+            isSynced = true
+        )
+
+        // Device ahead of cloud — keep local and push later.
+        if (!local.isSynced && local.updatedAt >= remote.updatedAt) {
+            return local
+        }
+
+        if (local.lastStreakDate == remote.lastStreakDate) {
+            val bestCount = maxOf(local.streakCount, remote.streakCount)
+            val needsUpload = bestCount > remote.streakCount
+            return local.copy(
+                streakCount = bestCount,
+                createdAt = minOf(local.createdAt, remote.createdAt),
+                updatedAt = maxOf(local.updatedAt, remote.updatedAt),
+                isSynced = !needsUpload
+            )
+        }
+
+        return if (local.lastStreakDate > remote.lastStreakDate) {
+            local.copy(isSynced = false)
+        } else {
+            remoteEntity
         }
     }
 

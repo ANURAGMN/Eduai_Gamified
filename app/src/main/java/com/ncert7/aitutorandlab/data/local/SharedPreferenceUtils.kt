@@ -24,6 +24,7 @@ class SharedPreferenceUtils(context: Context) : AppMigrationVersionStore {
         private const val KEY_SIM_COACH_MODE = "key_sim_coach_mode"
         private const val KEY_SIM_COACH_MODE_MIGRATED = "key_sim_coach_mode_migrated_v3"
         private const val KEY_SIM_COACH_MODE_MIGRATED_V4 = "key_sim_coach_mode_migrated_v4"
+        private const val KEY_HINT_MODE = "key_hint_mode"
         private const val KEY_IS_LOGGED_IN = "key_is_logged_in"
         private const val KEY_SELECTED_SUBJECT = "selected_subject"
         private const val KEY_SELECTED_SUBJECT_ID = "selected_subject_id"
@@ -214,6 +215,13 @@ class SharedPreferenceUtils(context: Context) : AppMigrationVersionStore {
             putBoolean(KEY_SIM_COACH_MODE_MIGRATED, true)
             putBoolean(KEY_SIM_COACH_MODE_MIGRATED_V4, true)
         }
+    }
+
+    /** Hint model (student-switchable): "ask" | "guided" | "self" | "ondemand". */
+    fun getHintMode(): String = prefs.getString(KEY_HINT_MODE, "ask") ?: "ask"
+
+    fun setHintMode(id: String) {
+        prefs.edit { putString(KEY_HINT_MODE, id) }
     }
 
     fun setSubjectSelectionId(subjectId: String) {

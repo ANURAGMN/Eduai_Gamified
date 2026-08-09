@@ -157,7 +157,7 @@ fun ConceptSimulationViewer(
     // Build marker — grep logcat for "CoachBuild" to confirm the running APK has the latest coach.
     // If this line is ABSENT from a sim session's log, the build is stale (incremental-compile cache).
     LaunchedEffect(Unit) {
-        DebugLogger.debugLog("CoachBuild", "v5 + Explain panel (why/how/detail, native TTS + stop) (build 20260808l)")
+        DebugLogger.debugLog("CoachBuild", "v5 + student-switchable Hint models (Try/Step/Self/Answer) + Explain chip (build 20260808n)")
     }
 
     LaunchedEffect(decodedUrl) {
@@ -276,14 +276,8 @@ fun ConceptSimulationViewer(
             }
             if (decodedConceptId.isNotEmpty() && decodedConceptId != "empty" && !progressMarked) {
                 progressMarked = true
-                if (TrialSessionStore.activeTrialItemId == null) {
-                    viewModel.markSimulationCompleted(decodedConceptId)
-                } else {
-                    DebugLogger.debugLog(
-                        "ConceptSimulationViewer",
-                        "Trial mode — URL completion tracked via click count for concept: $decodedConceptId",
-                    )
-                }
+                // Always notify VM: trial skips chapter progress but still records streak.
+                viewModel.markSimulationCompleted(decodedConceptId)
                 DebugLogger.debugLog(
                     "ConceptSimulationViewer",
                     "Simulation page loaded for concept: $decodedConceptId",
@@ -483,6 +477,11 @@ fun ConceptSimulationViewer(
     var mathMoveActive by remember(decodedUrl) { mutableStateOf(false) }       // build/calc: highlight the next move
     // v4 one-clock coach: the current line the page-side loop wants displayed (passive mirror).
     var v4Line by remember(decodedUrl) { mutableStateOf("") }
+    // Bumped by the coach card's "Explain" chip to trigger the page-side detail panel.
+    var explainSignal by remember(decodedUrl) { mutableStateOf(0) }
+    // Student-switchable hint model (persisted); `hintSignal` is bumped by the Hint / Show-answer chip.
+    var hintMode by remember { mutableStateOf(sharedPrefs.getHintMode()) }
+    var hintSignal by remember(decodedUrl) { mutableStateOf(0) }
     // Identity of the round currently on screen (prompt with the build "Current/Clicks" tail stripped,
     // so tapping place-value buttons doesn't count as a new round). Used to drop a stale why-line when
     // the sim advances to the next round while a verdict's feedback is still up.
@@ -1167,6 +1166,9 @@ fun ConceptSimulationViewer(
                         }
                     },
                     onCoachStop = { keyConceptTts.stop() }, // Explain panel Stop button
+                    explainSignal = explainSignal,          // coach-card Explain chip → open the page panel
+                    hintMode = hintMode,                    // student-chosen hint model
+                    hintSignal = hintSignal,                // Hint / Show-answer chip → advance disclosure
                 )
 
                 trialPrompt?.let { promptKind ->
@@ -1271,6 +1273,10 @@ fun ConceptSimulationViewer(
                     onReplay = onReplay,
                     onBack = onBack,
                     onContinue = null,
+                    onExplain = { explainSignal++ },
+                    hintMode = hintMode,
+                    onHint = { hintSignal++ },
+                    onHintModeChange = { id -> hintMode = id; sharedPrefs.setHintMode(id) },
                 )
             }
         }
