@@ -157,7 +157,7 @@ fun ConceptSimulationViewer(
     // Build marker — grep logcat for "CoachBuild" to confirm the running APK has the latest coach.
     // If this line is ABSENT from a sim session's log, the build is stale (incremental-compile cache).
     LaunchedEffect(Unit) {
-        DebugLogger.debugLog("CoachBuild", "v5 Socratic: hint first, reveal+glow on linger; per-sim native hooks (build 20260808k)")
+        DebugLogger.debugLog("CoachBuild", "v5 + Explain panel (why/how/detail, native TTS + stop) (build 20260808l)")
     }
 
     LaunchedEffect(decodedUrl) {
@@ -1166,6 +1166,7 @@ fun ConceptSimulationViewer(
                             keyConceptTts.speak(line, "v4-$decodedUrl-${System.nanoTime()}")
                         }
                     },
+                    onCoachStop = { keyConceptTts.stop() }, // Explain panel Stop button
                 )
 
                 trialPrompt?.let { promptKind ->

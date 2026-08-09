@@ -24,6 +24,7 @@ internal class SimulationWebViewBridge(
     var onMathProblemReported: (String) -> Unit = {}
     // V4 one-clock coach: the page-side loop pushes the CURRENT short line to speak / to display.
     var onCoachSpeak: (String) -> Unit = {}
+    var onCoachStop: () -> Unit = {}
     var onCoachText: (String) -> Unit = {}
 
     private val paramsBridge = SimulationJavaScriptInterface { params ->
@@ -119,5 +120,12 @@ internal class SimulationWebViewBridge(
         val line = text.trim()
         DebugLogger.debugLog("coachText", line.take(160))
         mainHandler.post { onCoachText(line) }
+    }
+
+    /** Stop any ongoing coach TTS (used by the Explain panel's Stop button). */
+    @JavascriptInterface
+    fun coachStop() {
+        DebugLogger.debugLog("coachStop", "stop")
+        mainHandler.post { onCoachStop() }
     }
 }

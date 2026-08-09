@@ -52,6 +52,7 @@ fun SimulationWebView(
     coachV4Active: Boolean = false,
     onCoachText: (String) -> Unit = {},
     onCoachSpeak: (String) -> Unit = {},
+    onCoachStop: () -> Unit = {},
 ) {
     val mainHandler = remember { Handler(Looper.getMainLooper()) }
     val bridge = remember { SimulationWebViewBridge(mainHandler) }
@@ -170,6 +171,7 @@ fun SimulationWebView(
             bridge.onMathProblemReported = onMathProblemReported
             bridge.onCoachText = onCoachText
             bridge.onCoachSpeak = onCoachSpeak
+            bridge.onCoachStop = onCoachStop
             webViewRef.value = webView
             if (webView.url != url) {
                 webView.loadUrl(url)
