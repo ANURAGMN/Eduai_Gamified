@@ -26,6 +26,8 @@ internal class SimulationWebViewBridge(
     var onCoachSpeak: (String) -> Unit = {}
     var onCoachStop: () -> Unit = {}
     var onCoachText: (String) -> Unit = {}
+    /** Explain panel opened/closed in the page (Compose coach collapses while open). */
+    var onCoachExplainVisible: (Boolean) -> Unit = {}
 
     private val paramsBridge = SimulationJavaScriptInterface { params ->
         mainHandler.post { onParamsChanged(params) }
@@ -127,5 +129,12 @@ internal class SimulationWebViewBridge(
     fun coachStop() {
         DebugLogger.debugLog("coachStop", "stop")
         mainHandler.post { onCoachStop() }
+    }
+
+    /** Page Explain modal visibility — lets the native coach bar collapse while explaining. */
+    @JavascriptInterface
+    fun coachExplainVisible(visible: Boolean) {
+        DebugLogger.debugLog("coachExplainVisible", "visible=$visible")
+        mainHandler.post { onCoachExplainVisible(visible) }
     }
 }

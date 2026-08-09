@@ -157,7 +157,7 @@ fun ConceptSimulationViewer(
     // Build marker — grep logcat for "CoachBuild" to confirm the running APK has the latest coach.
     // If this line is ABSENT from a sim session's log, the build is stale (incremental-compile cache).
     LaunchedEffect(Unit) {
-        DebugLogger.debugLog("CoachBuild", "v5 + student-switchable Hint models (Try/Step/Self/Answer) + Explain chip (build 20260808n)")
+        DebugLogger.debugLog("CoachBuild", "v5 floating coach (bubble + peek + Hint FAB) overlays sim; one-tap reveal (build 20260808p)")
     }
 
     LaunchedEffect(decodedUrl) {
@@ -479,6 +479,8 @@ fun ConceptSimulationViewer(
     var v4Line by remember(decodedUrl) { mutableStateOf("") }
     // Bumped by the coach card's "Explain" chip to trigger the page-side detail panel.
     var explainSignal by remember(decodedUrl) { mutableStateOf(0) }
+    var explainDismissSignal by remember(decodedUrl) { mutableStateOf(0) }
+    var explainOpen by remember(decodedUrl) { mutableStateOf(false) }
     // Student-switchable hint model (persisted); `hintSignal` is bumped by the Hint / Show-answer chip.
     var hintMode by remember { mutableStateOf(sharedPrefs.getHintMode()) }
     var hintSignal by remember(decodedUrl) { mutableStateOf(0) }
@@ -1166,7 +1168,9 @@ fun ConceptSimulationViewer(
                         }
                     },
                     onCoachStop = { keyConceptTts.stop() }, // Explain panel Stop button
+                    onCoachExplainVisible = { visible -> explainOpen = visible },
                     explainSignal = explainSignal,          // coach-card Explain chip → open the page panel
+                    explainDismissSignal = explainDismissSignal,
                     hintMode = hintMode,                    // student-chosen hint model
                     hintSignal = hintSignal,                // Hint / Show-answer chip → advance disclosure
                 )
@@ -1196,6 +1200,24 @@ fun ConceptSimulationViewer(
                     )
                 }
 
+                // V5 floating coach — overlays the sim (Layout C): small bubble + one-line peek +
+                // floating Hint. Frees the vertical space the bottom card used to take.
+                if (trialPrompt == null && isV4 && coachV4Active && v4Line.isNotBlank()) {
+                    SimFloatingCoach(
+                        message = v4Line.ifBlank { coachMission ?: "Follow the glowing hint." },
+                        hintMode = hintMode,
+                        voiceEnabled = voiceEnabled,
+                        onVoiceChange = { voiceEnabled = it },
+                        onHint = { hintSignal++ },
+                        onHintModeChange = { id -> hintMode = id; sharedPrefs.setHintMode(id) },
+                        onExplain = { explainOpen = true; explainSignal++ },
+                        explainOpen = explainOpen,
+                        onReplay = onReplay,
+                        // Anchor to the bottom region only (not fillMaxSize) so the rest of the sim
+                        // stays fully touchable — a full transparent overlay can eat WebView taps.
+                        modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth(),
+                    )
+                }
             }
 
             // Coach bar lives BELOW the simulation (its own row in the Column) rather than
@@ -1256,29 +1278,9 @@ fun ConceptSimulationViewer(
                     onBack = onBack,
                     onContinue = onPhaseBContinue,
                 )
-            } else if (trialPrompt == null && isV4 && coachV4Active && v4Line.isNotBlank()) {
-                // v4 one-clock coach — a PASSIVE mirror of the page-side loop's current line. Kotlin
-                // renders whatever the loop last pushed via coachText; it never computes anything here,
-                // so the bar can't drift from the glow. No Continue gate — the sim drives the pace.
-                SimAdaptiveCoachBar(
-                    message = v4Line.ifBlank { coachMission ?: "Follow the glowing hint." },
-                    mission = coachMission,
-                    tone = CoachTone.NEUTRAL,
-                    onClose = {
-                        keyConceptTts.stop()
-                        viewModel.dismissGuide(decodedUrl)
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    avatar = coachAvatar,
-                    onReplay = onReplay,
-                    onBack = onBack,
-                    onContinue = null,
-                    onExplain = { explainSignal++ },
-                    hintMode = hintMode,
-                    onHint = { hintSignal++ },
-                    onHintModeChange = { id -> hintMode = id; sharedPrefs.setHintMode(id) },
-                )
             }
+            // (V5 one-clock coach now renders as SimFloatingCoach overlaying the sim above,
+            // instead of a bottom card here — see the Box content.)
         }
     }
 }

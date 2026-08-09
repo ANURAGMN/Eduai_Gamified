@@ -53,7 +53,10 @@ fun SimulationWebView(
     onCoachText: (String) -> Unit = {},
     onCoachSpeak: (String) -> Unit = {},
     onCoachStop: () -> Unit = {},
+    onCoachExplainVisible: (Boolean) -> Unit = {},
     explainSignal: Int = 0,
+    /** Bumped to force-close the page Explain modal (e.g. slim coach strip tap). */
+    explainDismissSignal: Int = 0,
     hintMode: String = "ask",
     hintSignal: Int = 0,
 ) {
@@ -74,6 +77,16 @@ fun SimulationWebView(
         if (explainSignal > 0) {
             webViewRef.value?.evaluateJavascript(
                 "if(window.__eduExplain){window.__eduExplain();}",
+                null,
+            )
+        }
+    }
+
+    // Slim coach strip → close the page Explain modal.
+    LaunchedEffect(explainDismissSignal) {
+        if (explainDismissSignal > 0) {
+            webViewRef.value?.evaluateJavascript(
+                "if(window.__eduCloseExplain){window.__eduCloseExplain();}",
                 null,
             )
         }
@@ -199,6 +212,7 @@ fun SimulationWebView(
             bridge.onCoachText = onCoachText
             bridge.onCoachSpeak = onCoachSpeak
             bridge.onCoachStop = onCoachStop
+            bridge.onCoachExplainVisible = onCoachExplainVisible
             // hintMode / hintSignal are handled by LaunchedEffects above (no bridge state needed)
             webViewRef.value = webView
             if (webView.url != url) {
