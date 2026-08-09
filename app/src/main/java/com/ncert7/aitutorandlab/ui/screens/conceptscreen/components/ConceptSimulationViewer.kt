@@ -166,7 +166,7 @@ fun ConceptSimulationViewer(
     // Build marker — grep logcat for "CoachBuild" to confirm the running APK has the latest coach.
     // If this line is ABSENT from a sim session's log, the build is stale (incremental-compile cache).
     LaunchedEffect(Unit) {
-        DebugLogger.debugLog("CoachBuild", "v5 coach: None hides tutor bubble; methodology only in settings (build 20260808v)")
+        DebugLogger.debugLog("CoachBuild", "v5 coach: header voice→settings, gear shows; Replay speaks v4Line; TTS reads shown text (build 20260808w)")
     }
 
     LaunchedEffect(decodedUrl) {
@@ -1013,6 +1013,7 @@ fun ConceptSimulationViewer(
                 languageCode = languageCode,
                 coachMode = coachMode,
                 onCoachModeChange = onCoachModeChange,
+                showVoiceToggle = false, // voice on/off now lives in the Settings sheet
                 onSettingsClick = { showCoachSettings = true },
             )
 
@@ -1273,7 +1274,7 @@ fun ConceptSimulationViewer(
                         onHint = { hintSignal++ },
                         onExplain = { explainOpen = true; explainSignal++ },
                         explainOpen = explainOpen,
-                        onReplay = onReplay,
+                        onReplay = { if (v4Line.isNotBlank()) speakLine(v4Line) },
                         avatar = coachAvatar,
                         // Anchor to the bottom region only (not fillMaxSize) so the rest of the sim
                         // stays fully touchable — a full transparent overlay can eat WebView taps.
