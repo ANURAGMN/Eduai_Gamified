@@ -25,6 +25,7 @@ class SharedPreferenceUtils(context: Context) : AppMigrationVersionStore {
         private const val KEY_SIM_COACH_MODE_MIGRATED = "key_sim_coach_mode_migrated_v3"
         private const val KEY_SIM_COACH_MODE_MIGRATED_V4 = "key_sim_coach_mode_migrated_v4"
         private const val KEY_HINT_MODE = "key_hint_mode"
+        private const val KEY_COACH_AVATAR = "key_coach_avatar"
         private const val KEY_IS_LOGGED_IN = "key_is_logged_in"
         private const val KEY_SELECTED_SUBJECT = "selected_subject"
         private const val KEY_SELECTED_SUBJECT_ID = "selected_subject_id"
@@ -222,6 +223,13 @@ class SharedPreferenceUtils(context: Context) : AppMigrationVersionStore {
 
     fun setHintMode(id: String) {
         prefs.edit { putString(KEY_HINT_MODE, id) }
+    }
+
+    /** Coach tutor voice/avatar profile: "boy" | "girl". */
+    fun getCoachAvatar(): String = prefs.getString(KEY_COACH_AVATAR, "boy") ?: "boy"
+
+    fun setCoachAvatar(code: String) {
+        prefs.edit { putString(KEY_COACH_AVATAR, code) }
     }
 
     fun setSubjectSelectionId(subjectId: String) {

@@ -513,10 +513,10 @@ fun SimFloatingCoach(
     voiceEnabled: Boolean,
     onVoiceChange: (Boolean) -> Unit,
     onHint: () -> Unit,
-    onHintModeChange: (String) -> Unit,
     onExplain: () -> Unit,
     explainOpen: Boolean,
     onReplay: (() -> Unit)? = null,
+    avatar: (@Composable () -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     if (explainOpen) return
@@ -536,9 +536,7 @@ fun SimFloatingCoach(
                 Text(text = message, color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Medium)
                 Spacer(Modifier.height(10.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    CoachChip(text = "ⓘ Explain", onClick = onExplain)
                     if (onReplay != null) {
-                        Spacer(Modifier.size(6.dp))
                         CoachIconButton(
                             icon = Icons.AutoMirrored.Filled.VolumeUp,
                             contentDescription = "Replay",
@@ -558,20 +556,7 @@ fun SimFloatingCoach(
                             .padding(horizontal = 8.dp, vertical = 4.dp),
                     )
                 }
-                Spacer(Modifier.height(10.dp))
-                Text(text = "Coaching style", color = TextSecondary, fontSize = 11.sp, fontWeight = FontWeight.Medium)
-                Spacer(Modifier.height(6.dp))
-                Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
-                    listOf(
-                        "ask" to "Try first",
-                        "guided" to "Step-by-step",
-                        "self" to "Self-explain",
-                        "ondemand" to "Answer on tap",
-                    ).forEach { (id, label) ->
-                        CoachChip(text = label, onClick = { onHintModeChange(id) }, filled = id == hintMode)
-                        Spacer(Modifier.size(6.dp))
-                    }
-                }
+                // Coaching-style selection lives in the Settings sheet (header gear) — not duplicated here.
             }
         }
         Row(
@@ -585,16 +570,20 @@ fun SimFloatingCoach(
                 modifier = Modifier
                     .size(46.dp)
                     .clip(CircleShape)
-                    .background(BrandPrimary)
+                    .then(if (avatar == null) Modifier.background(BrandPrimary) else Modifier)
                     .clickable { expanded = !expanded },
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(
-                    imageVector = if (expanded) Icons.Default.ExpandMore else Icons.Default.Lightbulb,
-                    contentDescription = "Coach",
-                    tint = White,
-                    modifier = Modifier.size(22.dp),
-                )
+                if (avatar != null) {
+                    avatar()
+                } else {
+                    Icon(
+                        imageVector = if (expanded) Icons.Default.ExpandMore else Icons.Default.Lightbulb,
+                        contentDescription = "Coach",
+                        tint = White,
+                        modifier = Modifier.size(22.dp),
+                    )
+                }
             }
             Spacer(Modifier.size(8.dp))
             Text(
@@ -612,19 +601,43 @@ fun SimFloatingCoach(
                     .clickable { expanded = !expanded }
                     .padding(horizontal = 12.dp, vertical = 8.dp),
             )
-            if (hintMode != "guided") {
-                Spacer(Modifier.size(8.dp))
+            if (onReplay != null) {
+                Spacer(Modifier.size(6.dp))
+                CoachIconButton(
+                    icon = Icons.AutoMirrored.Filled.VolumeUp,
+                    contentDescription = "Replay",
+                    onClick = onReplay,
+                    tint = BrandPrimary,
+                    filled = true,
+                )
+            }
+            Spacer(Modifier.size(8.dp))
+            Column(horizontalAlignment = Alignment.End) {
                 Text(
-                    text = if (hintMode == "ondemand") "Show answer" else "Hint",
-                    color = White,
-                    fontSize = 14.sp,
+                    text = "ⓘ Explain",
+                    color = BrandPrimary,
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier
-                        .clip(RoundedCornerShape(24.dp))
-                        .background(BrandPrimary)
-                        .clickable { onHint() }
-                        .padding(horizontal = 18.dp, vertical = 12.dp),
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(BrandPrimary.copy(alpha = 0.12f))
+                        .clickable { onExplain() }
+                        .padding(horizontal = 14.dp, vertical = 8.dp),
                 )
+                if (hintMode != "guided") {
+                    Spacer(Modifier.size(8.dp))
+                    Text(
+                        text = if (hintMode == "ondemand") "Show answer" else "Hint",
+                        color = White,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(24.dp))
+                            .background(BrandPrimary)
+                            .clickable { onHint() }
+                            .padding(horizontal = 18.dp, vertical = 12.dp),
+                    )
+                }
             }
         }
     }

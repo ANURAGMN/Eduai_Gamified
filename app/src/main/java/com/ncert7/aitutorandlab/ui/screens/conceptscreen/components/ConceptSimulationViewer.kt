@@ -41,6 +41,7 @@ import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.AgentTutorAv
 import com.ncert7.aitutorandlab.ui.screens.conceptscreen.viewmodel.ConceptSimulationViewModel
 import com.ncert7.aitutorandlab.ui.screens.simulation_agent.components.SimulationWebView
 import com.ncert7.aitutorandlab.ui.screens.simulation_agent.components.rememberSimulationKeyConceptTts
+import com.ncert7.aitutorandlab.ui.viewModel.TextToSpeech
 import com.ncert7.aitutorandlab.ui.screens.simulation_agent.components.speakSimulationCoach
 import com.ncert7.aitutorandlab.ui.screens.simulation_agent.components.speakSimulationFooter
 import com.ncert7.aitutorandlab.ui.screens.simulation_agent.components.speakSimulationReplay
@@ -88,7 +89,15 @@ fun ConceptSimulationViewer(
     val activity = remember(context) { context.findActivity() }
     val sharedPrefs = remember { SharedPreferenceUtils(context) }
     var voiceEnabled by remember { mutableStateOf(sharedPrefs.getSimulationVoiceEnabled()) }
-    val (keyConceptTts, ttsState) = rememberSimulationKeyConceptTts(languageCode = languageCode)
+    val ttsController: TextToSpeech = hiltViewModel()
+    var coachAvatarCode by remember { mutableStateOf(sharedPrefs.getCoachAvatar()) }
+    var showCoachSettings by remember { mutableStateOf(false) }
+    var selectedVoiceLabel by remember { mutableStateOf("") }
+    val (keyConceptTts, ttsState) = rememberSimulationKeyConceptTts(
+        languageCode = languageCode,
+        avatarCode = coachAvatarCode,
+        ttsController = ttsController,
+    )
     val useNativeAvatar = LocalNativeTutorAvatarEnabled.current
     val wordBoundaryIndex by keyConceptTts.wordBoundaryIndex.collectAsState()
 
@@ -157,7 +166,7 @@ fun ConceptSimulationViewer(
     // Build marker — grep logcat for "CoachBuild" to confirm the running APK has the latest coach.
     // If this line is ABSENT from a sim session's log, the build is stale (incremental-compile cache).
     LaunchedEffect(Unit) {
-        DebugLogger.debugLog("CoachBuild", "v5 floating coach (bubble + peek + Hint FAB) overlays sim; one-tap reveal (build 20260808p)")
+        DebugLogger.debugLog("CoachBuild", "v5 coach: None hides tutor bubble; methodology only in settings (build 20260808v)")
     }
 
     LaunchedEffect(decodedUrl) {
@@ -1004,7 +1013,60 @@ fun ConceptSimulationViewer(
                 languageCode = languageCode,
                 coachMode = coachMode,
                 onCoachModeChange = onCoachModeChange,
+                onSettingsClick = { showCoachSettings = true },
             )
+
+            if (showCoachSettings) {
+                CoachSettingsSheet(
+                    hintMode = hintMode,
+                    onHintMode = { id -> hintMode = id; sharedPrefs.setHintMode(id) },
+                    voiceEnabled = voiceEnabled,
+                    onVoiceEnabled = { voiceEnabled = it },
+                    speed = ttsState.speechRate,
+                    onSpeed = { ttsController.setSpeechRate(it) },
+                    voiceOptions = ttsState.availableVoices.take(8).mapIndexed { i, _ -> "Voice ${i + 1}" },
+                    selectedVoice = selectedVoiceLabel,
+                    onVoiceSelect = { label ->
+                        val idx = (label.removePrefix("Voice ").trim().toIntOrNull() ?: 1) - 1
+                        ttsState.availableVoices.getOrNull(idx)?.let { ttsController.setVoice(it) }
+                        selectedVoiceLabel = label
+                    },
+                    avatarOptions = listOf("Boy", "Girl", "None"),
+                    selectedAvatar = when (coachAvatarCode) {
+                        "girl" -> "Girl"
+                        "disable" -> "None"
+                        else -> "Boy"
+                    },
+                    onAvatarSelect = { name ->
+                        val code = when (name) {
+                            "Girl" -> "girl"
+                            "None" -> "disable"
+                            else -> "boy"
+                        }
+                        coachAvatarCode = code
+                        sharedPrefs.setCoachAvatar(code)
+                        ttsController.switchCharacter(code) // switch the actual tutor character
+                    },
+                    onDismiss = { showCoachSettings = false },
+                )
+            }
+
+            // Tutor avatar (used by the floating coach bubble and the below-sim coach bars).
+            // "None" (disable) hides the tutor so the bubble falls back to the bulb glyph.
+            val coachAvatar: (@Composable () -> Unit)? = if (useNativeAvatar && coachAvatarCode != "disable") {
+                {
+                    AgentTutorAvatarBubble(
+                        avatarSize = 44.dp,
+                        ttsState = ttsState,
+                        wordBoundaryIndex = wordBoundaryIndex,
+                        isListening = false,
+                        isThinking = false,
+                        fullBody = false,
+                    )
+                }
+            } else {
+                null
+            }
 
             Box(
                 modifier = Modifier
@@ -1209,10 +1271,10 @@ fun ConceptSimulationViewer(
                         voiceEnabled = voiceEnabled,
                         onVoiceChange = { voiceEnabled = it },
                         onHint = { hintSignal++ },
-                        onHintModeChange = { id -> hintMode = id; sharedPrefs.setHintMode(id) },
                         onExplain = { explainOpen = true; explainSignal++ },
                         explainOpen = explainOpen,
                         onReplay = onReplay,
+                        avatar = coachAvatar,
                         // Anchor to the bottom region only (not fillMaxSize) so the rest of the sim
                         // stays fully touchable — a full transparent overlay can eat WebView taps.
                         modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth(),
@@ -1223,21 +1285,6 @@ fun ConceptSimulationViewer(
             // Coach bar lives BELOW the simulation (its own row in the Column) rather than
             // floating over it, so it never covers controls like "Start race" when there's little
             // room under the sim.
-            val coachAvatar: (@Composable () -> Unit)? = if (useNativeAvatar) {
-                {
-                    AgentTutorAvatarBubble(
-                        avatarSize = 44.dp,
-                        ttsState = ttsState,
-                        wordBoundaryIndex = wordBoundaryIndex,
-                        isListening = false,
-                        isThinking = false,
-                        fullBody = false,
-                    )
-                }
-            } else {
-                null
-            }
-
             if (trialPrompt == null && inScripted) {
                 // Phase A — scripted walkthrough (all of v1; the intro of v2/v3).
                 val step = scriptedSteps[guideStepIdx]

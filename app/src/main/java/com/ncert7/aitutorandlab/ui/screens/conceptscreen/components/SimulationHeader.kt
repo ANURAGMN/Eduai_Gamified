@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -46,6 +47,8 @@ fun SimulationHeader(
     /** When non-null, shows the v1/v2/v3 coach-style selector for side-by-side comparison. */
     coachMode: SimCoachMode? = null,
     onCoachModeChange: (SimCoachMode) -> Unit = {},
+    /** Opens the coach settings sheet (methodology, voice, speed, avatar). Null hides the gear. */
+    onSettingsClick: (() -> Unit)? = null,
 ) {
     val dimens = LocalDimensions.current
 
@@ -90,6 +93,17 @@ fun SimulationHeader(
                 onVoiceEnabledChange = onVoiceEnabledChange,
                 languageCode = languageCode,
             )
+        }
+
+        if (onSettingsClick != null) {
+            IconButton(onClick = onSettingsClick) {
+                Icon(
+                    imageVector = Icons.Default.Settings,
+                    contentDescription = "Coach settings",
+                    tint = TextOnPrimary,
+                    modifier = Modifier.size(dimens.iconMedium),
+                )
+            }
         }
     }
 }
