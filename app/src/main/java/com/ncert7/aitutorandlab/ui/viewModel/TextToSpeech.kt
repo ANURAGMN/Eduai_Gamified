@@ -389,10 +389,14 @@ class TextToSpeech @Inject constructor() : ViewModel(), AndroidTextToSpeech.OnIn
      * Clean text for TTS by removing asterisks and markdown formatting
      */
     private fun cleanTextForTTS(text: String): String {
-        return text
+        val withoutMarkers = text
             .replace("**", "")  // Remove bold markers
             .replace("*", "")   // Remove any remaining asterisks
             .trim()
+        // Speak numbers as words so the engine never spells digits ("+1000" → "plus one thousand",
+        // not "plus one oh oh oh"). Applies to the study/chat agent and any other app TTS caller.
+        return com.ncert7.aitutorandlab.ui.screens.simulation_agent.components
+            .SimulationIntroTtsSanitizer.spokenNumbers(withoutMarkers)
     }
 
     /**

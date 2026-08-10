@@ -258,4 +258,77 @@ object SimulationIntroTtsSanitizer {
 
     private fun expandNumericFractions(text: String): String =
         text.replace(Regex("\\b(\\d+)\\s*/\\s*(\\d+)\\b"), "$1 over $2")
+
+    // ---- Number-to-words (fixes "+1000" being read digit-by-digit as "plus one oh oh oh") ----
+
+    private val ONES =
+        arrayOf(
+            "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
+            "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen",
+            "seventeen", "eighteen", "nineteen",
+        )
+    private val TENS =
+        arrayOf("", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety")
+
+    private fun twoDigitsToWords(n: Int): String =
+        when {
+            n < 20 -> ONES[n]
+            n % 10 == 0 -> TENS[n / 10]
+            else -> "${TENS[n / 10]} ${ONES[n % 10]}"
+        }
+
+    private fun threeDigitsToWords(n: Int): String {
+        val hundreds = n / 100
+        val rest = n % 100
+        val sb = StringBuilder()
+        if (hundreds > 0) {
+            sb.append(ONES[hundreds]).append(" hundred")
+            if (rest > 0) sb.append(" ")
+        }
+        if (rest > 0) sb.append(twoDigitsToWords(rest))
+        return sb.toString().trim()
+    }
+
+    /** Indian numbering system: thousand / lakh / crore. */
+    private fun numberToWordsIndian(value: Long): String {
+        if (value == 0L) return "zero"
+        var n = value
+        val parts = mutableListOf<String>()
+        val crore = n / 10_000_000
+        n %= 10_000_000
+        val lakh = n / 100_000
+        n %= 100_000
+        val thousand = n / 1_000
+        val hundreds = (n % 1_000).toInt()
+        if (crore > 0) parts.add(numberToWordsIndian(crore) + " crore")
+        if (lakh > 0) parts.add(twoDigitsToWords(lakh.toInt()) + " lakh")
+        if (thousand > 0) parts.add(twoDigitsToWords(thousand.toInt()) + " thousand")
+        if (hundreds > 0) parts.add(threeDigitsToWords(hundreds))
+        return parts.joinToString(" ")
+    }
+
+    /**
+     * Speak numbers as words so the engine never spells digits ("1000" → "one thousand", not
+     * "one oh oh oh"). Strips digit-grouping commas, turns a sign glued to a number into
+     * "plus"/"minus", and expands decimals as "point" + spoken digits. Safe to run on any text.
+     */
+    fun spokenNumbers(raw: String): String {
+        if (raw.isBlank()) return raw
+        var s = raw.replace(Regex("(?<=\\d),(?=\\d)"), "") // strip grouping commas (30,000 / 3,00,000)
+        s = s.replace(Regex("(?<![\\w.])\\+(?=\\d)"), "plus ")
+        s = s.replace(Regex("(?<![\\w.])-(?=\\d)"), "minus ")
+        s =
+            Regex("\\d+(?:\\.\\d+)?").replace(s) { m ->
+                val tok = m.value
+                if (tok.contains('.')) {
+                    val pieces = tok.split('.', limit = 2)
+                    val intWords = pieces[0].toLongOrNull()?.let { numberToWordsIndian(it) } ?: return@replace tok
+                    val decWords = pieces[1].map { ONES[it - '0'] }.joinToString(" ")
+                    "$intWords point $decWords"
+                } else {
+                    tok.toLongOrNull()?.let { numberToWordsIndian(it) } ?: tok
+                }
+            }
+        return s.replace(Regex("\\s+"), " ").trim()
+    }
 }
