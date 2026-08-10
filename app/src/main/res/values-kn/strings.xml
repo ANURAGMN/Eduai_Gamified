@@ -327,6 +327,7 @@
     <string name="ok">ಸರಿ</string>
 
     <!-- Math Agent Strings -->
+    <string name="math_session_missing_problem">ಈ ಸಮಸ್ಯೆಯನ್ನು ತೆರೆಯಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ಹಿಂದಕ್ಕೆ ಹೋಗಿ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.</string>
     <string name="math_session_failed_start">ಸೆಶನ್ ಪ್ರಾರಂಭಿಸಲು ವಿಫಲವಾಗಿದೆ</string>
     <string name="math_session_failed_continue">ಸೆಶನ್ ಮುಂದುವರಿಸಲು ವಿಫಲವಾಗಿದೆ</string>
     <string name="math_session_resumed">ಸೆಶನ್ ಪುನರಾರಂಭ ಮಾಡಲಾಯಿತು</string>

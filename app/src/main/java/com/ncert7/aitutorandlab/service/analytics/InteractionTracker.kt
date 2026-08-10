@@ -61,6 +61,12 @@ object InteractionTracker {
     /** When false, interactions are logged but do not increment [sessionInteractionCount]. */
     private var sessionCountingEnabled = true
 
+    /**
+     * Invoked once per real in-simulation interaction (tap/slider/input). Wired at app start to feed
+     * the engagement-based ad counter, so ad cadence reflects activity inside simulations.
+     */
+    var onCountedInteraction: (() -> Unit)? = null
+
     fun initialize(simulationInteractionRepository: SimulationInteractionRepository) {
         repository = simulationInteractionRepository
         DebugLogger.debugLog(TAG, "Initialized")
@@ -185,6 +191,7 @@ object InteractionTracker {
         if (sessionCountingEnabled) {
             _sessionInteractionCount.value += 1
         }
+        onCountedInteraction?.invoke()
         _events.value = _events.value + event
         repository?.let { repo ->
             scope.launch {

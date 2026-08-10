@@ -343,6 +343,7 @@
     <string name="ok">OK</string>
 
     <!-- Math Agent Strings -->
+    <string name="math_session_missing_problem">Could not open this problem. Please go back and try again.</string>
     <string name="math_session_failed_start">Failed to start session</string>
     <string name="math_session_failed_continue">Failed to continue session</string>
     <string name="math_session_resumed">Session resumed</string>

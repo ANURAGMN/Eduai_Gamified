@@ -82,6 +82,8 @@ class EduAiApplication : Application(), Configuration.Provider {
                 sharedPreferenceUtils = sharedPref
             )
         )
+        // Ad cadence is engagement-based: every in-sim interaction feeds the ad counter.
+        InteractionTracker.onCountedInteraction = { ClickAdGate.recordSimInteraction() }
 
         // Register app lifecycle observer (handles session start/end on foreground/background)
         appLifecycleObserver = AppLifecycleObserver(this)

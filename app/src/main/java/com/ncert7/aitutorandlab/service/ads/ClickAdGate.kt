@@ -32,11 +32,25 @@ object ClickAdGate {
         )
     }
 
-    suspend fun shouldShowAdBeforeNextClick(): Boolean {
-        val count = getTodayClickCount()
+    /** Called for each in-simulation interaction (tap/slider/input). Accumulates toward the next ad. */
+    fun recordSimInteraction() {
+        if (!::sharedPrefs.isInitialized) return
+        sharedPrefs.addSimInteractionsSinceAd(1)
+    }
+
+    /** Ad cadence is engagement-based: fire once the learner has done enough in-sim interactions. */
+    fun shouldShowAdBeforeNextClick(): Boolean {
+        if (!::sharedPrefs.isInitialized) return false
+        val count = sharedPrefs.getSimInteractionsSinceAd()
         val show = ClickAdPolicy.shouldShowAd(count)
-        DebugLogger.debugLog(TAG, "Clicks today: $count, showAd=$show")
+        DebugLogger.debugLog(TAG, "Sim interactions since last ad: $count, showAd=$show")
         return show
+    }
+
+    /** Reset the interaction counter once an ad has actually been shown. */
+    fun consumeAd() {
+        if (!::sharedPrefs.isInitialized) return
+        sharedPrefs.resetSimInteractionsSinceAd()
     }
 
     private fun todayBounds(): Pair<Long, Long> {

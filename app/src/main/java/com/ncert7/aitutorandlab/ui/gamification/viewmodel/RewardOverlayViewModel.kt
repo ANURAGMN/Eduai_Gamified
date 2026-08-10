@@ -36,6 +36,10 @@ class RewardOverlayViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Drain a pending reward. The blocking XP/gems overlay is no longer shown, but this still runs so
+     * XP/gems (awarded upstream) are acknowledged and a meaningful-win notification primer can fire.
+     */
     fun dismissReward() {
         _pendingReward.value = null
         viewModelScope.launch {

@@ -54,6 +54,7 @@ class SharedPreferenceUtils(context: Context) : AppMigrationVersionStore {
         private const val KEY_NOTIFICATION_PRIMER_DECLINED = "notification_primer_declined"
         private const val KEY_NOTIFICATION_PRIMER_SHOW_COUNT = "notification_primer_show_count"
         private const val KEY_NOTIFICATION_PRIMER_LAST_SHOWN_DAY = "notification_primer_last_shown_day"
+        private const val KEY_SIM_INTERACTIONS_SINCE_AD = "sim_interactions_since_ad"
         private const val KEY_RATING_FLOW_COMPLETED = "rating_flow_completed"
         private const val KEY_RATING_PROMPT_SHOW_COUNT = "rating_prompt_show_count"
         private const val KEY_RATING_PROMPT_LAST_SHOWN_DAY = "rating_prompt_last_shown_day"
@@ -230,6 +231,21 @@ class SharedPreferenceUtils(context: Context) : AppMigrationVersionStore {
 
     fun setCoachAvatar(code: String) {
         prefs.edit { putString(KEY_COACH_AVATAR, code) }
+    }
+
+    /**
+     * In-simulation interactions (taps/sliders/inputs) accumulated since the last ad. Drives the
+     * engagement-based ad cadence: an ad shows at the next open once this crosses the policy threshold.
+     */
+    fun getSimInteractionsSinceAd(): Int = prefs.getInt(KEY_SIM_INTERACTIONS_SINCE_AD, 0)
+
+    fun addSimInteractionsSinceAd(delta: Int) {
+        if (delta <= 0) return
+        prefs.edit { putInt(KEY_SIM_INTERACTIONS_SINCE_AD, getSimInteractionsSinceAd() + delta) }
+    }
+
+    fun resetSimInteractionsSinceAd() {
+        prefs.edit { putInt(KEY_SIM_INTERACTIONS_SINCE_AD, 0) }
     }
 
     fun setSubjectSelectionId(subjectId: String) {

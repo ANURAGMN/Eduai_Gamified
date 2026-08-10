@@ -112,6 +112,8 @@ class ConceptViewModel @Inject constructor(
 
     fun dismissAdAndNavigate() {
         _showAdDialog.value = false
+        // Ad was shown → reset the in-sim interaction counter that gates the next ad.
+        com.ncert7.aitutorandlab.service.ads.ClickAdGate.consumeAd()
         pendingAfterAd?.let { _pendingNavigation.value = it }
         pendingAfterAd = null
     }

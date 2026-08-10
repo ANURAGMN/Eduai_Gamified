@@ -7,15 +7,15 @@ import org.junit.Test
 class ClickAdPolicyTest {
 
     @Test
-    fun firstFiveClicksPerDay_areAdFree() {
-        for (clicks in 0 until ClickAdPolicy.FREE_CLICKS_PER_DAY) {
-            assertFalse(ClickAdPolicy.shouldShowAd(clicks))
+    fun belowThreshold_isAdFree() {
+        for (n in 0 until ClickAdPolicy.SIM_INTERACTIONS_PER_AD) {
+            assertFalse(ClickAdPolicy.shouldShowAd(n))
         }
     }
 
     @Test
-    fun sixthClickOnward_showsAd() {
-        assertTrue(ClickAdPolicy.shouldShowAd(ClickAdPolicy.FREE_CLICKS_PER_DAY))
-        assertTrue(ClickAdPolicy.shouldShowAd(10))
+    fun atOrAboveThreshold_showsAd() {
+        assertTrue(ClickAdPolicy.shouldShowAd(ClickAdPolicy.SIM_INTERACTIONS_PER_AD))
+        assertTrue(ClickAdPolicy.shouldShowAd(ClickAdPolicy.SIM_INTERACTIONS_PER_AD + 5))
     }
 }

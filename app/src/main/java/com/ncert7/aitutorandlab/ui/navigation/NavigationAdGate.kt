@@ -68,6 +68,8 @@ fun NavigationAdGate(content: @Composable (GatedNavigationAction) -> Unit) {
             context = context,
             onDismiss = {
                 showAd = false
+                // Ad was shown → reset the in-sim interaction counter that gates the next ad.
+                ClickAdGate.consumeAd()
                 pendingNavigate?.invoke()
                 pendingNavigate = null
             }
