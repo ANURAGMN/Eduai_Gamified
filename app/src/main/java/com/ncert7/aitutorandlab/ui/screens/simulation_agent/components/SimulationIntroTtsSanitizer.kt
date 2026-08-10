@@ -48,6 +48,9 @@ object SimulationIntroTtsSanitizer {
 
     private val NUMBER = "(\\d+(?:[.,]\\d+)?)"
 
+    // Devanagari / Tamil / Telugu / Kannada — the app's Indic languages.
+    private val INDIC_SCRIPT = Regex("[\\u0900-\\u097F\\u0B80-\\u0BFF\\u0C00-\\u0C7F\\u0C80-\\u0CFF]")
+
     fun forSpeech(raw: String): String {
         if (raw.isBlank()) return ""
 
@@ -68,15 +71,33 @@ object SimulationIntroTtsSanitizer {
                 }
             }
 
-        return withoutEmojis
+        val base = withoutEmojis
             .replace(UNICODE_SPACES, " ")
             .replace(INTERACTIVE_UI_HINT, "")
             .replace(KEY_CONCEPT_LABEL, "")
-            .let(::expandForSpeech)
+
+        // English text gets full expansion (units/math → English words). Indic text (Kannada, Hindi,
+        // …) must NOT get English words injected; instead we drop stray symbols/markup so the native
+        // voice reads only the actual words and digits, not bullets, arrows, or leftover glyphs.
+        val expanded =
+            if (INDIC_SCRIPT.containsMatchIn(base)) neutralizeForIndic(base) else expandForSpeech(base)
+
+        return expanded
             .replace(Regex("\\s+"), " ")
             .trim()
             .trim(' ', '.', '-', '–', '—')
     }
+
+    /**
+     * Minimal cleanup for Indic-script narration: strip digit-grouping commas, then replace anything
+     * that is not a letter, combining mark, digit, whitespace, or basic sentence punctuation with a
+     * space. This keeps Kannada (and any) words + numbers intact while removing symbols, arrows,
+     * bullets, brackets, and stray markup the engine would otherwise read aloud.
+     */
+    private fun neutralizeForIndic(text: String): String =
+        text
+            .replace(Regex("(?<=\\d),(?=\\d)"), "")
+            .replace(Regex("[^\\p{L}\\p{M}\\p{Nd}\\s.,!?।]"), " ")
 
     private fun expandForSpeech(text: String): String {
         var s = normalizeMathCharacters(text)
