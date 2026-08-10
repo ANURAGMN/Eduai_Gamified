@@ -393,10 +393,17 @@ class TextToSpeech @Inject constructor() : ViewModel(), AndroidTextToSpeech.OnIn
             .replace("**", "")  // Remove bold markers
             .replace("*", "")   // Remove any remaining asterisks
             .trim()
-        // Speak numbers as words so the engine never spells digits ("+1000" → "plus one thousand",
-        // not "plus one oh oh oh"). Applies to the study/chat agent and any other app TTS caller.
-        return com.ncert7.aitutorandlab.ui.screens.simulation_agent.components
-            .SimulationIntroTtsSanitizer.spokenNumbers(withoutMarkers)
+        // Number handling is language-aware. In English, spell numbers as words so the engine never
+        // reads digit-by-digit ("+1000" → "plus one thousand", not "plus one oh oh oh"). In an Indic
+        // language (Kannada, Hindi, …) do NOT inject English words — just drop digit-grouping commas so
+        // the native voice reads the digits in its own language instead of switching to English.
+        val isIndic = languagePatterns.values.any { it.containsMatchIn(withoutMarkers) }
+        return if (isIndic) {
+            withoutMarkers.replace(Regex("(?<=\\d),(?=\\d)"), "")
+        } else {
+            com.ncert7.aitutorandlab.ui.screens.simulation_agent.components
+                .SimulationIntroTtsSanitizer.spokenNumbers(withoutMarkers)
+        }
     }
 
     /**
