@@ -128,11 +128,15 @@ class ChatViewModel @Inject constructor(
      */
     fun hasExistingSession(concept: String) = sessionUseCase.hasExistingSession(concept)
 
-    /** Time-based proceed: mark the current trial study item complete before leaving. */
+    /**
+     * Soft exit from the time-based proceed overlay.
+     * Does not force the trial item DONE — study/math bites still come from real exchanges.
+     */
     fun recordTrialProceed() {
         val trialItemId = TrialSessionStore.activeTrialItemId ?: return
         viewModelScope.launch {
-            planTrialProgressTracker.recordGeReached(trialItemId)
+            planTrialProgressTracker.reconcileCompletion(trialItemId)
+            DebugLogger.debugLog("ChatViewModel", "Trial soft proceed (no forced complete) for item $trialItemId")
         }
     }
 

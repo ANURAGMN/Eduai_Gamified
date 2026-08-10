@@ -21,10 +21,12 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.outlined.Autorenew
+import androidx.compose.material.icons.outlined.Calculate
 import androidx.compose.material.icons.outlined.EmojiEvents
 import androidx.compose.material.icons.outlined.MenuBook
 import androidx.compose.material.icons.outlined.Redeem
 import androidx.compose.material.icons.outlined.Science
+import androidx.compose.material.icons.outlined.SmartToy
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -46,8 +48,12 @@ import androidx.compose.ui.unit.sp
 import com.anurag.eduai.uikit.theme.EduAiTheme
 import kotlin.math.sin
 
-/** Item categories on the trial path, each with its own icon + accent. */
-enum class TrialNodeType { Simulation, Study, Revision }
+/**
+ * Item categories on the trial path, each with its own icon + accent.
+ * [Simulation] = URL lab · [SimAgent] = simulation chat agent · [Study] = lesson chat ·
+ * [Math] = math problem agent · [Revision] = revise.
+ */
+enum class TrialNodeType { Simulation, SimAgent, Study, Math, Revision }
 
 /** DONE = cleared · ACTIVE = suggested next (START) · UPCOMING = not attended yet (still tappable). */
 enum class TrialNodeState { Done, Active, Upcoming }
@@ -178,19 +184,25 @@ private fun TrialNode(
     val typeColor =
         when (node.type) {
             TrialNodeType.Simulation -> colors.pro
+            TrialNodeType.SimAgent -> colors.success
             TrialNodeType.Study -> colors.accent
-            TrialNodeType.Revision -> colors.warning
+            TrialNodeType.Math -> colors.warning
+            TrialNodeType.Revision -> colors.warning.copy(alpha = 0.85f)
         }
     val icon =
         when (node.type) {
             TrialNodeType.Simulation -> Icons.Outlined.Science
+            TrialNodeType.SimAgent -> Icons.Outlined.SmartToy
             TrialNodeType.Study -> Icons.Outlined.MenuBook
+            TrialNodeType.Math -> Icons.Outlined.Calculate
             TrialNodeType.Revision -> Icons.Outlined.Autorenew
         }
     val typeLabel =
         when (node.type) {
             TrialNodeType.Simulation -> "Simulation"
+            TrialNodeType.SimAgent -> "Sim agent"
             TrialNodeType.Study -> "Study"
+            TrialNodeType.Math -> "Math"
             TrialNodeType.Revision -> "Revision"
         }
 

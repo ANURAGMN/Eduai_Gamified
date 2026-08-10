@@ -19,8 +19,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.outlined.Autorenew
+import androidx.compose.material.icons.outlined.Calculate
 import androidx.compose.material.icons.outlined.MenuBook
 import androidx.compose.material.icons.outlined.Science
+import androidx.compose.material.icons.outlined.SmartToy
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -192,21 +194,27 @@ private fun typeColor(type: TrialNodeType): Color {
     val colors = EduAiTheme.colors
     return when (type) {
         TrialNodeType.Simulation -> colors.pro
+        TrialNodeType.SimAgent -> colors.success
         TrialNodeType.Study -> colors.accent
-        TrialNodeType.Revision -> colors.warning
+        TrialNodeType.Math -> colors.warning
+        TrialNodeType.Revision -> colors.warning.copy(alpha = 0.85f)
     }
 }
 
 private fun typeIcon(type: TrialNodeType): ImageVector =
     when (type) {
         TrialNodeType.Simulation -> Icons.Outlined.Science
+        TrialNodeType.SimAgent -> Icons.Outlined.SmartToy
         TrialNodeType.Study -> Icons.Outlined.MenuBook
+        TrialNodeType.Math -> Icons.Outlined.Calculate
         TrialNodeType.Revision -> Icons.Outlined.Autorenew
     }
 
 private fun typeGroupLabel(type: TrialNodeType): String =
     when (type) {
         TrialNodeType.Simulation -> "Simulations"
+        TrialNodeType.SimAgent -> "Sim agents"
         TrialNodeType.Study -> "Study"
+        TrialNodeType.Math -> "Math"
         TrialNodeType.Revision -> "Revision"
     }

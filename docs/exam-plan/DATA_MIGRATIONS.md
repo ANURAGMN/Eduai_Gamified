@@ -65,6 +65,7 @@ Do **not** add a migration for pure UI changes or server-only data that re-syncs
 | 3 | `TRIAL_SCHEDULE_BATCHED` | Rebuild trial queues (batched sims before study) |
 | 4 | `TRIAL_SCHEDULE_INTERLEAVED` | Rebuild trial queues (interleaved partitions + revise agents) |
 | 5 | `TRIAL_SCHEDULE_THREE_SIMS_PER_STUDY` | Three sims per study slot across days; leftover studies stacked at end |
+| 6 | `TRIAL_SCHEDULE_TWO_SIMS_PER_STUDY` | Two sims per study/math slot; chapter trials: interleaved → revision → sim agents last |
 
 ## When migrations run
 

@@ -77,6 +77,9 @@ fun SimulationConversationView(
 
     modifier: Modifier = Modifier,
 
+    /** Full-screen sim placeholder only while the first session URL is loading — not on every reply. */
+    isSimulationLoading: Boolean = isLoading,
+
     simulationUrl: String? = null,
 
     languageCode: String = getCurrentLanguageCode(),
@@ -227,7 +230,7 @@ fun SimulationConversationView(
 
         ) {
 
-            if (isLoading) {
+            if (isSimulationLoading) {
 
                 LoadingInsightPanel(
 

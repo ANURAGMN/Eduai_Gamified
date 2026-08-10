@@ -312,10 +312,16 @@ class ConceptSimulationViewModel @Inject constructor(
         _trialPrompt.value = null
     }
 
+    /**
+     * Soft exit from the time-based "Next item" overlay.
+     * Persists real interaction credit only — does **not** force the item DONE.
+     * Forcing GE here caused "Level cleared!" / XP celebrations when the learner
+     * had barely touched the sim (or not at all).
+     */
     suspend fun completeTrialSimProceed(clickCount: Int) {
         val trialItemId = TrialSessionStore.activeTrialItemId ?: capturedTrialItemId ?: return
         planTrialProgressTracker.syncToCount(trialItemId, clickCount)
-        planTrialProgressTracker.recordGeReached(trialItemId)
+        planTrialProgressTracker.reconcileCompletion(trialItemId)
     }
 
     suspend fun keyConceptFallback(conceptId: String): String? {

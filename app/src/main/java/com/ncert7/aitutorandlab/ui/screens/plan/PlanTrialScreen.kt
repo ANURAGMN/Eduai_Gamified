@@ -288,10 +288,10 @@ private fun buildTrialChapters(items: List<PlanTrialItemUi>): List<TrialPathChap
                     chapterItems.map { item ->
                         val type =
                             when (item.kind) {
-                                PlanTrialItemKind.SIM_AGENT,
-                                PlanTrialItemKind.SIM_URL,
-                                PlanTrialItemKind.MATH ->
-                                    TrialNodeType.Simulation
+                                PlanTrialItemKind.SIM_URL -> TrialNodeType.Simulation
+                                PlanTrialItemKind.SIM_AGENT -> TrialNodeType.SimAgent
+                                PlanTrialItemKind.STUDY -> TrialNodeType.Study
+                                PlanTrialItemKind.MATH -> TrialNodeType.Math
                                 PlanTrialItemKind.REVISION -> TrialNodeType.Revision
                                 else -> TrialNodeType.Study
                             }

@@ -22,6 +22,9 @@ object AppDataMigrationVersions {
     /** Trial queue: three sims per study slot across plan days; leftover studies stacked. */
     const val TRIAL_SCHEDULE_THREE_SIMS_PER_STUDY = 5
 
+    /** Trial queue: two sims per study/math slot; chapter trials end with sim agents. */
+    const val TRIAL_SCHEDULE_TWO_SIMS_PER_STUDY = 6
+
     /** Must equal the highest migration [AppDataMigration.toVersion]. */
-    const val CURRENT = TRIAL_SCHEDULE_THREE_SIMS_PER_STUDY
+    const val CURRENT = TRIAL_SCHEDULE_TWO_SIMS_PER_STUDY
 }

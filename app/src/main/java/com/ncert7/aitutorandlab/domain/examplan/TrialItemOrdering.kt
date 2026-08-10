@@ -5,20 +5,20 @@ import com.ncert7.aitutorandlab.data.local.entities.ConceptEntity
 /**
  * Pure ordering helpers for exam-trial queues.
  *
- * Lesson days: up to [SIMS_PER_STUDY_BLOCK] sim URLs before each study (sim1–3, study1, sim4–6,
- * study2, …). Studies with no sims left in the chapter are stacked after interleaved blocks.
- * Revise days: revision items first, then simulation agents.
+ * Lesson / chapter trials: up to [SIMS_PER_STUDY_BLOCK] sim URLs before each study (or math)
+ * agent — e.g. sim1, sim2, study1, sim3, sim4, study2, …. Leftover studies stack after the
+ * interleaved blocks; revision and simulation agents come after that (agents last).
  */
 object TrialItemOrdering {
-    /** Default sim URLs placed before each study agent when the chapter has enough sims. */
-    const val SIMS_PER_STUDY_BLOCK = 3
+    /** Sim URLs placed before each study/math agent when the chapter has enough sims. */
+    const val SIMS_PER_STUDY_BLOCK = 2
 
     private const val MINUTES_PER_SIM_URL = 4
     private const val MINUTES_PER_STUDY = 12
 
     /**
      * Returns the simulation URL slice for [study] based on its index in the full chapter syllabus.
-     * Study 1 → sims 0..2, study 2 → sims 3..5, etc. (continues across plan days).
+     * Study 1 → sims 0..1, study 2 → sims 2..3, etc. (continues across plan days).
      */
     fun simUrlsForStudy(
         study: ConceptEntity,

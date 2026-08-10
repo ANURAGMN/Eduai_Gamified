@@ -387,11 +387,15 @@ class RevisionViewModel @Inject constructor(
         _uiState.update { it.copy(inputText = text) }
     }
 
-    /** Time-based proceed: mark the current trial item complete before leaving revision. */
+    /**
+     * Soft exit from the time-based proceed overlay.
+     * Does not force the trial item DONE — revision completion still requires real END/GE.
+     */
     fun recordTrialProceed() {
         val trialItemId = TrialSessionStore.activeTrialItemId ?: return
         viewModelScope.launch {
-            planTrialProgressTracker.recordGeReached(trialItemId)
+            planTrialProgressTracker.reconcileCompletion(trialItemId)
+            DebugLogger.debugLog("RevisionViewModel", "Trial soft proceed (no forced complete) for item $trialItemId")
         }
     }
 

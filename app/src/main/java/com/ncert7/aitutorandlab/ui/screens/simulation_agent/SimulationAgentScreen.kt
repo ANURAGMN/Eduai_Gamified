@@ -236,9 +236,9 @@ fun SimulationAgentScreen(
             spoken != lastProcessedSpeechText
         ) {
             lastProcessedSpeechText = spoken
-            // Auto-send captured voice (speak → it sends) when the agent is ready;
-            // otherwise stage it in the input box.
-            if (isInputEnabled) {
+            // Auto-send captured voice when ready; ignore 1-char junk (pocket/noise STT).
+            // Otherwise stage it in the input box.
+            if (isInputEnabled && spoken.length >= 2) {
                 ttsController.stop()
                 viewModel.handleIntent(SimulationIntent.SendUserResponse(spoken))
                 viewModel.onUserInputChanged("")
@@ -445,6 +445,10 @@ fun SimulationAgentScreen(
                 avatarSize = avatarSize,
                 currentMessage = currentTeacherMessage,
                 isLoading = uiState is SimAgentUiState.Loading,
+                // Keep the live WebView while the teacher thinks — tearing it down on every
+                // /respond made the agent look broken (quotes panel for 15–20s).
+                isSimulationLoading = uiState is SimAgentUiState.Loading &&
+                    sessionData?.simulation?.htmlUrl.isNullOrBlank(),
                 ttsController = ttsController,
                 onParamsChanged = { viewModel.handleIntent(SimulationIntent.ParametersChanged(it)) },
                 simulationUrl = sessionData?.simulation?.htmlUrl?.takeIf { it.isNotBlank() },

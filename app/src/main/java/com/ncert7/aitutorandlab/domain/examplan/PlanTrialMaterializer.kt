@@ -16,7 +16,8 @@ import javax.inject.Singleton
 /**
  * Builds the vertical exam-trial queue for a plan day from syllabus data.
  *
- * Lesson days: sim URLs batched before each study (sim1…simN, study1, …). Sim agents are omitted.
+ * Lesson days: 2 sim URLs before each study (sim, sim, study, …). Sim agents are omitted
+ * (they appear on revise days and at the end of chapter trials).
  * Revise days: revision items first, then simulation agents for the covered chapters.
  */
 @Singleton
@@ -309,10 +310,13 @@ class PlanTrialMaterializer @Inject constructor(
         )
 
     /**
-     * Builds a standalone trial for a single chapter (opened from the chapter picker),
-     * independent of the exam-plan schedule. Order matches the plan trial: simulations
-     * (SIM_URL) → lessons (STUDY) → revision → simulation agents. Stored under a
-     * chapter-scoped [dayIndex].
+     * Builds a standalone trial for a single chapter (opened from the chapter picker).
+     *
+     * Priority (Science-style, also used for Math with math agents in the study slots):
+     * 1. Interleave — up to 2 sim URLs, then a Study (or Math) agent, repeat
+     * 2. Any leftover sims / study-only agents
+     * 3. Revision agent
+     * 4. Simulation agents last (sim + chat agent)
      */
     suspend fun materializeChapter(
         studentId: String,
@@ -348,41 +352,94 @@ class PlanTrialMaterializer @Inject constructor(
                 )
         }
 
-        // Order: simulations → study → revision → sim agent → math (agents last).
-
-        // 1. Simulations (URL) for the chapter.
-        simsWithUrlForChapter(chapterId, languageCode).forEach { sim ->
-            val url = resolvedSimulationUrl(sim, languageCode) ?: return@forEach
-            emit(sim, PlanTrialItemKind.SIM_URL, url, requiredCount = 7)
-        }
-
-        // 2. Lessons.
+        val simsWithUrl = simsWithUrlForChapter(chapterId, languageCode)
         val studies =
             conceptDao.getStudyConceptsForChapter(chapterId).sortedBy { it.orderIndex }
-        studies.forEach { study ->
-            emit(study, PlanTrialItemKind.STUDY, study.conceptId, requiredCount = 7)
+        val mathProblems =
+            conceptDao.getConceptsForChapterSync(chapterId, "MATH PROBLEM")
+                .sortedBy { it.orderIndex }
+                .filter { it.problemId.isNotBlank() }
+
+        // Study chat fills the interleaved agent slots for Science; Math problems do so when
+        // there are no STUDY concepts (Math chapters).
+        val interleavedAgents = if (studies.isNotEmpty()) studies else mathProblems
+        val interleavedKind =
+            if (studies.isNotEmpty()) PlanTrialItemKind.STUDY else PlanTrialItemKind.MATH
+
+        val (agentsWithSims, agentsOnly) =
+            TrialItemOrdering.partitionStudiesBySimAvailability(
+                studiesOnDay = interleavedAgents,
+                allStudiesInChapter = interleavedAgents,
+                simsWithUrl = simsWithUrl,
+            )
+
+        // 1. sim, sim, study/math, … for each agent that still has a sim block.
+        agentsWithSims.forEach { agent ->
+            val block =
+                TrialItemOrdering.simUrlsForStudy(
+                    study = agent,
+                    allStudiesInChapter = interleavedAgents,
+                    simsWithUrl = simsWithUrl,
+                )
+            block.forEach { sim ->
+                val url = resolvedSimulationUrl(sim, languageCode) ?: return@forEach
+                emit(sim, PlanTrialItemKind.SIM_URL, url, requiredCount = 7)
+            }
+            val agentSourceId =
+                if (interleavedKind == PlanTrialItemKind.MATH) {
+                    agent.problemId
+                } else {
+                    agent.conceptId
+                }
+            emit(agent, interleavedKind, agentSourceId, requiredCount = 7)
         }
 
-        // 3. Revision for the chapter (one item, when there is content to revise).
+        // Leftover sims that did not fit a 2-sim study block (more sims than 2×agents).
+        val consumedSimIds =
+            agentsWithSims
+                .flatMap { agent ->
+                    TrialItemOrdering.simUrlsForStudy(agent, interleavedAgents, simsWithUrl)
+                }
+                .map { it.conceptId }
+                .toSet()
+        simsWithUrl
+            .filter { it.conceptId !in consumedSimIds }
+            .forEach { sim ->
+                val url = resolvedSimulationUrl(sim, languageCode) ?: return@forEach
+                emit(sim, PlanTrialItemKind.SIM_URL, url, requiredCount = 7)
+            }
+
+        // Agents with no remaining sim block — after the interleaved section.
+        agentsOnly.forEach { agent ->
+            val agentSourceId =
+                if (interleavedKind == PlanTrialItemKind.MATH) {
+                    agent.problemId
+                } else {
+                    agent.conceptId
+                }
+            emit(agent, interleavedKind, agentSourceId, requiredCount = 7)
+        }
+
+        // If studies filled the interleaved slots, any math problems still go before revision
+        // so the very end stays reserved for simulation agents.
+        if (studies.isNotEmpty()) {
+            mathProblems.forEach { problem ->
+                emit(problem, PlanTrialItemKind.MATH, problem.problemId, requiredCount = 7)
+            }
+        }
+
+        // 2. Revision (one per chapter when there is study content to revise).
         studies.firstOrNull()?.let { rep ->
             emit(rep, PlanTrialItemKind.REVISION, chapterId, requiredCount = 1)
         }
 
-        // 4. Simulation agents.
+        // 3. Simulation agents last.
         conceptDao.getConceptsForChapterSync(chapterId, "SIMULATION")
             .sortedBy { it.orderIndex }
             .filter { isValidSimId(resolvedSimulationId(it, languageCode)) }
             .forEach { sim ->
                 val simId = resolvedSimulationId(sim, languageCode) ?: return@forEach
                 emit(sim, PlanTrialItemKind.SIM_AGENT, simId, requiredCount = 7)
-            }
-
-        // 5. Math practice problems — agent-based, so they come last (Math chapters).
-        conceptDao.getConceptsForChapterSync(chapterId, "MATH PROBLEM")
-            .sortedBy { it.orderIndex }
-            .forEach { problem ->
-                val problemId = problem.problemId.takeIf { it.isNotBlank() } ?: return@forEach
-                emit(problem, PlanTrialItemKind.MATH, problemId, requiredCount = 7)
             }
 
         return items

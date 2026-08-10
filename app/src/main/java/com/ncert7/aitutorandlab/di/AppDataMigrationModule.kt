@@ -39,4 +39,9 @@ object AppDataMigrationModule {
     @IntoSet
     fun provideTrialScheduleThreeSimsPerStudyMigration(): AppDataMigration =
         RematerializeTrialScheduleMigration(AppDataMigrationVersions.TRIAL_SCHEDULE_THREE_SIMS_PER_STUDY)
+
+    @Provides
+    @IntoSet
+    fun provideTrialScheduleTwoSimsPerStudyMigration(): AppDataMigration =
+        RematerializeTrialScheduleMigration(AppDataMigrationVersions.TRIAL_SCHEDULE_TWO_SIMS_PER_STUDY)
 }

@@ -251,7 +251,13 @@ class SimulationAgentViewModel @Inject constructor(
      */
     fun handleIntent(intent: SimulationIntent) {
         when (intent) {
-            is SimulationIntent.SendUserResponse -> onSendClick()
+            is SimulationIntent.SendUserResponse -> {
+                val spoken = intent.text.trim()
+                if (spoken.isNotEmpty()) {
+                    _userInput.value = spoken
+                }
+                onSendClick()
+            }
             is SimulationIntent.UpdateInput -> onUserInputChanged(intent.text)
             is SimulationIntent.ParametersChanged -> onSimulationParamsChanged(intent.params)
             is SimulationIntent.OnBackPressed -> onBackPressed()
@@ -290,10 +296,7 @@ class SimulationAgentViewModel @Inject constructor(
             return
         }
 
-        // Hide webview immediately when sending
-        _showWebView.value = false
-
-        // Clear input IMMEDIATELY
+        // Clear input IMMEDIATELY — keep the simulation WebView mounted while awaiting reply
         _userInput.value = ""
 
         // Send response
@@ -465,12 +468,16 @@ class SimulationAgentViewModel @Inject constructor(
         checkTrialGeProgress(response)
     }
 
-    /** Time-based proceed from the agent: mark the current trial item complete before leaving. */
+    /**
+     * Soft exit from the time-based proceed overlay.
+     * Leaves the trial item as-is — completion is only via real GE / bite progress,
+     * not wall-clock time (which was awarding "Level cleared!" with no learning).
+     */
     fun recordTrialProceed() {
         val trialItemId = TrialSessionStore.activeTrialItemId ?: return
         viewModelScope.launch {
-            planTrialProgressTracker.recordGeReached(trialItemId)
-            DebugLogger.debugLog(TAG, "Trial sim agent proceed (time) for item $trialItemId")
+            planTrialProgressTracker.reconcileCompletion(trialItemId)
+            DebugLogger.debugLog(TAG, "Trial sim agent soft proceed (no forced complete) for item $trialItemId")
         }
     }
 
@@ -692,6 +699,9 @@ class SimulationAgentViewModel @Inject constructor(
     private fun performStartNewSession(simulationId: String) {
         viewModelScope.launch {
             try {
+                _errorMessage.value = null
+                _sessionData.value = null
+                _currentTeacherMessage.value = ""
                 _uiState.value = SimAgentUiState.Loading
                 DebugLogger.debugLog(TAG, "Starting new session for simulation: $simulationId")
 
@@ -725,6 +735,7 @@ class SimulationAgentViewModel @Inject constructor(
 
                     _sessionData.value = response
                     processSessionResponse(response)
+                    _errorMessage.value = null
                     _uiState.value = SimAgentUiState.Success(response)
                 } else {
                     throw result.exceptionOrNull() ?: Exception("Failed to start simulation session")
@@ -789,6 +800,7 @@ class SimulationAgentViewModel @Inject constructor(
 
         viewModelScope.launch {
             try {
+                _errorMessage.value = null
                 _uiState.value = SimAgentUiState.Loading
                 DebugLogger.debugLog(TAG, "Sending student response: $response")
 
@@ -827,6 +839,7 @@ class SimulationAgentViewModel @Inject constructor(
 
                     _sessionData.value = apiResponse
                     processSessionResponse(apiResponse)
+                    _errorMessage.value = null
                     _uiState.value = SimAgentUiState.Success(apiResponse)
                 } else {
                     throw result.exceptionOrNull() ?: Exception("Failed to send response")

@@ -45,7 +45,7 @@ object MomentVariants {
             MomentVariant("sim_done_2", true, EmotionType.Happy, "Boom — done!", "That's another one cleared.", "Next up"),
             MomentVariant("sim_done_3", true, EmotionType.Surprised, "You're on fire!", "{bite} complete. Nice focus.", "Continue"),
             MomentVariant("sim_done_4", true, EmotionType.Celebrating, "Clean run!", "Simulation cleared — the next one's waiting.", "Let's go"),
-            MomentVariant("sim_done_5", true, EmotionType.Happy, "Level cleared!", "+{gems} gems. Momentum is yours.", "Keep it up"),
+            MomentVariant("sim_done_5", true, EmotionType.Happy, "Sim cleared!", "+{gems} gems. Momentum is yours.", "Keep it up"),
         )
 
     private val STUDY_COMPLETED =
@@ -185,7 +185,7 @@ object MomentVariants {
             "sim_done_2" to KnText("ಸಂಪೂರ್ಣ!", "ಇನ್ನೊಂದು ಅಂಶ ಪೂರ್ಣಗೊಂಡಿದೆ.", "ಮುಂದೆ"),
             "sim_done_3" to KnText("ನೀವು ಅದ್ಭುತ!", "{bite} ಪೂರ್ಣ. ಉತ್ತಮ ಕೇಂದ್ರೀಕರಣ.", "ಮುಂದುವರಿಸಿ"),
             "sim_done_4" to KnText("ಚೆನ್ನಾಗಿ!", "ಸಿಮ್ಯುಲೇಶನ್ ಪೂರ್ಣ — ಮುಂದಿನದು ಕಾಯುತ್ತಿದೆ.", "ಹೋಗೋಣ"),
-            "sim_done_5" to KnText("ಹಂತ ಪೂರ್ಣ!", "+{gems} ರತ್ನಗಳು. ಜೋಶ ನಿಮ್ಮದು.", "ಮುಂದುವರಿಸಿ"),
+            "sim_done_5" to KnText("ಸಿಮ್ ಪೂರ್ಣ!", "+{gems} ರತ್ನಗಳು. ಜೋಶ ನಿಮ್ಮದು.", "ಮುಂದುವರಿಸಿ"),
             "study_done_1" to KnText("ಅದ್ಭುತ!", "{bite} ಮುಗಿಸಿದ್ದೀರಿ. +{gems} ರತ್ನಗಳು.", "ಮುಂದುವರಿಸಿ"),
             "study_done_2" to KnText("ಪೂರ್ಣ!", "ಅಧ್ಯಯನ ಅವಧಿ ಪೂರ್ಣ — ಅದ್ಭುತ.", "ಮುಂದೆ"),
             "study_done_3" to KnText("ಚುರುಕಾದ ಕೆಲಸ!", "{bite} ಅರ್ಥವಾಯಿತು. ಮುಂದೆ!", "ಮುಂದುವರಿಸಿ"),

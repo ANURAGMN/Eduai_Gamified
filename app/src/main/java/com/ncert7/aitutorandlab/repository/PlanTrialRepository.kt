@@ -47,8 +47,9 @@ class PlanTrialRepository @Inject constructor(
 
     /**
      * Ensures a standalone chapter trial exists (opened from the chapter picker). Stored
-     * under a chapter-scoped [dayIndex]; materialized once, then progress persists like a
-     * normal plan day. Independent of the exam-plan schedule.
+     * under a chapter-scoped [dayIndex]. Rematerializes when the syllabus queue changes
+     * (e.g. older builds only stored SIM_URL and omitted STUDY / MATH / SIM_AGENT), merging
+     * progress by kind+concept+source so done sims stay done.
      */
     suspend fun ensureChapterTrial(
         studentId: String,
@@ -57,13 +58,10 @@ class PlanTrialRepository @Inject constructor(
         languageCode: String,
     ) {
         if (studentId.isBlank()) return
-        if (ensureChapterTrialPlanDay(studentId, dayIndex, chapterId, languageCode) == null) return
-        val existing = planTrialItemDao.getItemsForDay(studentId, dayIndex)
-        if (existing.isNotEmpty()) return
-        val planDayId =
-            examPlanDao.getPlanDays(studentId).firstOrNull { it.dayIndex == dayIndex }?.id
-                ?: return
-        val items =
+        val planDayId = ensureChapterTrialPlanDay(studentId, dayIndex, chapterId, languageCode) ?: return
+        val day =
+            examPlanDao.getPlanDays(studentId).firstOrNull { it.dayIndex == dayIndex } ?: return
+        val expected =
             materializer.materializeChapter(
                 studentId = studentId,
                 chapterId = chapterId,
@@ -71,9 +69,15 @@ class PlanTrialRepository @Inject constructor(
                 planDayId = planDayId,
                 languageCode = languageCode,
             )
-        if (items.isNotEmpty()) {
-            planTrialItemDao.upsertItems(items)
+        if (expected.isEmpty()) return
+
+        val existing = planTrialItemDao.getItemsForDay(studentId, dayIndex)
+        if (existing.isEmpty()) {
+            planTrialItemDao.upsertItems(expected)
+            return
         }
+        if (trialOrderSignature(existing) == trialOrderSignature(expected)) return
+        applyRematerializedItems(day, expected, existing)
     }
 
     /**
@@ -184,7 +188,7 @@ class PlanTrialRepository @Inject constructor(
         languageCode: String,
     ) {
         if (day.id == 0L || !planDayExists(day)) return
-        val expected = materializer.materializeDay(day, languageCode)
+        val expected = expectedItemsForDay(day, languageCode)
         if (expected.isEmpty()) return
 
         val existing = planTrialItemDao.getItemsForDay(day.studentId, day.dayIndex)
@@ -203,7 +207,7 @@ class PlanTrialRepository @Inject constructor(
         languageCode: String,
     ) {
         if (day.id == 0L || !planDayExists(day)) return
-        val expected = materializer.materializeDay(day, languageCode)
+        val expected = expectedItemsForDay(day, languageCode)
         if (expected.isEmpty()) return
 
         val existing = planTrialItemDao.getItemsForDay(day.studentId, day.dayIndex)
@@ -215,6 +219,24 @@ class PlanTrialRepository @Inject constructor(
         if (trialOrderSignature(existing) == trialOrderSignature(expected)) return
 
         applyRematerializedItems(day, expected, existing)
+    }
+
+    /** Lesson/revise days use [PlanTrialMaterializer.materializeDay]; chapter trials use materializeChapter. */
+    private suspend fun expectedItemsForDay(
+        day: ExamPlanDayEntity,
+        languageCode: String,
+    ): List<PlanTrialItemEntity> {
+        if (day.dayType.equals("CHAPTER_TRIAL", ignoreCase = true)) {
+            val chapterId = day.conceptIds.trim().takeIf { it.isNotBlank() } ?: return emptyList()
+            return materializer.materializeChapter(
+                studentId = day.studentId,
+                chapterId = chapterId,
+                dayIndex = day.dayIndex,
+                planDayId = day.id,
+                languageCode = languageCode,
+            )
+        }
+        return materializer.materializeDay(day, languageCode)
     }
 
     private suspend fun planDayExists(day: ExamPlanDayEntity): Boolean =

@@ -19,8 +19,8 @@ class AppDataMigrationRunnerTest {
 
         runner.runPendingMigrations("student-1", "en")
 
-        assertEquals(listOf(1, 2, 3, 4, 5), steps)
-        assertEquals(5, store.version)
+        assertEquals(listOf(1, 2, 3, 4, 5, 6), steps)
+        assertEquals(6, store.version)
     }
 
     @Test
@@ -56,7 +56,7 @@ class AppDataMigrationRunnerTest {
 
         runner.runPendingMigrations("student-1", "en")
 
-        assertEquals(listOf(4, 5), steps)
+        assertEquals(listOf(4, 5, 6), steps)
     }
 
     private fun fullMigrationChain(steps: MutableList<Int>): Set<AppDataMigration> =
@@ -66,6 +66,7 @@ class AppDataMigrationRunnerTest {
             recordingMigration(AppDataMigrationVersions.TRIAL_SCHEDULE_BATCHED, steps),
             recordingMigration(AppDataMigrationVersions.TRIAL_SCHEDULE_INTERLEAVED, steps),
             recordingMigration(AppDataMigrationVersions.TRIAL_SCHEDULE_THREE_SIMS_PER_STUDY, steps),
+            recordingMigration(AppDataMigrationVersions.TRIAL_SCHEDULE_TWO_SIMS_PER_STUDY, steps),
         )
 
     private fun recordingMigration(
