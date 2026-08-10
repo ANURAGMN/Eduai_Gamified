@@ -17,7 +17,6 @@ import com.ncert7.aitutorandlab.domain.chatbot.usecase.ChatIntent
 import com.ncert7.aitutorandlab.service.analytics.ScreenName
 import com.ncert7.aitutorandlab.service.analytics.TrackScreenEvent
 import com.ncert7.aitutorandlab.ui.components.AdDialog
-import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.AppDialog
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.viewmodel.ChatViewModel
 import com.ncert7.aitutorandlab.ui.screens.conceptscreen.components.ConceptCard
 import com.ncert7.aitutorandlab.ui.screens.conceptscreen.components.ConceptScreenHeader
@@ -46,7 +45,6 @@ fun ConceptScreen(
     val dimes = LocalDimensions.current
     val configuration = LocalConfiguration.current
     val state by viewModel.state.collectAsState()
-    val chatState by chatViewModel.uiState.collectAsState()
     val pendingNavigation by viewModel.pendingNavigation.collectAsState()
     val showAdDialog by viewModel.showAdDialog.collectAsState()
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -150,10 +148,10 @@ fun ConceptScreen(
                                 concept = conceptUiModel,
                                 serialNumber = index + 1,
                                 onClick = { conceptId, problemId, conceptType ->
-                                    chatViewModel.selectConceptWithDialog(conceptUiModel.sessionKey)
-                                    if (!chatViewModel.hasExistingSession(conceptUiModel.sessionKey)) {
-                                        onConceptClick(conceptId, problemId, conceptType)
-                                    }
+                                    // Always start a fresh session — the "Continue vs Start new"
+                                    // resume dialog has been removed to cut popups.
+                                    chatViewModel.onIntent(ChatIntent.StartFreshSession(conceptUiModel.sessionKey))
+                                    onConceptClick(conceptId, problemId, conceptType)
                                 },
                                 onSimulationAgentClick = { simId, conceptId ->
                                     if (conceptUiModel.status == ProgressStatus.NOT_STARTED) {
@@ -170,7 +168,8 @@ fun ConceptScreen(
                 }
             }
 
-            // Ad after 5 tracked clicks per day
+            // Ad shown at this open boundary when in-sim interactions have crossed the policy
+            // threshold (see ClickAdPolicy.SIM_INTERACTIONS_PER_AD); counter resets on dismiss.
             if (showAdDialog) {
                 AdDialog(
                     context = context,
@@ -178,32 +177,7 @@ fun ConceptScreen(
                 )
             }
 
-            // Session Resume Dialog
-            AppDialog(
-                show = chatState.pendingConceptForDialog != null,
-                title = stringResource(R.string.existing_session_found),
-                message = stringResource(R.string.resume_or_start_fresh),
-                confirmText = stringResource(R.string.continue_session),
-                dismissText = stringResource(R.string.start_new),
-                onConfirm = {
-                    chatState.pendingConceptForDialog?.let { conceptName ->
-                        chatViewModel.onIntent(ChatIntent.SelectConcept(conceptName))
-                        chatViewModel.dismissSessionDialog()
-                        state.concepts.find { it.sessionKey == conceptName || it.name == conceptName }?.let { concept ->
-                            onConceptClick(concept.id, concept.problemId, concept.type)
-                        }
-                    }
-                },
-                onDismiss = {
-                    chatState.pendingConceptForDialog?.let { conceptName ->
-                        chatViewModel.onIntent(ChatIntent.StartFreshSession(conceptName))
-                        chatViewModel.dismissSessionDialog()
-                        state.concepts.find { it.sessionKey == conceptName || it.name == conceptName }?.let { concept ->
-                            onConceptClick(concept.id, concept.problemId, concept.type)
-                        }
-                    }
-                }
-            )
+            // Session-resume dialog removed — concepts always start fresh (see onClick above).
         }
     }
 }

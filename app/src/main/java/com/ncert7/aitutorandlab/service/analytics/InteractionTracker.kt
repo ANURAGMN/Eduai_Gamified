@@ -190,8 +190,10 @@ object InteractionTracker {
         _totalInteractions.value += 1
         if (sessionCountingEnabled) {
             _sessionInteractionCount.value += 1
+            // Feed the ad counter only for counted interactions, so trial-before-progress taps
+            // don't tick ads (keeps "counted" session semantics consistent).
+            onCountedInteraction?.invoke()
         }
-        onCountedInteraction?.invoke()
         _events.value = _events.value + event
         repository?.let { repo ->
             scope.launch {

@@ -3,7 +3,6 @@ package com.ncert7.aitutorandlab.ui.gamification.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import android.content.Context
-import com.ncert7.aitutorandlab.data.local.dao.StreakDao
 import com.ncert7.aitutorandlab.domain.gamification.RewardEventBus
 import com.ncert7.aitutorandlab.domain.gamification.RewardUiEvent
 import com.ncert7.aitutorandlab.data.local.SharedPreferenceUtils
@@ -22,7 +21,6 @@ class RewardOverlayViewModel @Inject constructor(
     @ApplicationContext private val appContext: Context,
     private val rewardEventBus: RewardEventBus,
     private val sharedPreferenceUtils: SharedPreferenceUtils,
-    private val streakDao: StreakDao,
 ) : ViewModel() {
 
     private val _pendingReward = MutableStateFlow<RewardUiEvent?>(null)
@@ -42,25 +40,13 @@ class RewardOverlayViewModel @Inject constructor(
      */
     fun dismissReward() {
         _pendingReward.value = null
-        viewModelScope.launch {
-            val userId = sharedPreferenceUtils.getUserId().orEmpty()
-            val streakCount =
-                if (userId.isNotBlank()) {
-                    streakDao.getStreakByUserId(userId)?.streakCount ?: 0
-                } else {
-                    0
-                }
-            val variant =
-                if (streakCount <= 1) {
-                    NotificationPrimerVariant.STREAK
-                } else {
-                    NotificationPrimerVariant.QUEST
-                }
-            NotificationPermissionGate.onMeaningfulWin(
-                context = appContext,
-                prefs = sharedPreferenceUtils,
-                variant = variant,
-            )
-        }
+        // The gate chooses the persuasion angle by show-count and ignores the variant passed here,
+        // so we pass a placeholder. It is throttled to once/day, max 3 times, and stops after the
+        // permission has been asked or granted.
+        NotificationPermissionGate.onMeaningfulWin(
+            context = appContext,
+            prefs = sharedPreferenceUtils,
+            variant = NotificationPrimerVariant.STREAK,
+        )
     }
 }
