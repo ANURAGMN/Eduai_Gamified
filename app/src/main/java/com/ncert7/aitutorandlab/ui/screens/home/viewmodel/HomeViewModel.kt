@@ -263,6 +263,9 @@ class HomeViewModel @Inject constructor(
     init {
         getStudent()
         observeStreak()
+        // Opening home (logged-in) counts for streak — covers login-after-launch when
+        // ProcessLifecycle onStart ran before userId was available.
+        recordAppOpenStreak()
         observeTodayProgress()
         observeTotalCounts()
         observeProgressConceptsAndSimulations()
@@ -277,6 +280,19 @@ class HomeViewModel @Inject constructor(
         loadYoutubeVideos()
         observeGardenProgress()
         applyOnboardingPicksOnce()
+    }
+
+    /** Opening the app / landing on home is enough to keep or extend the daily streak. */
+    private fun recordAppOpenStreak() {
+        viewModelScope.launch {
+            val id = userId.takeIf { it.isNotBlank() } ?: return@launch
+            try {
+                val count = streakRepository.recordActivity(id)
+                DebugLogger.debugLog("HomeViewModel", "App-open streak → $count")
+            } catch (e: Exception) {
+                DebugLogger.errorLog("HomeViewModel", "App-open streak failed: ${e.message}")
+            }
+        }
     }
 
     /**

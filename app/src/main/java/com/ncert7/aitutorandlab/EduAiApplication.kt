@@ -84,13 +84,27 @@ class EduAiApplication : Application(), Configuration.Provider {
         )
 
         // Register app lifecycle observer (handles session start/end on foreground/background)
-        appLifecycleObserver = AppLifecycleObserver()
+        appLifecycleObserver = AppLifecycleObserver(this)
         appLifecycleObserver.register()
 
         // Cold start: ProcessLifecycleOwner may already be STARTed before the observer registers
         applicationScope.launch {
             SessionManager.startSession()
             DebugLogger.debugLog("EduAiApplication", "Initial session started on app launch")
+            // Same path as onStart — covers cold start when STARTED fired before register().
+            try {
+                val userId = SharedPreferenceUtils(this@EduAiApplication).getUserId()?.takeIf { it.isNotBlank() }
+                if (userId != null) {
+                    val streakRepository = EntryPointAccessors
+                        .fromApplication(this@EduAiApplication, com.ncert7.aitutorandlab.di.StreakEntryPoint::class.java)
+                        .streakRepository()
+                    kotlinx.coroutines.withContext(Dispatchers.IO) {
+                        streakRepository.recordActivity(userId)
+                    }
+                }
+            } catch (e: Exception) {
+                DebugLogger.errorLog("EduAiApplication", "Cold-start streak failed: ${e.message}")
+            }
         }
 
         scheduleDailySync()
