@@ -40,7 +40,6 @@ import com.ncert7.aitutorandlab.ui.screens.simulation_agent.components.Simulatio
 import com.ncert7.aitutorandlab.ui.screens.simulation_agent.components.rememberSimulationKeyConceptTts
 import com.ncert7.aitutorandlab.ui.screens.simulation_agent.components.speakFromApiInsight
 import com.ncert7.aitutorandlab.ui.screens.simulation_agent.components.speakSimulationIntro
-import com.ncert7.aitutorandlab.ui.screens.simulation_agent.components.speakSimulationFooter
 import com.ncert7.aitutorandlab.ui.screens.simulation_agent.components.speakTitleFallback
 import com.ncert7.aitutorandlab.ui.theme.LocalDimensions
 import com.ncert7.aitutorandlab.ui.screens.simulation_agent.viewmodel.SimAgentUiState
@@ -483,13 +482,9 @@ fun SimulationAgentScreen(
                         )
                     }
                 },
-                onSimulationFooterReported = { htmlText ->
-                    htmlText.trim().takeIf { it.isNotEmpty() }?.let { text ->
-                        keyConceptTts.speakSimulationFooter(
-                            text = text,
-                            simulationKey = simulationId,
-                        )
-                    }
+                onSimulationFooterReported = { _ ->
+                    // Auto second-narration of the footer/description text is DISABLED — it
+                    // interrupted the learner mid-task. The coach narrates each round on demand.
                 },
                 languageCode = normalizeLanguageCode(currentLanguage),
                 useNativeAvatar = useNativeAvatar,

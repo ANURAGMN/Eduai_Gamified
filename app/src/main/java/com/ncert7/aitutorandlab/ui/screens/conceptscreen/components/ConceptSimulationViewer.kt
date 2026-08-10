@@ -43,7 +43,6 @@ import com.ncert7.aitutorandlab.ui.screens.simulation_agent.components.Simulatio
 import com.ncert7.aitutorandlab.ui.screens.simulation_agent.components.rememberSimulationKeyConceptTts
 import com.ncert7.aitutorandlab.ui.viewModel.TextToSpeech
 import com.ncert7.aitutorandlab.ui.screens.simulation_agent.components.speakSimulationCoach
-import com.ncert7.aitutorandlab.ui.screens.simulation_agent.components.speakSimulationFooter
 import com.ncert7.aitutorandlab.ui.screens.simulation_agent.components.speakSimulationReplay
 import com.ncert7.aitutorandlab.ui.screens.simulation_agent.components.speakSimulationStep
 import com.ncert7.aitutorandlab.utils.TrialCopy
@@ -166,7 +165,7 @@ fun ConceptSimulationViewer(
     // Build marker — grep logcat for "CoachBuild" to confirm the running APK has the latest coach.
     // If this line is ABSENT from a sim session's log, the build is stale (incremental-compile cache).
     LaunchedEffect(Unit) {
-        DebugLogger.debugLog("CoachBuild", "v5 coach: header voice→settings, gear shows; Replay speaks v4Line; TTS reads shown text (build 20260808w)")
+        DebugLogger.debugLog("CoachBuild", "v5 coach: header voice→settings, gear shows; Replay speaks v4Line; TTS reads shown text; auto 1.25-min footer narration REMOVED (build 20260810a)")
     }
 
     LaunchedEffect(decodedUrl) {
@@ -180,8 +179,6 @@ fun ConceptSimulationViewer(
         }
     }
 
-    val introTts by rememberUpdatedState(keyConceptTts)
-    val introSimulationKey by rememberUpdatedState(decodedUrl)
     val introTitle by rememberUpdatedState(decodedTitle)
 
     // The top-of-page description (everything above the interactive canvas). It is now delivered
@@ -224,35 +221,10 @@ fun ConceptSimulationViewer(
             }
         }
 
-    // The description below the canvas — captured early, spoken later by the 1.25-min timer.
-    var footerHtmlText by remember(decodedUrl) { mutableStateOf<String?>(null) }
-    val onSimulationFooterReported: (String) -> Unit = { htmlText ->
-        htmlText.trim().takeIf { it.isNotEmpty() }?.let { text ->
-            if (footerHtmlText == null) footerHtmlText = text
-        }
-    }
-
-    // Second narration ("description of the simulation") at 1.25 min. Driven from here (not the
-    // WebView) so it survives rotation and always fires — falling back to the concept description
-    // if the page had no readable footer text.
-    LaunchedEffect(decodedUrl, viewerSession.startedAtMs, voiceEnabled) {
-        if (!voiceEnabled || viewerSession.url != decodedUrl || viewerSession.startedAtMs <= 0L) {
-            return@LaunchedEffect
-        }
-        delay(viewModel.remainingFooterDelayMs())
-        if (!isForeground) return@LaunchedEffect
-        if (!viewModel.shouldHandleFooter(decodedUrl) || viewModel.viewerSession.value.url != decodedUrl) {
-            return@LaunchedEffect
-        }
-        val text =
-            footerHtmlText
-                ?: viewModel.keyConceptFallback(decodedConceptId)
-                ?: decodedTitle.takeIf { it.isNotBlank() }
-        if (!text.isNullOrBlank()) {
-            viewModel.markFooterHandled(decodedUrl)
-            introTts.speakSimulationFooter(text = text, simulationKey = introSimulationKey)
-        }
-    }
+    // Auto second-narration of the footer/description text (previously spoken ~1.25 min after load)
+    // is DISABLED — it interrupted the learner mid-task. The V5 coach narrates each round on demand,
+    // so the reported footer text is intentionally ignored.
+    val onSimulationFooterReported: (String) -> Unit = { _ -> }
 
     // Unlock the guided coach once its walkthrough is ready — the controls are harvested, the
     // hosted guide (if any) has resolved, and the intro text (its first step) is in hand. Gating
