@@ -147,6 +147,7 @@ fun ConceptScreen(
                             ConceptCard(
                                 concept = conceptUiModel,
                                 serialNumber = index + 1,
+                                isTrial = state.type.equals("TRIAL", ignoreCase = true),
                                 onClick = { conceptId, problemId, conceptType ->
                                     // Always start a fresh session — the "Continue vs Start new"
                                     // resume dialog has been removed to cut popups.

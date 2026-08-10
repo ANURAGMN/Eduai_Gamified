@@ -8,7 +8,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.School
+import androidx.compose.material.icons.filled.Science
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults.buttonColors
 import androidx.compose.material3.ButtonDefaults.outlinedButtonColors
@@ -25,6 +28,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 import com.ncert7.aitutorandlab.R
 import com.ncert7.aitutorandlab.domain.progress.model.ProgressStatus
 import com.ncert7.aitutorandlab.ui.models.ConceptUiModel
@@ -48,6 +52,8 @@ import com.ncert7.aitutorandlab.ui.theme.White
  *
  * @param concept The Concept data to display.
  * @param serialNumber The serial number (1, 2, 3, ...) to display in the badge.
+ * @param isTrial When true (the merged Trial list), a type icon marks each row as study,
+ *   simulation, or study+simulation so the mixed list is scannable.
  * @param onClick Lambda function to handle main card click (STUDY type).
  * @param onSimulationAgentClick Lambda to handle simulation agent button click.
  * @param onSimulationClick Lambda to handle simulation URL button click.
@@ -56,6 +62,7 @@ import com.ncert7.aitutorandlab.ui.theme.White
 fun ConceptCard(
     concept: ConceptUiModel,
     serialNumber: Int = 1,
+    isTrial: Boolean = false,
     onClick: (conceptId: String, problemId: String, conceptType: String) -> Unit = { _, _, _ -> },
     onSimulationAgentClick: (String, String) -> Unit = { _, _ -> },
     onSimulationClick: (title: String, url: String, conceptId: String) -> Unit = { _, _, _ -> },
@@ -85,6 +92,11 @@ fun ConceptCard(
                 conceptOrder = serialNumber.toString(),
                 status = concept.status
             )
+
+            // Trial list is a merged view of lessons and simulations — mark each row's type.
+            if (isTrial) {
+                ConceptTypeIcon(concept = concept)
+            }
 
             // Content (Title + Status)
             Column(
@@ -151,6 +163,53 @@ fun ConceptCard(
                 modifier = Modifier.size(dimens.iconLarge)
             )
         }
+    }
+}
+
+/**
+ * Type marker for the merged Trial list: a book for a lesson, a flask for a simulation, and both
+ * together when a lesson also ships a simulation. Purely a visual hint — the buttons are unchanged.
+ */
+@Composable
+private fun ConceptTypeIcon(concept: ConceptUiModel) {
+    val dimens = LocalDimensions.current
+    val hasSim = concept.simulationId?.let { it.isNotBlank() && it != "null" } == true ||
+        concept.simulationUrl?.let { it.isNotBlank() && it != "null" } == true
+    val isSimType = concept.type.equals("SIMULATION", ignoreCase = true)
+    val isStudyType = concept.type.equals("STUDY", ignoreCase = true)
+
+    when {
+        // Study + Simulation → both icons.
+        isStudyType && hasSim -> {
+            Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                Icon(
+                    imageVector = Icons.Filled.School,
+                    contentDescription = null,
+                    tint = TextSecondary,
+                    modifier = Modifier.size(dimens.iconMedium)
+                )
+                Icon(
+                    imageVector = Icons.Filled.Science,
+                    contentDescription = null,
+                    tint = TextSecondary,
+                    modifier = Modifier.size(dimens.iconMedium)
+                )
+            }
+        }
+        // Simulation only.
+        isSimType -> Icon(
+            imageVector = Icons.Filled.Science,
+            contentDescription = null,
+            tint = TextSecondary,
+            modifier = Modifier.size(dimens.iconMedium)
+        )
+        // Study only.
+        isStudyType -> Icon(
+            imageVector = Icons.AutoMirrored.Filled.MenuBook,
+            contentDescription = null,
+            tint = TextSecondary,
+            modifier = Modifier.size(dimens.iconMedium)
+        )
     }
 }
 
