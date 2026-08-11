@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.ncert7.aitutorandlab.ui.components.DropDownMenu
+import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.ChatFontSizeSettingSection
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.InputModeChip
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.dataclass.ChatBotSettingsState
 import com.ncert7.aitutorandlab.ui.theme.BrandPrimary
@@ -41,6 +42,7 @@ fun MathBotSettings(
     defaultInputLabel: String = "Default input",
     voiceFirstLabel: String = "Voice first",
     textFirstLabel: String = "Text first",
+    onFontSizeChange: (Float) -> Unit = {},
 ) {
     val dimens = LocalDimensions.current
     val levelLow = stringResource(R.string.level_low)
@@ -289,6 +291,13 @@ fun MathBotSettings(
                 options = listOf("0.75x", "1.0x", "1.25x", "1.5x"),
                 selectedValue = state.selectedSpeed,
                 onValueSelected = onSpeedChange
+            )
+
+            Spacer(modifier = Modifier.height(dimens.spaceMedium))
+
+            ChatFontSizeSettingSection(
+                selectedSp = state.messageFontSp,
+                onFontSizeChange = onFontSizeChange,
             )
         }
     }

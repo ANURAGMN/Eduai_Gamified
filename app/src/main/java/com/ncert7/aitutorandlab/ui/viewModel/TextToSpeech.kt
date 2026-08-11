@@ -393,16 +393,20 @@ class TextToSpeech @Inject constructor() : ViewModel(), AndroidTextToSpeech.OnIn
             .replace("**", "")  // Remove bold markers
             .replace("*", "")   // Remove any remaining asterisks
             .trim()
-        // Number handling is language-aware. In English, spell numbers as words so the engine never
-        // reads digit-by-digit ("+1000" → "plus one thousand", not "plus one oh oh oh"). In an Indic
-        // language (Kannada, Hindi, …) do NOT inject English words — just drop digit-grouping commas so
-        // the native voice reads the digits in its own language instead of switching to English.
+        // Cleanup is language-aware, and applies to EVERY app TTS caller (study/chat agent, the
+        // simulation-agent teacher message, intros, …).
+        // - Indic (Kannada, Hindi, …): run the full sanitizer, which strips emoji/icons and any stray
+        //   symbols/markup (bullets, arrows, brackets, ×, …) and drops grouping commas, so the native
+        //   voice reads only the actual words and digits — never non-text glyphs or injected English.
+        // - English: spell numbers as words so the engine never reads digit-by-digit ("+1000" →
+        //   "plus one thousand", not "plus one oh oh oh").
+        val sanitizer = com.ncert7.aitutorandlab.ui.screens.simulation_agent.components
+            .SimulationIntroTtsSanitizer
         val isIndic = languagePatterns.values.any { it.containsMatchIn(withoutMarkers) }
         return if (isIndic) {
-            withoutMarkers.replace(Regex("(?<=\\d),(?=\\d)"), "")
+            sanitizer.forSpeech(withoutMarkers)
         } else {
-            com.ncert7.aitutorandlab.ui.screens.simulation_agent.components
-                .SimulationIntroTtsSanitizer.spokenNumbers(withoutMarkers)
+            sanitizer.spokenNumbers(withoutMarkers)
         }
     }
 

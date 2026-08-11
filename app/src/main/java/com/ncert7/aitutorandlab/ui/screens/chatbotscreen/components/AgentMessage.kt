@@ -21,6 +21,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.text.TextProcessor
@@ -42,7 +43,9 @@ fun AgentMessage(
     typingText: String = "",
     fullText: String = text,
     ttsController: TextToSpeech = viewModel(),
-    reduceTextSize: Boolean = false
+    reduceTextSize: Boolean = false,
+    messageFontSize: TextUnit? = null,
+    messageLineHeight: TextUnit? = null,
 ) {
     val scrollState = rememberScrollState()
     val ttsState by ttsController.state.collectAsState()
@@ -106,7 +109,9 @@ fun AgentMessage(
                 fullText = fullText,
                 ttsController = ttsController,
                 onTextLayout = { textLayout = it },
-                reduceTextSize = reduceTextSize
+                reduceTextSize = reduceTextSize,
+                messageFontSize = messageFontSize,
+                messageLineHeight = messageLineHeight,
             )
             Spacer(modifier = Modifier.height(if (reduceTextSize) 12.dp else 8.dp))
         }

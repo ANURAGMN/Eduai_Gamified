@@ -42,6 +42,7 @@ import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.ChatEffects
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.VoiceInputBar
 import com.ncert7.aitutorandlab.data.local.SharedPreferenceUtils
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.ChatHeaderIcons
+import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.ChatMessageFontSize
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.ConversationView
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.InitialAvatarView
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.InputSection
@@ -58,6 +59,7 @@ import com.ncert7.aitutorandlab.domain.chatbot.usecase.ChatIntent
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.viewmodel.ChatViewModel
 import com.ncert7.aitutorandlab.ui.screens.mathagentscreen.components.MathBotSettings
 import com.ncert7.aitutorandlab.ui.screens.mathagentscreen.viewmodel.MathViewModel
+import androidx.compose.ui.unit.sp
 import com.ncert7.aitutorandlab.domain.mathagent.usecase.MathIntent
 import com.ncert7.aitutorandlab.ui.screens.mathagentscreen.dataclass.MathMessageModel
 
@@ -95,11 +97,13 @@ fun MathAgentScreen(
     var permissionGranted by remember { mutableStateOf(false) }
     var showSettingsMenu by remember { mutableStateOf(false) }
 
-    // Settings state
-    var settingsState by remember { mutableStateOf(ChatBotSettingsState()) }
-
     // Hands-free voice: persisted toggle (default on). Mic auto-opens after the tutor speaks.
     val sharedPrefs = remember { SharedPreferenceUtils(context) }
+
+    // Settings state — message font loads from prefs; Math renders 0.5sp smaller than base.
+    var settingsState by remember {
+        mutableStateOf(ChatBotSettingsState(messageFontSp = sharedPrefs.getChatMessageFontSp()))
+    }
     var handsFreeMode by remember { mutableStateOf(sharedPrefs.getHandsFreeMode()) }
     val handsFreeLabel = if (mathState.isKannada) "ಧ್ವನಿ ಸಂಭಾಷಣೆ" else "Hands-free voice"
 
@@ -455,6 +459,15 @@ fun MathAgentScreen(
                                 ttsState = ttsState,
                                 wordBoundaryIndex = wordBoundaryIndex,
                                 isListening = sttState.isListening,
+                                messageFontSize = ChatMessageFontSize
+                                    .resolveFontSp(settingsState.messageFontSp, mathAgent = true).sp,
+                                messageLineHeight = ChatMessageFontSize
+                                    .lineHeightSp(
+                                        ChatMessageFontSize.resolveFontSp(
+                                            settingsState.messageFontSp,
+                                            mathAgent = true,
+                                        ),
+                                    ).sp,
                             )
                         }
                     }
@@ -532,6 +545,10 @@ fun MathAgentScreen(
                 defaultInputLabel = if (mathState.isKannada) "ಡೀಫಾಲ್ಟ್ ಇನ್‌ಪುಟ್" else "Default input",
                 voiceFirstLabel = if (mathState.isKannada) "ಧ್ವನಿ ಮೊದಲು" else "Voice first",
                 textFirstLabel = if (mathState.isKannada) "ಪಠ್ಯ ಮೊದಲು" else "Text first",
+                onFontSizeChange = { sp ->
+                    sharedPrefs.setChatMessageFontSp(sp)
+                    settingsState = settingsState.copy(messageFontSp = sp)
+                },
             )
         }
 

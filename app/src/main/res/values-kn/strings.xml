@@ -107,6 +107,7 @@
     <string name="select_student_level">ವಿದ್ಯಾರ್ಥಿ ಮಟ್ಟವನ್ನು ಆಯ್ಕೆಮಾಡಿ</string>
     <string name="select_voice">ಧ್ವನಿಯನ್ನು ಆಯ್ಕೆಮಾಡಿ</string>
     <string name="select_speed">ವೇಗವನ್ನು ಆಯ್ಕೆಮಾಡಿ</string>
+    <string name="select_chat_font_size">ಪಠ್ಯ ಗಾತ್ರ (XS = ಅತಿ ಚಿಕ್ಕದು)</string>
 
     <!--    Settings tab-->
     <string name="select_language">ಭಾಷೆ ಆಯ್ಕೆಮಾಡಿ</string>

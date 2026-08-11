@@ -38,7 +38,9 @@ import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.AutoListenAf
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.ChatBotSettings
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.ChatHeaderIcons
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.VoiceInputBar
+import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.ChatMessageFontSize
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.ConversationView
+import androidx.compose.ui.unit.sp
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.InitialAvatarView
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.InputSection
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.dataclass.ChatBotSettingsState
@@ -84,7 +86,9 @@ fun RevisionScreen(
     var permissionGranted by remember { mutableStateOf(false) }
     var lastProcessedSpeechText by remember { mutableStateOf("") }
     var showSettingsMenu by remember { mutableStateOf(false) }
-    var settingsState by remember { mutableStateOf(ChatBotSettingsState()) }
+    var settingsState by remember {
+        mutableStateOf(ChatBotSettingsState(messageFontSp = sharedPrefs.getChatMessageFontSp()))
+    }
     var showSessionResumeDialog by remember { mutableStateOf(false) }
 
     // Hands-free voice: persisted toggle (default on). Mic auto-opens after the tutor speaks.
@@ -387,6 +391,10 @@ fun RevisionScreen(
                             defaultInputLabel = if (chatState.isKannada) "ಡೀಫಾಲ್ಟ್ ಇನ್‌ಪುಟ್" else "Default input",
                             voiceFirstLabel = if (chatState.isKannada) "ಧ್ವನಿ ಮೊದಲು" else "Voice first",
                             textFirstLabel = if (chatState.isKannada) "ಪಠ್ಯ ಮೊದಲು" else "Text first",
+                            onFontSizeChange = { sp ->
+                                sharedPrefs.setChatMessageFontSp(sp)
+                                settingsState = settingsState.copy(messageFontSp = sp)
+                            },
                         )
                     }
                 )
@@ -402,6 +410,15 @@ fun RevisionScreen(
                         ttsState = ttsState,
                         wordBoundaryIndex = wordBoundaryIndex,
                         isListening = sttState.isListening,
+                        messageFontSize = ChatMessageFontSize
+                            .resolveFontSp(settingsState.messageFontSp, mathAgent = false).sp,
+                        messageLineHeight = ChatMessageFontSize
+                            .lineHeightSp(
+                                ChatMessageFontSize.resolveFontSp(
+                                    settingsState.messageFontSp,
+                                    mathAgent = false,
+                                ),
+                            ).sp,
                     )
                 } else {
                     InitialAvatarView(

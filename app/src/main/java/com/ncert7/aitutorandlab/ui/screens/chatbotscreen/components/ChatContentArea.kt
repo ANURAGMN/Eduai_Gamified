@@ -8,6 +8,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import com.ncert7.aitutorandlab.R
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import com.ncert7.aitutorandlab.ui.components.LoadingInsightPanel
 import androidx.compose.foundation.background
@@ -29,6 +30,8 @@ fun ChatContentArea(
     ttsController: TextToSpeech,
     isResourceCardShowing: Boolean = false,
     languageCode: String = "en",
+    messageFontSize: TextUnit? = null,
+    messageLineHeight: TextUnit? = null,
     modifier: Modifier = Modifier
 ) {
     val dimens= LocalDimensions.current
@@ -74,6 +77,8 @@ fun ChatContentArea(
                             typingText = typingText,
                             fullText = lastAIMessage.content,
                             ttsController = ttsController,
+                            messageFontSize = messageFontSize,
+                            messageLineHeight = messageLineHeight,
                             modifier = Modifier.fillMaxSize()
                         )
                     }

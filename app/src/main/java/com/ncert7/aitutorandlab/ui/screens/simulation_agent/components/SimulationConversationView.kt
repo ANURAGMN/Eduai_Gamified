@@ -42,6 +42,8 @@ import androidx.compose.ui.text.style.TextAlign
 
 import androidx.compose.ui.unit.Dp
 
+import androidx.compose.ui.unit.TextUnit
+
 import androidx.compose.ui.unit.dp
 
 import com.ncert7.aitutorandlab.R
@@ -91,6 +93,10 @@ fun SimulationConversationView(
     wordBoundaryIndex: Int = -1,
 
     isListening: Boolean = false,
+
+    messageFontSize: TextUnit? = null,
+
+    messageLineHeight: TextUnit? = null,
 
     onParamsChanged: (Map<String, Any>) -> Unit = {},
 
@@ -198,7 +204,11 @@ fun SimulationConversationView(
 
                             modifier = Modifier.fillMaxSize(),
 
-                            reduceTextSize = true
+                            reduceTextSize = messageFontSize == null,
+
+                            messageFontSize = messageFontSize,
+
+                            messageLineHeight = messageLineHeight,
 
                         )
 

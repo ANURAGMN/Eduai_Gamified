@@ -38,7 +38,9 @@ import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.ChatHeaderIc
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.AutoSuggestionChips
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.VoiceInputBar
 import com.ncert7.aitutorandlab.data.local.SharedPreferenceUtils
+import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.ChatMessageFontSize
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.ConversationView
+import androidx.compose.ui.unit.sp
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.InitialAvatarView
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.InputSection
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.ResourcesCard
@@ -91,12 +93,14 @@ fun ChatbotScreen(
     var showSettingsMenu by remember { mutableStateOf(false) }
     var pendingConceptSelection by remember { mutableStateOf<String?>(null) }
 
-    //settings state
-    var settingsState by remember { mutableStateOf(ChatBotSettingsState()) }
-
     // Hands-free voice: persisted toggle (default on). When on, the mic auto-opens
     // after the tutor finishes speaking.
     val sharedPrefs = remember { SharedPreferenceUtils(context) }
+
+    // Settings state — message font loads from prefs.
+    var settingsState by remember {
+        mutableStateOf(ChatBotSettingsState(messageFontSp = sharedPrefs.getChatMessageFontSp()))
+    }
     var handsFreeMode by remember { mutableStateOf(sharedPrefs.getHandsFreeMode()) }
     val handsFreeLabel = if (chatState.isKannada) "ಧ್ವನಿ ಸಂಭಾಷಣೆ" else "Hands-free voice"
 
@@ -391,6 +395,10 @@ fun ChatbotScreen(
                             defaultInputLabel = if (chatState.isKannada) "ಡೀಫಾಲ್ಟ್ ಇನ್‌ಪುಟ್" else "Default input",
                             voiceFirstLabel = if (chatState.isKannada) "ಧ್ವನಿ ಮೊದಲು" else "Voice first",
                             textFirstLabel = if (chatState.isKannada) "ಪಠ್ಯ ಮೊದಲು" else "Text first",
+                            onFontSizeChange = { sp ->
+                                sharedPrefs.setChatMessageFontSp(sp)
+                                settingsState = settingsState.copy(messageFontSp = sp)
+                            },
                         )
                     }
                 )
@@ -419,6 +427,15 @@ fun ChatbotScreen(
                         ttsState = ttsState,
                         wordBoundaryIndex = wordBoundaryIndex,
                         isListening = sttState.isListening,
+                        messageFontSize = ChatMessageFontSize
+                            .resolveFontSp(settingsState.messageFontSp, mathAgent = false).sp,
+                        messageLineHeight = ChatMessageFontSize
+                            .lineHeightSp(
+                                ChatMessageFontSize.resolveFontSp(
+                                    settingsState.messageFontSp,
+                                    mathAgent = false,
+                                ),
+                            ).sp,
                     )
                 }
             }

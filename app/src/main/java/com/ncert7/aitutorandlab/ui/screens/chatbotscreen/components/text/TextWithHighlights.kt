@@ -12,10 +12,12 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ncert7.aitutorandlab.domain.chatbot.usecase.TextHighlightUseCase
 import com.ncert7.aitutorandlab.domain.chatbot.usecase.TextProcessingUseCase
+import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.ChatMessageFontSize
 import com.ncert7.aitutorandlab.ui.theme.AccentBlue
 import com.ncert7.aitutorandlab.ui.theme.TextPrimary
 import com.ncert7.aitutorandlab.ui.viewModel.TextToSpeech
@@ -28,7 +30,10 @@ fun TextWithHighlights(
     fullText: String = text,
     ttsController: TextToSpeech = viewModel(),
     onTextLayout: (TextLayoutResult) -> Unit = {},
-    reduceTextSize: Boolean = false
+    reduceTextSize: Boolean = false,
+    /** When set, overrides the default/compact sizes (used for learner font preference). */
+    messageFontSize: TextUnit? = null,
+    messageLineHeight: TextUnit? = null,
 ) {
     val currentWordIndex by ttsController.currentWordIndex.collectAsState()
     val ttsState by ttsController.state.collectAsState()
@@ -65,10 +70,23 @@ fun TextWithHighlights(
         }
     }
 
+    val defaultFont =
+        when {
+            messageFontSize != null -> messageFontSize
+            reduceTextSize -> 16.sp
+            else -> ChatMessageFontSize.DEFAULT_SP.sp
+        }
+    val defaultLineHeight =
+        when {
+            messageLineHeight != null -> messageLineHeight
+            reduceTextSize -> 16.sp
+            else -> ChatMessageFontSize.lineHeightSp(ChatMessageFontSize.DEFAULT_SP).sp
+        }
+
     Text(
         text = styledText,
-        fontSize = if (reduceTextSize) 16.sp else 40.sp,
-        lineHeight = if (reduceTextSize) 16.sp else 60.sp,
+        fontSize = defaultFont,
+        lineHeight = defaultLineHeight,
         color = TextPrimary,
         style = MaterialTheme.typography.bodyLarge,
         modifier = modifier,

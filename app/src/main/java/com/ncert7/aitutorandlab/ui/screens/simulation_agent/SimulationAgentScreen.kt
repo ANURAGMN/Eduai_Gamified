@@ -30,6 +30,7 @@ import com.ncert7.aitutorandlab.service.analytics.TrackScreenEvent
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.AutoListenAfterAgentTurn
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.ChatBotSettings
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.ChatHeaderIcons
+import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.ChatMessageFontSize
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.VoiceInputBar
 import com.ncert7.aitutorandlab.data.local.SharedPreferenceUtils
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.InputSection
@@ -37,6 +38,7 @@ import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.AppDialog
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.dataclass.ChatBotSettingsState
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.dataclass.ChatUiState
 import com.ncert7.aitutorandlab.ui.screens.simulation_agent.components.SimulationConversationView
+import androidx.compose.ui.unit.sp
 import com.ncert7.aitutorandlab.ui.screens.simulation_agent.components.rememberSimulationKeyConceptTts
 import com.ncert7.aitutorandlab.ui.screens.simulation_agent.components.speakFromApiInsight
 import com.ncert7.aitutorandlab.ui.screens.simulation_agent.components.speakSimulationIntro
@@ -100,9 +102,14 @@ fun SimulationAgentScreen(
         ttsController.setNativeLipSyncEnabled(useNativeAvatar)
     }
 
-    // Settings state (local UI-only state)
+    // Hands-free voice: persisted toggle (default on). Mic auto-opens after the tutor speaks.
+    val sharedPrefs = remember { SharedPreferenceUtils(context) }
+
+    // Settings state — message font loads from prefs (shared XS default with Study/Math/Revision).
     var showSettingsMenu by remember { mutableStateOf(false) }
-    var settingsState by remember { mutableStateOf(ChatBotSettingsState()) }
+    var settingsState by remember {
+        mutableStateOf(ChatBotSettingsState(messageFontSp = sharedPrefs.getChatMessageFontSp()))
+    }
     var permissionGranted by remember { mutableStateOf(false) }
     var lastProcessedSpeechText by remember { mutableStateOf("") }
 
@@ -113,8 +120,6 @@ fun SimulationAgentScreen(
         ttsController = ttsController,
     )
 
-    // Hands-free voice: persisted toggle (default on). Mic auto-opens after the tutor speaks.
-    val sharedPrefs = remember { SharedPreferenceUtils(context) }
     var handsFreeMode by remember { mutableStateOf(sharedPrefs.getHandsFreeMode()) }
     val handsFreeLabel = if (currentLanguage.startsWith("kn", ignoreCase = true)) "ಧ್ವನಿ ಸಂಭಾಷಣೆ" else "Hands-free voice"
 
@@ -389,6 +394,10 @@ fun SimulationAgentScreen(
                         defaultInputLabel = if (currentLanguage.startsWith("kn", ignoreCase = true)) "ಡೀಫಾಲ್ಟ್ ಇನ್‌ಪುಟ್" else "Default input",
                         voiceFirstLabel = if (currentLanguage.startsWith("kn", ignoreCase = true)) "ಧ್ವನಿ ಮೊದಲು" else "Voice first",
                         textFirstLabel = if (currentLanguage.startsWith("kn", ignoreCase = true)) "ಪಠ್ಯ ಮೊದಲು" else "Text first",
+                        onFontSizeChange = { sp ->
+                            sharedPrefs.setChatMessageFontSp(sp)
+                            settingsState = settingsState.copy(messageFontSp = sp)
+                        },
                     )
                 }
             )
@@ -450,6 +459,15 @@ fun SimulationAgentScreen(
                 isSimulationLoading = uiState is SimAgentUiState.Loading &&
                     sessionData?.simulation?.htmlUrl.isNullOrBlank(),
                 ttsController = ttsController,
+                messageFontSize = ChatMessageFontSize
+                    .resolveFontSp(settingsState.messageFontSp, mathAgent = false).sp,
+                messageLineHeight = ChatMessageFontSize
+                    .lineHeightSp(
+                        ChatMessageFontSize.resolveFontSp(
+                            settingsState.messageFontSp,
+                            mathAgent = false,
+                        ),
+                    ).sp,
                 onParamsChanged = { viewModel.handleIntent(SimulationIntent.ParametersChanged(it)) },
                 simulationUrl = sessionData?.simulation?.htmlUrl?.takeIf { it.isNotBlank() },
                 onPageFinished = {

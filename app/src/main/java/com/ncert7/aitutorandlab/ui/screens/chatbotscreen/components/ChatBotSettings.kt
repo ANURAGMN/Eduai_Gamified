@@ -44,6 +44,7 @@ fun ChatBotSettings(
     defaultInputLabel: String = "Default input",
     voiceFirstLabel: String = "Voice first",
     textFirstLabel: String = "Text first",
+    onFontSizeChange: (Float) -> Unit = {},
 ) {
     val dimens = LocalDimensions.current
 
@@ -287,6 +288,42 @@ fun ChatBotSettings(
                 selectedValue = state.selectedSpeed,
                 onValueSelected = onSpeedChange
             )
+
+            Spacer(modifier = Modifier.height(dimens.spaceMedium))
+
+            ChatFontSizeSettingSection(
+                selectedSp = state.messageFontSp,
+                onFontSizeChange = onFontSizeChange,
+            )
+        }
+    }
+}
+
+@Composable
+fun ChatFontSizeSettingSection(
+    selectedSp: Float,
+    onFontSizeChange: (Float) -> Unit,
+) {
+    val dimens = LocalDimensions.current
+    val nearest = ChatMessageFontSize.nearestPreset(selectedSp)
+    Text(
+        text = stringResource(R.string.select_chat_font_size),
+        color = TextPrimary,
+        style = MaterialTheme.typography.titleSmall
+    )
+    Spacer(modifier = Modifier.height(dimens.spaceSmall))
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        ChatMessageFontSize.PRESETS.forEach { (label, sp) ->
+            InputModeChip(
+                label = label,
+                selected = nearest == sp,
+                onClick = { onFontSizeChange(sp) },
+                modifier = Modifier.weight(1f),
+                compact = true,
+            )
         }
     }
 }
@@ -297,6 +334,7 @@ internal fun InputModeChip(
     selected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    compact: Boolean = false,
 ) {
     Box(
         modifier = modifier
@@ -308,13 +346,13 @@ internal fun InputModeChip(
                 shape = RoundedCornerShape(8.dp),
             )
             .clickable { onClick() }
-            .padding(vertical = 9.dp),
+            .padding(vertical = if (compact) 6.dp else 9.dp),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             text = label,
             color = if (selected) BrandPrimary else TextPrimary,
-            style = MaterialTheme.typography.titleSmall,
+            style = if (compact) MaterialTheme.typography.labelMedium else MaterialTheme.typography.titleSmall,
         )
     }
 }

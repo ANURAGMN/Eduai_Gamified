@@ -20,6 +20,8 @@ class SharedPreferenceUtils(context: Context) : AppMigrationVersionStore {
         private const val KEY_LANGUAGE = "key_language"
         private const val KEY_HANDS_FREE_MODE = "key_hands_free_mode"
         private const val KEY_VOICE_FIRST = "key_input_voice_first"
+        /** v2: default XS (28sp); old key had L (40sp) as fallback. */
+        private const val KEY_CHAT_MESSAGE_FONT_SP = "key_chat_message_font_sp_v2"
         private const val KEY_SIMULATION_VOICE_ENABLED = "key_simulation_voice_enabled"
         private const val KEY_SIM_COACH_MODE = "key_sim_coach_mode"
         private const val KEY_SIM_COACH_MODE_MIGRATED = "key_sim_coach_mode_migrated_v3"
@@ -171,6 +173,17 @@ class SharedPreferenceUtils(context: Context) : AppMigrationVersionStore {
 
     fun setVoiceFirst(enabled: Boolean) {
         prefs.edit { putBoolean(KEY_VOICE_FIRST, enabled) }
+    }
+
+    /**
+     * Base chat/agent message font size in sp (Study / Math / Revision / Sim).
+     * Math applies an additional −0.5sp at render time. Default XS (28).
+     */
+    fun getChatMessageFontSp(): Float =
+        prefs.getFloat(KEY_CHAT_MESSAGE_FONT_SP, 28f).coerceIn(24f, 52f)
+
+    fun setChatMessageFontSp(sp: Float) {
+        prefs.edit { putFloat(KEY_CHAT_MESSAGE_FONT_SP, sp.coerceIn(24f, 52f)) }
     }
 
     /** Narration in the plain simulation viewer (intro / footer TTS). Default on. */

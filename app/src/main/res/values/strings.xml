@@ -122,6 +122,7 @@
     <string name="select_student_level">Select Student Level</string>
     <string name="select_voice">Select Voice</string>
     <string name="select_speed">Select Speed</string>
+    <string name="select_chat_font_size">Text size (XS = ultra small)</string>
 
     <!--    Settings tab-->
     <string name="select_language">Select Language</string>

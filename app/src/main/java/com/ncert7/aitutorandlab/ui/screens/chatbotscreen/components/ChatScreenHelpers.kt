@@ -32,6 +32,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import com.anurag.eduai.uikit.avatar.rememberSavedTutorConfig
 import com.anurag.eduai.uikit.avatar.EduTutorAvatarWithLipSync
 import com.anurag.eduai.uikit.avatar.core.AvatarState
@@ -243,6 +244,8 @@ fun ConversationView(
     ttsState: TextToSpeech.TTSState = TextToSpeech.TTSState(),
     wordBoundaryIndex: Int = -1,
     isListening: Boolean = false,
+    messageFontSize: TextUnit? = null,
+    messageLineHeight: TextUnit? = null,
 ) {
     val dimens = LocalDimensions.current
     val isWaitingForAgent = chatState.isLoading || chatState.isTyping || chatState.waitingForTTSToComplete
@@ -296,6 +299,8 @@ fun ConversationView(
             ttsController = ttsController,
             isResourceCardShowing = chatState.resourceCardState !is ResourceCardUiState.Hidden,
             languageCode = chatState.currentLanguage,
+            messageFontSize = messageFontSize,
+            messageLineHeight = messageLineHeight,
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
