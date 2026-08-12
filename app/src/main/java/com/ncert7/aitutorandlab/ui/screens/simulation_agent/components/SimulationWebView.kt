@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.graphics.Color
 import android.os.Handler
 import android.os.Looper
+import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.foundation.layout.fillMaxSize
@@ -148,6 +149,8 @@ fun SimulationWebView(
                     domStorageEnabled = true
                     loadWithOverviewMode = true
                     useWideViewPort = true
+                    // Always fetch sim HTML / edu-coach.js from network (GitHub Pages).
+                    cacheMode = WebSettings.LOAD_NO_CACHE
                 }
                 webViewClient =
                     object : WebViewClient() {
@@ -216,6 +219,7 @@ fun SimulationWebView(
             // hintMode / hintSignal are handled by LaunchedEffects above (no bridge state needed)
             webViewRef.value = webView
             if (webView.url != url) {
+                webView.clearCache(true)
                 webView.loadUrl(url)
             }
         },

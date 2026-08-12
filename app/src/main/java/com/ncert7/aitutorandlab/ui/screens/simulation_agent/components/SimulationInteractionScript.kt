@@ -493,7 +493,7 @@ object SimulationInteractionScript {
                 }
 
                 if (parts.length === 0) {
-                    ['.legend', '.insight-box', '.real-world', '.takeaway', '.takeaway-text'].forEach(function(sel) {
+                    ['.legend', '.insight', '.insight-box', '.real-world', '.takeaway', '.takeaway-text'].forEach(function(sel) {
                         document.querySelectorAll(sel).forEach(function(el) {
                             if (!isVisible(el)) return;
                             addPlainText(parts, el);
@@ -683,6 +683,11 @@ object SimulationInteractionScript {
                 }
 
                 function eduHasLetters(s) { return /[a-zA-Z]/.test(s || ''); }
+                // Expression / numeric MCQ labels (Associative Chain, Bracket Tunnel, Distribute Maze)
+                // have digits + operators but no Latin letters — still valid tap targets.
+                function eduIsMathLabel(s) {
+                    return /\d/.test(s || '') && /[+\-−×÷*\/()=<>]/.test(s || '');
+                }
 
                 // Many sims use emoji-only buttons (no text). Map the common ones to words so the
                 // guide can name/target/narrate them ("lemon" instead of an unspeakable glyph).
@@ -763,7 +768,8 @@ object SimulationInteractionScript {
                             var textified = eduIconLabel(el);
                             if (textified) label = textified;
                         }
-                        if (!label || (label === 'interaction' && !input) || !eduHasLetters(label)) return;
+                        if (!label || (label === 'interaction' && !input) ||
+                            (!eduHasLetters(label) && !eduIsMathLabel(label))) return;
                         var key = (el.tagName || '') + '|' + (el.id || label);
                         if (seen[key]) return;
                         seen[key] = true;
@@ -846,7 +852,7 @@ object SimulationInteractionScript {
                     // Use the WHOLE mission text — some sims show the number(s) in elements other
                     // than <p>/.num (e.g. population figure, the two compared values, the sequence).
                     var prompt = eduTxt(mission);
-                    var optEls = [].slice.call(document.querySelectorAll('.opt, .choice, button[data-v]'));
+                    var optEls = [].slice.call(document.querySelectorAll('.opt, .choice, .lane, button[data-v]'));
                     // Speed sim (1_13) options like "500 km/day" aren't .opt/.choice/[data-v]. Add any
                     // control whose WHOLE text is exactly a km/day option (safe: won't match prose).
                     if (/km\/day|daily speed/i.test(prompt)) {

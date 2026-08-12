@@ -153,7 +153,7 @@ fun ConceptSimulationViewer(
 
     val decodedChapter = try {
         URLDecoder.decode(chapterName, "UTF-8")
-    } catch (e: Exception) {
+        } catch (e: Exception) {
         chapterName
     }
 
@@ -165,7 +165,7 @@ fun ConceptSimulationViewer(
     // Build marker — grep logcat for "CoachBuild" to confirm the running APK has the latest coach.
     // If this line is ABSENT from a sim session's log, the build is stale (incremental-compile cache).
     LaunchedEffect(Unit) {
-        DebugLogger.debugLog("CoachBuild", "v5 coach: header voice→settings, gear shows; Replay speaks v4Line; TTS reads shown text; auto 1.25-min footer narration REMOVED (build 20260810a)")
+        DebugLogger.debugLog("CoachBuild", "v5 coach: ONE_CLOCK unlock without harvest (digit MCQ sims); math-label harvest; LOAD_NO_CACHE WebView (build 20260812a)")
     }
 
     LaunchedEffect(decodedUrl) {
@@ -229,6 +229,10 @@ fun ConceptSimulationViewer(
     // Unlock the guided coach once its walkthrough is ready — the controls are harvested, the
     // hosted guide (if any) has resolved, and the intro text (its first step) is in hand. Gating
     // on introText keeps step 0 stable, so the very first narration is the intro itself.
+    //
+    // ONE_CLOCK (V4/V5): the page owns coaching via edu-coach.js / __eduRound. Digit-only MCQ
+    // options (e.g. Associative Chain, Bracket Tunnel, Distribute Maze) are skipped by the
+    // letter-gated harvester, so never block unlock on harvest for that mode.
     LaunchedEffect(
         viewerSession.harvestJson,
         guideFetchDone,
@@ -237,9 +241,12 @@ fun ConceptSimulationViewer(
         decodedUrl,
     ) {
         if (viewerSession.url != decodedUrl || viewerSession.guideUnlocked) return@LaunchedEffect
-        val introReady = introText != null || guideDoc != null
+        val oneClock =
+            SimCoachMode.fromKey(sharedPrefs.getSimCoachMode()) == SimCoachMode.ONE_CLOCK
+        val introReady = introText != null || guideDoc != null || oneClock
         // A hosted guide unlocks even without a harvest (MCQ sims); heuristic guides still need it.
-        val structureReady = viewerSession.harvestJson != null || guideDoc != null
+        val structureReady =
+            viewerSession.harvestJson != null || guideDoc != null || oneClock
         if (structureReady && guideFetchDone && introReady) {
             viewModel.unlockGuide(decodedUrl)
         }
