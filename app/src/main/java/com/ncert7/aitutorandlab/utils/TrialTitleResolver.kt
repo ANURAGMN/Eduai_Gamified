@@ -33,10 +33,18 @@ object TrialTitleResolver {
         day: ExamPlanDayEntity,
         languageCode: String,
         conceptDao: ConceptDao,
+        chapterDao: ChapterDao,
     ): String {
         when (day.dayType) {
             "REVISE", "MOCK", "EXAM" ->
                 return ExamPlanCopy.localizedStoredDayLabel(languageCode, day.dayType, day.label)
+            "CHAPTER_TRIAL" -> {
+                // conceptIds stores the chapter id for chapter trials; day.label is frozen at
+                // first create language and must not be shown after a language switch.
+                val chapterId = day.conceptIds.trim().substringBefore(',').trim()
+                return chapterDao.getChapter(chapterId)?.getLocalizedName(languageCode)
+                    ?: day.label
+            }
             else -> {
                 val conceptIds =
                     day.conceptIds

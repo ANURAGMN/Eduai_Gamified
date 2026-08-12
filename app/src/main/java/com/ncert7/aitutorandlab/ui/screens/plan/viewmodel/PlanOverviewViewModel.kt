@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import com.anurag.eduai.uikit.components.PlanDayNode
 
 import com.ncert7.aitutorandlab.data.local.dao.ConceptDao
+import com.ncert7.aitutorandlab.data.local.dao.ChapterDao
 import com.ncert7.aitutorandlab.data.local.SharedPreferenceUtils
 
 import com.ncert7.aitutorandlab.data.local.entities.ChapterEntity
@@ -114,6 +115,8 @@ class PlanOverviewViewModel @Inject constructor(
     private val chapterRepository: ChapterRepository,
 
     private val conceptDao: ConceptDao,
+
+    private val chapterDao: ChapterDao,
 
     private val sharedPrefs: SharedPreferenceUtils,
 
@@ -233,7 +236,7 @@ class PlanOverviewViewModel @Inject constructor(
                         entities.map { day ->
                             ExamPlanUiMapper.toPlanDayNode(
                                 day,
-                                TrialTitleResolver.localizedPlanDayLabel(day, language, conceptDao),
+                                TrialTitleResolver.localizedPlanDayLabel(day, language, conceptDao, chapterDao),
                             )
                         }
                 }

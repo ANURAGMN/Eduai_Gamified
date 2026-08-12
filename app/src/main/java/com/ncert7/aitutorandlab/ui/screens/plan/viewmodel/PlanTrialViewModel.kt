@@ -223,7 +223,7 @@ class PlanTrialViewModel @Inject constructor(
                     }
                     if (day != null) {
                         val title =
-                            TrialTitleResolver.localizedPlanDayLabel(day, lang, conceptDao)
+                            TrialTitleResolver.localizedPlanDayLabel(day, lang, conceptDao, chapterDao)
                         if (_planDayTitle.value != title) {
                             _planDayTitle.value = title
                         }

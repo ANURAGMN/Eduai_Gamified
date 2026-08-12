@@ -217,7 +217,7 @@ class HomeViewModel @Inject constructor(
             entities.map { day ->
                 ExamPlanUiMapper.toPlanDayNode(
                     day,
-                    TrialTitleResolver.localizedPlanDayLabel(day, language, conceptDao),
+                    TrialTitleResolver.localizedPlanDayLabel(day, language, conceptDao, chapterDao),
                 )
             }
     }

@@ -88,12 +88,30 @@ fun ChapterScreen(
                 }
             }
             else -> {
+                // "Recommended" wording is dynamic: a fresh account sees "Start here"; once any
+                // chapter has progress, the hint on the next incomplete chapter reads "Continue".
+                val anyProgress = state.chapters.any { (it.progressUiModel?.completed ?: 0) > 0 }
                 EduChapterPicker(
                     title = "${state.subjectName} · ${if (isKannada) "ಅಧ್ಯಾಯ ಆರಿಸಿ" else "pick a chapter"}",
-                    subtitle = if (isKannada) "ಎಲ್ಲಿಂದ ಪ್ರಾರಂಭಿಸಬೇಕು?" else "Where do you want to start?",
-                    chapters = state.chapters.map { EduChapterPickerItem(id = it.id, label = it.name) },
+                    subtitle = if (anyProgress) {
+                        if (isKannada) "ಎಲ್ಲಿ ನಿಲ್ಲಿಸಿದ್ದೀರೋ ಅಲ್ಲಿಂದ ಮುಂದುವರಿಸಿ" else "Pick up where you left off"
+                    } else {
+                        if (isKannada) "ಎಲ್ಲಿಂದ ಪ್ರಾರಂಭಿಸಬೇಕು?" else "Where do you want to start?"
+                    },
+                    chapters = state.chapters.map {
+                        EduChapterPickerItem(
+                            id = it.id,
+                            label = it.name,
+                            done = it.progressUiModel?.completed ?: 0,
+                            total = it.progressUiModel?.total ?: it.totalConcepts,
+                        )
+                    },
                     selectedId = selectedChapterId,
-                    recommendedLabel = if (isKannada) "ಪ್ರಾರಂಭಿಸಲು ಶಿಫಾರಸು" else "Recommended to start",
+                    recommendedLabel = if (anyProgress) {
+                        if (isKannada) "ಮುಂದುವರಿಸಿ" else "Continue"
+                    } else {
+                        if (isKannada) "ಇಲ್ಲಿ ಪ್ರಾರಂಭಿಸಿ" else "Start here"
+                    },
                     backLabel = if (isKannada) "ವಿಷಯ" else "Subject",
                     continueLabel = if (isKannada) "ಮುಂದುವರಿಸಿ" else "Continue",
                     loadingLabel = if (isKannada) "ಅಧ್ಯಾಯಗಳನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ…" else "Loading chapters…",

@@ -101,7 +101,7 @@ class LanguageConsistencyTest {
                 conceptId = concept.conceptId,
             )
         val conceptDao = FakeConceptDao(concept)
-        val label = TrialTitleResolver.localizedPlanDayLabel(day, "en", conceptDao)
+        val label = TrialTitleResolver.localizedPlanDayLabel(day, "en", conceptDao, FakeChapterDao(chapter))
         assertEquals("Photosynthesis", label)
     }
 
@@ -113,8 +113,32 @@ class LanguageConsistencyTest {
                 conceptId = concept.conceptId,
             )
         val conceptDao = FakeConceptDao(concept)
-        val label = TrialTitleResolver.localizedPlanDayLabel(day, "kn", conceptDao)
+        val label = TrialTitleResolver.localizedPlanDayLabel(day, "kn", conceptDao, FakeChapterDao(chapter))
         assertEquals("ಪ್ರಕಾಶ ಸಂಶ್ಲೇಷಣೆ", label)
+    }
+
+    @Test
+    fun chapterTrial_localizesFromChapterEntityDespiteStoredKannadaLabel() = runBlocking {
+        val day =
+            ExamPlanDayEntity(
+                id = 2L,
+                studentId = "student-1",
+                dayIndex = -1,
+                calendarEpochDay = 0L,
+                dayType = "CHAPTER_TRIAL",
+                status = "TODAY",
+                label = "ಜೀವ ಪ್ರಕ್ರಿಯೆಗಳು",
+                conceptIds = chapter.chapterId,
+                estimatedMinutes = 30,
+            )
+        val label =
+            TrialTitleResolver.localizedPlanDayLabel(
+                day,
+                "en",
+                FakeConceptDao(concept),
+                FakeChapterDao(chapter),
+            )
+        assertEquals("Life Processes", label)
     }
 
     @Test
@@ -168,6 +192,7 @@ class LanguageConsistencyTest {
                 day,
                 "en",
                 FakeConceptDao(concept, second),
+                FakeChapterDao(chapter),
             )
         assertEquals("Photosynthesis +1 more", label)
     }

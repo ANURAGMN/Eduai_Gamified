@@ -24,6 +24,7 @@ import com.ncert7.aitutorandlab.service.analytics.SimulationAnalyticsTracker
 import com.ncert7.aitutorandlab.service.analytics.SimulationInteraction
 import com.ncert7.aitutorandlab.service.analytics.SimulationSource
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -61,6 +62,7 @@ class ConceptViewModel @Inject constructor(
     val showAdDialog: StateFlow<Boolean> = _showAdDialog.asStateFlow()
 
     private var pendingAfterAd: PendingNavigation? = null
+    private var loadConceptsJob: Job? = null
 
     fun onSimulationOpened(simId: String, conceptId: String) {
         viewModelScope.launch {
@@ -129,14 +131,23 @@ class ConceptViewModel @Inject constructor(
     }
 
     fun loadConcepts(chapterId: String, type: String, language: String) {
-        viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true)
+        loadConceptsJob?.cancel()
+        loadConceptsJob = viewModelScope.launch {
+            val lang = normalizeLanguageCode(language)
+            val chapter = chapterRepository.getChapter(chapterId)
+            val subject = chapter?.let { subjectRepository.getSubject(it.subjectId) }
+            // Apply localized chapter/subject names immediately so a language switch doesn't
+            // briefly (or permanently, via a stale collector) keep the previous language title.
+            _state.value = _state.value.copy(
+                isLoading = true,
+                chapterName = chapter?.getLocalizedName(lang) ?: "",
+                chapterId = chapterId,
+                type = type,
+                subjectName = subject?.getLocalizedName(lang) ?: "",
+            )
             try {
                 val studentId = sharedPrefs.getUserId() ?: ""
-                val chapter = chapterRepository.getChapter(chapterId)
-                val subject = chapter?.let { subjectRepository.getSubject(it.subjectId) }
                 val classLevel = 7 // Force class 7 syllabus display
-                val lang = normalizeLanguageCode(language)
 
                 DebugLogger.debugLog("ConceptVM", " Loading concepts: chapterId=$chapterId, type=$type, language=$language")
 
