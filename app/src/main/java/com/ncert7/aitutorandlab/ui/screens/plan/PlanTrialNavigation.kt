@@ -18,8 +18,12 @@ object PlanTrialNavigation {
                 val encodedUrl = URLEncoder.encode(item.sourceId, Charsets.UTF_8.name())
                 val encodedConceptId =
                     URLEncoder.encode(item.conceptId, Charsets.UTF_8.name())
-                val safeTitle = titleForUrl.replace("/", "-")
-                "concept_sim_view/$encodedUrl/$safeTitle/$encodedConceptId//"
+                // Encode so titles with `?` / spaces don't break the path route.
+                val encodedTitle = URLEncoder.encode(
+                    titleForUrl.replace("/", "-"),
+                    Charsets.UTF_8.name(),
+                )
+                "concept_sim_view/$encodedUrl/$encodedTitle/$encodedConceptId//"
             }
             PlanTrialItemKind.REVISION ->
                 "revision/${item.chapterId}"

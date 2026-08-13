@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.ncert7.aitutorandlab.ui.screens.conceptscreen.SimulationViewerTiming
 import com.ncert7.aitutorandlab.ui.screens.conceptscreen.components.SimulationTrialProceedOverlay
 import com.ncert7.aitutorandlab.ui.screens.conceptscreen.components.SimulationTrialPromptKind
 import com.ncert7.aitutorandlab.utils.TrialCopy
@@ -20,13 +21,11 @@ import kotlinx.coroutines.delay
 
 /**
  * Recurring "still there / ready to move on?" gate for agentic interactions (study, revision,
- * simulation-agent chats). While the screen is in the foreground it counts elapsed time and, at
- * each two-minute mark (2, 4, 6, 8, 10, 12, 14 min), shows a dismissible proceed overlay. Tapping
- * "Keep going" hides it until the next mark; tapping proceed calls [onProceed]. At the 16-minute
- * hard cap it auto-advances by calling [onProceed] itself.
+ * simulation-agent, math). Timing matches HTML sim via [SimulationViewerTiming] (first mark at
+ * 5 min). Copy is EN/KN via [TrialCopy] — same cadence in both languages.
  *
- * Time only accrues while the app is in the foreground, so an ad / background pause doesn't age the
- * session. Drop it inside the screen's root Box and align [modifier] to the bottom.
+ * Soft marks: 5, 7, 9, 11, 13, 15 min. "Keep going" waits for the next mark; at the 16-min hard
+ * cap it auto-advances via [onProceed]. Time only accrues in the foreground.
  */
 @Composable
 fun AgentSessionTimeGate(
@@ -35,8 +34,8 @@ fun AgentSessionTimeGate(
     onProceed: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val softMarksMs = remember { (1..7).map { it * 2 * 60_000L } } // 2,4,6,8,10,12,14 min
-    val hardCapMs = 16 * 60_000L
+    val softMarksMs = remember { SimulationViewerTiming.agentSoftMarkMs() }
+    val hardCapMs = SimulationViewerTiming.AGENT_HARD_CAP_MS
 
     var elapsedMs by rememberSaveable { mutableStateOf(0L) }
     var nextMarkIndex by rememberSaveable { mutableStateOf(0) }

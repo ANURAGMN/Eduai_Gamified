@@ -46,6 +46,8 @@ import androidx.compose.ui.unit.TextUnit
 
 import androidx.compose.ui.unit.dp
 
+import androidx.compose.ui.zIndex
+
 import com.ncert7.aitutorandlab.R
 
 import com.ncert7.aitutorandlab.ui.components.LoadingInsightPanel
@@ -54,6 +56,8 @@ import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.AgentMessage
 
 import com.ncert7.aitutorandlab.config.LocalNativeTutorAvatarEnabled
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.AgentTutorAvatarBubble
+
+import com.ncert7.aitutorandlab.ui.theme.BackgroundPrimary
 
 import com.ncert7.aitutorandlab.ui.theme.LocalDimensions
 
@@ -82,6 +86,9 @@ fun SimulationConversationView(
     /** Full-screen sim placeholder only while the first session URL is loading — not on every reply. */
     isSimulationLoading: Boolean = isLoading,
 
+    /** HTML URL present but WebView page not ready yet — overlay loading without tearing down WebView. */
+    isHtmlLoading: Boolean = false,
+
     simulationUrl: String? = null,
 
     languageCode: String = getCurrentLanguageCode(),
@@ -101,6 +108,8 @@ fun SimulationConversationView(
     onParamsChanged: (Map<String, Any>) -> Unit = {},
 
     onPageFinished: () -> Unit = {},
+
+    onLoadFailed: () -> Unit = {},
 
     onKeyConceptReported: (String) -> Unit = {},
 
@@ -298,6 +307,8 @@ fun SimulationConversationView(
 
                     onPageFinished = onPageFinished,
 
+                    onLoadFailed = onLoadFailed,
+
                     onSimulationIntroReported = onSimulationIntroReported,
 
                     onSimulationFooterReported = onSimulationFooterReported,
@@ -305,6 +316,42 @@ fun SimulationConversationView(
                     modifier = Modifier.fillMaxSize()
 
                 )
+
+                if (isHtmlLoading) {
+
+                    Box(
+
+                        modifier = Modifier
+
+                            .fillMaxSize()
+
+                            .background(BackgroundPrimary)
+
+                            .zIndex(1f),
+
+                        contentAlignment = Alignment.Center,
+
+                    ) {
+
+                        LoadingInsightPanel(
+
+                            statusText = stringResource(R.string.sim_loading_simulation),
+
+                            languageCode = languageCode,
+
+                            centered = true,
+
+                            modifier = Modifier
+
+                                .fillMaxWidth()
+
+                                .padding(dimens.spaceMedium),
+
+                        )
+
+                    }
+
+                }
 
             }
 

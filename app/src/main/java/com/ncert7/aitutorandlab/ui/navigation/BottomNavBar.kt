@@ -332,13 +332,19 @@ private fun BottomNavBarContent(
                                 },
                                 navigate = {
                                     val encodedUrl = java.net.URLEncoder.encode(url, "UTF-8")
+                                    // Titles like "Are They Equal?" contain `?` which breaks the
+                                    // path route if left raw — encode like url/conceptId.
+                                    val encodedTitle = java.net.URLEncoder.encode(
+                                        title.replace("/", "-"),
+                                        "UTF-8",
+                                    )
                                     val encodedConceptId = if (conceptId.isNotBlank()) {
                                         java.net.URLEncoder.encode(conceptId, "UTF-8")
                                     } else {
                                         "empty"
                                     }
                                     navController.navigate(
-                                        "concept_sim_view/$encodedUrl/$title/$encodedConceptId//"
+                                        "concept_sim_view/$encodedUrl/$encodedTitle/$encodedConceptId//"
                                     )
                                 }
                             )
@@ -620,11 +626,15 @@ private fun BottomNavBarContent(
                     },
                     onSimulationClick = { title, url, conceptId, subjectName, chapterName ->
                         val encodedUrl = java.net.URLEncoder.encode(url, "UTF-8")
+                        val encodedTitle = java.net.URLEncoder.encode(
+                            title.replace("/", "-"),
+                            "UTF-8",
+                        )
                         val encodedConceptId = java.net.URLEncoder.encode(conceptId, "UTF-8")
                         val encodedSubject = java.net.URLEncoder.encode(subjectName, "UTF-8")
                         val encodedChapter = java.net.URLEncoder.encode(chapterName, "UTF-8")
                         navController.navigate(
-                            "concept_sim_view/$encodedUrl/$title/$encodedConceptId/$encodedSubject/$encodedChapter"
+                            "concept_sim_view/$encodedUrl/$encodedTitle/$encodedConceptId/$encodedSubject/$encodedChapter"
                         )
                     },
                     onGoSetting = {

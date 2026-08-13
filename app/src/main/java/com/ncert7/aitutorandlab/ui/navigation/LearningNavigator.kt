@@ -94,13 +94,18 @@ fun LearningNavigator(
                             },
                             navigate = {
                                 val encodedUrl = java.net.URLEncoder.encode(url, "UTF-8")
+                                // Titles with `?` (e.g. "Are They Equal?") break unencoded path routes.
+                                val encodedTitle = java.net.URLEncoder.encode(
+                                    title.replace("/", "-"),
+                                    "UTF-8",
+                                )
                                 val encodedConceptId = if (conceptId.isNotBlank()) {
                                     java.net.URLEncoder.encode(conceptId, "UTF-8")
                                 } else {
                                     "empty"
                                 }
                                 navController.navigate(
-                                    "concept_sim_view/$encodedUrl/$title/$encodedConceptId//"
+                                    "concept_sim_view/$encodedUrl/$encodedTitle/$encodedConceptId//"
                                 )
                             }
                         )
@@ -187,11 +192,16 @@ fun LearningNavigator(
                     },
                     onSimulationClick = { title, url, conceptId, subjectName, chapterName ->
                         val encodedUrl = java.net.URLEncoder.encode(url, "UTF-8")
+                        // Titles with `?` (e.g. "Are They Equal?") break unencoded path routes.
+                        val encodedTitle = java.net.URLEncoder.encode(
+                            title.replace("/", "-"),
+                            "UTF-8",
+                        )
                         val encodedConceptId = java.net.URLEncoder.encode(conceptId, "UTF-8")
                         val encodedSubject = java.net.URLEncoder.encode(subjectName, "UTF-8")
                         val encodedChapter = java.net.URLEncoder.encode(chapterName, "UTF-8")
                         navController.navigate(
-                            "concept_sim_view/$encodedUrl/$title/$encodedConceptId/$encodedSubject/$encodedChapter"
+                            "concept_sim_view/$encodedUrl/$encodedTitle/$encodedConceptId/$encodedSubject/$encodedChapter"
                         )
                     },
                     onGoHome = onGoHome,
@@ -252,7 +262,8 @@ fun LearningNavigator(
                     conceptId = conceptId,
                     subjectName = subjectName,
                     chapterName = chapterName,
-                    onBackClick = { navController.popBackStack() }
+                    onBackClick = { navController.popBackStack() },
+                    onNext = { route -> navController.navigate(route) },
                 )
             }
 

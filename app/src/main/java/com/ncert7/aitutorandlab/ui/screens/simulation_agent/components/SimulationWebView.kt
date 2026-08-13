@@ -12,8 +12,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
+import android.webkit.WebResourceError
+import android.webkit.WebResourceRequest
 import kotlinx.coroutines.delay
 
 private fun shouldHandlePageFinished(finishedUrl: String?, expectedUrl: String): Boolean {
@@ -32,6 +35,8 @@ fun SimulationWebView(
     modifier: Modifier = Modifier,
     onParamsChanged: (Map<String, Any>) -> Unit = {},
     onPageFinished: () -> Unit = {},
+    /** Main-frame load failed (network / HTTP / SSL) — parent can offer a skip dialog. */
+    onLoadFailed: () -> Unit = {},
     onInteractionTrackingReady: () -> Unit = {},
     onInteractionBudgetReported: (Int) -> Unit = {},
     onKeyConceptReported: (String) -> Unit = {},
@@ -64,6 +69,7 @@ fun SimulationWebView(
     val mainHandler = remember { Handler(Looper.getMainLooper()) }
     val bridge = remember { SimulationWebViewBridge(mainHandler) }
     val webViewRef = remember { mutableStateOf<WebView?>(null) }
+    val onLoadFailedState = rememberUpdatedState(onLoadFailed)
 
     // Drive the in-page highlight (guided coach) when the target step or its intent changes.
     LaunchedEffect(highlightStepIndex, highlightKind) {
@@ -179,22 +185,57 @@ fun SimulationWebView(
                             // Seed --vh early (and shell-rescue science_4_10) even if URL matching
                             // would skip the main inject.
                             runVhRescue(view, finishedUrl)
-                            if (!shouldHandlePageFinished(finishedUrl, bridge.expectedUrl)) return
-                            view?.evaluateJavascript(SimulationInteractionScript.injectionScript, null)
-                            // Re-apply V4 active after inject — wanted may already be true from Compose.
-                            view?.evaluateJavascript(
-                                "if(window.__eduCoachV4){window.__eduCoachV4.setActive(!!window.__eduCoachV4Wanted);}",
-                                null,
-                            )
-                            listOf(300L, 800L, 1600L).forEach { delayMs ->
-                                view?.postDelayed({
-                                    view.evaluateJavascript(
-                                        "if(window.__eduCoachV4){window.__eduCoachV4.setActive(!!window.__eduCoachV4Wanted);}",
-                                        null,
-                                    )
-                                }, delayMs)
+                            val handleInject =
+                                shouldHandlePageFinished(finishedUrl, bridge.expectedUrl)
+                            if (handleInject) {
+                                view?.evaluateJavascript(SimulationInteractionScript.injectionScript, null)
+                                // Re-apply V4 active after inject — wanted may already be true from Compose.
+                                view?.evaluateJavascript(
+                                    "if(window.__eduCoachV4){window.__eduCoachV4.setActive(!!window.__eduCoachV4Wanted);}",
+                                    null,
+                                )
+                                listOf(300L, 800L, 1600L).forEach { delayMs ->
+                                    view?.postDelayed({
+                                        view.evaluateJavascript(
+                                            "if(window.__eduCoachV4){window.__eduCoachV4.setActive(!!window.__eduCoachV4Wanted);}",
+                                            null,
+                                        )
+                                    }, delayMs)
+                                }
                             }
-                            bridge.onPageFinished()
+                            // Always clear the load-stall timer when a real page finishes — even if
+                            // inject is skipped (redirect / filename mismatch). about:blank stays waiting.
+                            if (!finishedUrl.isNullOrBlank() && finishedUrl != "about:blank") {
+                                bridge.onPageFinished()
+                            }
+                        }
+
+                        override fun onReceivedError(
+                            view: WebView?,
+                            request: WebResourceRequest?,
+                            error: WebResourceError?,
+                        ) {
+                            super.onReceivedError(view, request, error)
+                            if (request?.isForMainFrame == true) {
+                                onLoadFailedState.value()
+                            }
+                        }
+
+                        @Deprecated("Deprecated in Java")
+                        override fun onReceivedError(
+                            view: WebView?,
+                            errorCode: Int,
+                            description: String?,
+                            failingUrl: String?,
+                        ) {
+                            @Suppress("DEPRECATION")
+                            super.onReceivedError(view, errorCode, description, failingUrl)
+                            // Older API path — treat as main-frame failure when URL matches expected.
+                            val expected = bridge.expectedUrl.substringBefore('#').trimEnd('/')
+                            val failed = (failingUrl ?: "").substringBefore('#').trimEnd('/')
+                            if (failed.isNotEmpty() && (failed == expected || failed.endsWith(expected.substringAfterLast('/')))) {
+                                onLoadFailedState.value()
+                            }
                         }
                     }
                 addJavascriptInterface(bridge.paramsInterface(), "SimulationAndroidInterface")

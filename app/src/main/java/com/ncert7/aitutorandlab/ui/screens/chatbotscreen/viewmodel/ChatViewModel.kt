@@ -723,7 +723,9 @@ class ChatViewModel @Inject constructor(
     private fun appendSessionError(httpStatusCode: Int? = null) = _uiState.update {
         it.copy(
             messages = it.messages + sendMessageUseCase.createAIMessage(
-                ErrorHandler.getStudyAgentErrorMessage(context, httpStatusCode)
+                content = ErrorHandler.getStudyAgentErrorMessage(context, httpStatusCode),
+                isError = true,
+                canRetry = true,
             ),
             isLoading = false,
         )

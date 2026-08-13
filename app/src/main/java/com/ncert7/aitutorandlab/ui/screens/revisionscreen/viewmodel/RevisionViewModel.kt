@@ -164,7 +164,7 @@ class RevisionViewModel @Inject constructor(
 
         if (!result.success) {
             DebugLogger.errorLog("RevisionViewModel", "Failed to start revision session for revisionId: $revisionId")
-            return _uiState.update { it.copy(isLoading = false) }
+            return appendRevisionError()
         }
 
         DebugLogger.debugLog("RevisionViewModel", "Revision session started successfully")
@@ -260,7 +260,7 @@ class RevisionViewModel @Inject constructor(
 
         if (!result.success) {
             DebugLogger.errorLog("RevisionViewModel", "Failed to resume revision session")
-            return _uiState.update { it.copy(isLoading = false) }
+            return appendRevisionError()
         }
 
         // Messages are already translated by RevisionUseCase based on current app language
@@ -299,7 +299,7 @@ class RevisionViewModel @Inject constructor(
 
         if (!result.success) {
             DebugLogger.errorLog("RevisionViewModel", "Failed to send message in revision session")
-            return@launch _uiState.update { it.copy(isLoading = false) }
+            return@launch appendRevisionError()
         }
 
         val agentResponse = result.agentResponse ?: ""
@@ -481,5 +481,25 @@ class RevisionViewModel @Inject constructor(
      */
     fun hasExistingSession(revisionId: String): Boolean {
         return revisionUseCase.getRevisionThreadId(revisionId) != null
+    }
+
+    private fun appendRevisionError() {
+        val kn = _uiState.value.isKannada
+        val text = if (kn) {
+            "ಸರ್ವರ್ ದೋಷ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ."
+        } else {
+            "Server error. Please try again."
+        }
+        _uiState.update {
+            it.copy(
+                messages = it.messages + ChatMessageModel(
+                    sender = "ai",
+                    content = text,
+                    isError = true,
+                    canRetry = true,
+                ),
+                isLoading = false,
+            )
+        }
     }
 }

@@ -236,6 +236,12 @@
     <string name="sim_you_label">ನೀವು 👤</string>
     <string name="sim_loading_simulation">ಸಿಮ್ಯುಲೇಶನ್ ಲೋಡ್ ಆಗುತ್ತಿದೆ...</string>
     <string name="sim_error_loading">ಸಿಮ್ಯುಲೇಶನ್ ಲೋಡ್ ಮಾಡುವಲ್ಲಿ ದೋಷ</string>
+    <string name="load_stall_title">ಇನ್ನೂ ಲೋಡ್ ಆಗುತ್ತಿದೆ</string>
+    <string name="load_stall_message">ನಾವು ಸಮಸ್ಯೆಯನ್ನು ಪರಿಶೀಲಿಸುತ್ತಿರುವಾಗ, ಇನ್ನಷ್ಟು ಕಾಯದೆ ಮುಂದಿನ ವಿಭಾಗಕ್ಕೆ ಮುಂದುವರಿಯಬಹುದು.</string>
+    <string name="load_stall_continue">ಮುಂದಿನಕ್ಕೆ ಮುಂದುವರಿ</string>
+    <string name="load_stall_keep_waiting">ಕಾಯಿರಿ</string>
+    <string name="load_stall_error_title">ಏನೋ ತಪ್ಪಾಗಿದೆ</string>
+    <string name="load_stall_dismiss_error">ಇಲ್ಲೇ ಇರಿ</string>
 
     <!-- TTS/STT Common Strings -->
     <string name="ready_for_speech">ಮಾತಿನಿಗಾಗಿ ಸಿದ್ಧ…</string>

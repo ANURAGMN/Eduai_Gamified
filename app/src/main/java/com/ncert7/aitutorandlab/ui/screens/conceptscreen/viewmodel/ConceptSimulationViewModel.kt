@@ -8,6 +8,7 @@ import com.ncert7.aitutorandlab.domain.examplan.PlanTrialProgressTracker
 import com.ncert7.aitutorandlab.domain.examplan.SimulationTrialThresholds
 import com.ncert7.aitutorandlab.domain.examplan.TrialSessionStore
 import com.ncert7.aitutorandlab.domain.progress.ProgressEventTracker
+import com.ncert7.aitutorandlab.repository.ChapterRepository
 import com.ncert7.aitutorandlab.repository.ConceptRepository
 import com.ncert7.aitutorandlab.service.analytics.SimulationAnalyticsTracker
 import com.ncert7.aitutorandlab.service.analytics.SimulationInteraction
@@ -20,6 +21,7 @@ import com.ncert7.aitutorandlab.utils.TrialCopy
 import com.ncert7.aitutorandlab.utils.getCurrentLanguageCode
 import com.ncert7.aitutorandlab.utils.isKannada
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.net.URLEncoder
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -37,6 +39,7 @@ import javax.inject.Inject
 @HiltViewModel
 class ConceptSimulationViewModel @Inject constructor(
     private val conceptRepository: ConceptRepository,
+    private val chapterRepository: ChapterRepository,
     private val progressEventTracker: ProgressEventTracker,
     private val planTrialProgressTracker: PlanTrialProgressTracker,
     private val streakManager: StreakManager,
@@ -67,6 +70,8 @@ class ConceptSimulationViewModel @Inject constructor(
     companion object {
         private const val TAG = "ConceptSimulationVM"
         const val TRIAL_EXPLORE_PROMPT_MS = SimulationViewerTiming.TRIAL_OVERLAY_MS
+        /** In-sim taps required before chapter progress counts a URL sim as completed. */
+        const val MIN_INTERACTIONS_FOR_CHAPTER_PROGRESS = 7
     }
 
     private var timeExplorePromptShown = false
@@ -94,6 +99,70 @@ class ConceptSimulationViewModel @Inject constructor(
             progressEventTracker.markSimulationUrlCompleted(studentId, conceptId, language)
             DebugLogger.debugLog(TAG, " Simulation URL completed tracked: conceptId=$conceptId [$language]")
         }
+    }
+
+    /**
+     * Resolve where the header "Next" button should go, as a nav route string (or null if there is
+     * nothing after this — the caller falls back to leaving the sim). Order:
+     *   1. The next simulation in this chapter (by orderIndex).
+     *   2. If this is the last sim, the first still-unfinished simulation in this chapter.
+     *   3. If every sim here is done, the NEXT chapter — opened at its trial/plan screen, which
+     *      surfaces that chapter's first unfinished aspect (study / simulation / revision).
+     * Runs off the main thread (DB reads); returns on the calling coroutine.
+     */
+    suspend fun resolveNextRoute(
+        conceptId: String,
+        subjectName: String,
+        chapterName: String,
+    ): String? {
+        if (conceptId.isBlank()) return null
+        val language = getCurrentLanguageCode()
+        val studentId = sharedPrefs.getUserId()
+        val chapter = conceptRepository.getChapterForConcept(conceptId) ?: return null
+        val sims = conceptRepository.getSimulationConceptsForChapter(chapter.chapterId, language)
+        val idx = sims.indexOfFirst { it.conceptId == conceptId }
+
+        // 1. Next simulation in this chapter.
+        if (idx in 0 until sims.lastIndex) {
+            simRoute(sims[idx + 1], subjectName, chapterName, language)?.let { return it }
+        }
+
+        // 2. At the end → first unfinished simulation in this chapter (skip the current one).
+        if (idx >= 0 && !studentId.isNullOrBlank()) {
+            for (s in sims) {
+                if (s.conceptId == conceptId) continue
+                val done = conceptRepository
+                    .getProgress(studentId, "SIMULATION", s.conceptId, language)?.status == "COMPLETED"
+                if (!done) simRoute(s, subjectName, chapterName, language)?.let { return it }
+            }
+        }
+
+        // 3. Everything here is done → next chapter's plan (its first unfinished aspect).
+        val chapters = chapterRepository.getChaptersForSubject(chapter.subjectId)
+        val cIdx = chapters.indexOfFirst { it.chapterId == chapter.chapterId }
+        if (cIdx in 0 until chapters.lastIndex) {
+            return "chapter_trial/${chapters[cIdx + 1].chapterId}"
+        }
+        return null
+    }
+
+    /** Build the concept_sim_view route for a target simulation concept (mirrors LearningNavigator). */
+    private fun simRoute(
+        concept: com.ncert7.aitutorandlab.data.local.entities.ConceptEntity,
+        subjectName: String,
+        chapterName: String,
+        language: String,
+    ): String? {
+        val kn = language.equals("kn", ignoreCase = true)
+        val url = (if (kn) concept.simulationUrlKannada else concept.simulationUrl)
+            ?.takeIf { it.isNotBlank() }
+            ?: concept.simulationUrl?.takeIf { it.isNotBlank() }
+            ?: return null
+        val title = (if (kn) concept.conceptNameKannada else concept.conceptName)
+            .ifBlank { concept.conceptName }
+        fun enc(s: String) = URLEncoder.encode(s, "UTF-8")
+        val cid = concept.conceptId.ifBlank { "empty" }
+        return "concept_sim_view/${enc(url)}/${enc(title.replace("/", "-"))}/${enc(cid)}/${enc(subjectName)}/${enc(chapterName)}"
     }
 
     fun syncTrialSimClickCount(clickCount: Int) {
@@ -389,6 +458,35 @@ class ConceptSimulationViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Page finished loading — streak only. Chapter % must not advance on open alone.
+     */
+    fun onSimulationOpened(conceptId: String) {
+        viewModelScope.launch {
+            val studentId = sharedPrefs.getUserId() ?: return@launch
+            if (conceptId.isEmpty()) return@launch
+            DebugLogger.debugLog(TAG, "Simulation opened (streak only): $conceptId")
+            streakManager.recordLearningActivityForUser(studentId) { newStreak ->
+                DebugLogger.debugLog(TAG, "Open streak touch → $newStreak")
+            }
+        }
+    }
+
+    /**
+     * Record chapter progress when the learner actually engaged
+     * (coach concluded, or at least [MIN_INTERACTIONS_FOR_CHAPTER_PROGRESS] taps).
+     */
+    fun maybeMarkCompletedAfterEngagement(conceptId: String, interactionCount: Int) {
+        if (interactionCount < MIN_INTERACTIONS_FOR_CHAPTER_PROGRESS) {
+            DebugLogger.debugLog(
+                TAG,
+                "Skip chapter progress — only $interactionCount taps (need $MIN_INTERACTIONS_FOR_CHAPTER_PROGRESS)",
+            )
+            return
+        }
+        markSimulationCompleted(conceptId)
+    }
+
     fun markSimulationCompleted(conceptId: String) {
         viewModelScope.launch {
             try {
@@ -405,16 +503,6 @@ class ConceptSimulationViewModel @Inject constructor(
                         TAG,
                         " Failed to mark simulation completed - studentId: $studentId, conceptId: $conceptId"
                     )
-                    return@launch
-                }
-
-                // Trial: no chapter progress / XP, but opening a trial sim still counts for streak.
-                // Same-day recordActivity is a no-op (no local write, no Firestore schedule).
-                if (TrialSessionStore.activeTrialItemId != null) {
-                    DebugLogger.debugLog(TAG, "Trial mode — recording streak only on page load")
-                    streakManager.recordLearningActivityForUser(studentId) { newStreak ->
-                        DebugLogger.debugLog(TAG, "Trial streak touch → $newStreak")
-                    }
                     return@launch
                 }
 

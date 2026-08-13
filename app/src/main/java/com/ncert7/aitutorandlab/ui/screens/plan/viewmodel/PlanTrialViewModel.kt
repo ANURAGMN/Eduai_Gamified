@@ -298,6 +298,17 @@ class PlanTrialViewModel @Inject constructor(
         flushPendingSessionProgress()
         reconcileActiveTrialSession()
 
+        if (TrialSessionStore.consumeSoftProceedToNext()) {
+            cancelMandatoryAdSchedule()
+            _advanceOverlay.value = null
+            pendingAdvanceOverlay = null
+            pendingGemMoment = null
+            _partialReturnPrompt.value = null
+            _moment.value = null
+            launchNextIncompleteAfterSoftProceed()
+            return
+        }
+
         if (_partialReturnPrompt.value != null) return
 
         if (_moment.value != null) return
@@ -319,6 +330,25 @@ class PlanTrialViewModel @Inject constructor(
         }
 
         checkDeferredCelebration()
+    }
+
+    /**
+     * Soft "Continue to next" from a load-stall / time gate: leave the current item incomplete
+     * without the comeback dialog, and open the next incomplete bite when one exists.
+     */
+    private suspend fun launchNextIncompleteAfterSoftProceed() {
+        val currentId = TrialSessionStore.activeTrialItemId
+        val items = planTrialRepository.getTrialItems(userId, dayIndex)
+        val next =
+            items.firstOrNull { it.id != currentId && it.status != PlanTrialItemStatus.DONE }
+        TrialSessionStore.activeTrialItemId = null
+        if (next == null) {
+            checkDeferredCelebration()
+            return
+        }
+        val ui = next.toUi(_languageCode.value)
+        prepareLaunch(ui)
+        _launchTarget.value = ui
     }
 
     private suspend fun ensureGardenCelebrationQueued() {
@@ -615,6 +645,7 @@ class PlanTrialViewModel @Inject constructor(
             // A task's reward was just consumed — remember it so the first return to home can request
             // an in-app review (fully compliant; any card shown is Google's own).
             sharedPrefs.setHasCompletedAnyTask()
+            sharedPrefs.setPendingReviewOnHome(true)
             overlay.launchNext?.let { next ->
                 // More to do → a good moment to ask about reminders (the gate enforces its own
                 // once-a-day / max-3 cadence).

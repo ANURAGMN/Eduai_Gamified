@@ -13,10 +13,12 @@ class SendMessageUseCase @Inject constructor(
         )
     }
 
-    fun createAIMessage(content: String): ChatMessageModel {
+    fun createAIMessage(content: String, isError: Boolean = false, canRetry: Boolean = false): ChatMessageModel {
         return ChatMessageModel(
             sender = "ai",
             content = content,
+            isError = isError,
+            canRetry = canRetry,
         )
     }
 }

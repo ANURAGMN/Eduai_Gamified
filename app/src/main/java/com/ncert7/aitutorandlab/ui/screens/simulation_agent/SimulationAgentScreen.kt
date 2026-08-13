@@ -14,6 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import com.ncert7.aitutorandlab.domain.examplan.TrialSessionStore
 import com.ncert7.aitutorandlab.ui.components.AgentSessionTimeGate
+import com.ncert7.aitutorandlab.ui.components.LoadStallProceedGate
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -91,6 +92,18 @@ fun SimulationAgentScreen(
     val showSessionResumeDialog by viewModel.showSessionResumeDialog.collectAsState()
     val simulationUrls by viewModel.simulationUrls.collectAsState()
     val sessionData by viewModel.sessionData.collectAsState()
+
+    // Iframe / session stall → 15s "continue to next" dialog.
+    val simHtmlUrl = sessionData?.simulation?.htmlUrl?.takeIf { it.isNotBlank() }
+    var simPageReady by remember(simHtmlUrl) { mutableStateOf(false) }
+    var simPageFailed by remember(simHtmlUrl) { mutableStateOf(false) }
+    val loadStalled =
+        (uiState is SimAgentUiState.Loading && simHtmlUrl == null) ||
+            errorMessage != null ||
+            uiState is SimAgentUiState.Error ||
+            (uiState is SimAgentUiState.Success && simHtmlUrl == null) ||
+            (simHtmlUrl != null && !simPageReady) ||
+            simPageFailed
 
     // TTS/STT states
     val ttsState by ttsController.state.collectAsState()
@@ -458,6 +471,7 @@ fun SimulationAgentScreen(
                 // /respond made the agent look broken (quotes panel for 15–20s).
                 isSimulationLoading = uiState is SimAgentUiState.Loading &&
                     sessionData?.simulation?.htmlUrl.isNullOrBlank(),
+                isHtmlLoading = simHtmlUrl != null && !simPageReady && !simPageFailed,
                 ttsController = ttsController,
                 messageFontSize = ChatMessageFontSize
                     .resolveFontSp(settingsState.messageFontSp, mathAgent = false).sp,
@@ -471,6 +485,8 @@ fun SimulationAgentScreen(
                 onParamsChanged = { viewModel.handleIntent(SimulationIntent.ParametersChanged(it)) },
                 simulationUrl = sessionData?.simulation?.htmlUrl?.takeIf { it.isNotBlank() },
                 onPageFinished = {
+                    simPageReady = true
+                    simPageFailed = false
                     viewModel.onSimulationUrlLoaded(simulationId)
                     scope.launch {
                         delay(3_000)
@@ -496,6 +512,7 @@ fun SimulationAgentScreen(
                             }
                     }
                 },
+                onLoadFailed = { simPageFailed = true },
                 onSimulationIntroReported = { htmlText ->
                     htmlText.trim().takeIf { it.isNotEmpty() }?.let { text ->
                         keyConceptTts.speakSimulationIntro(
@@ -581,9 +598,22 @@ fun SimulationAgentScreen(
             inTrialMode = TrialSessionStore.activeTrialItemId != null,
             onProceed = {
                 viewModel.recordTrialProceed()
+                TrialSessionStore.markSoftProceedToNext()
                 onNavigateBack()
             },
             modifier = Modifier.align(Alignment.BottomCenter),
+        )
+
+        LoadStallProceedGate(
+            waiting = loadStalled,
+            resetKey = simHtmlUrl ?: simulationId,
+            errorMessage = errorMessage?.takeIf { it.isNotBlank() }
+                ?: (uiState as? SimAgentUiState.Error)?.message?.takeIf { it.isNotBlank() },
+            onContinue = {
+                viewModel.recordTrialProceed()
+                TrialSessionStore.markSoftProceedToNext()
+                onNavigateBack()
+            },
         )
     }
 

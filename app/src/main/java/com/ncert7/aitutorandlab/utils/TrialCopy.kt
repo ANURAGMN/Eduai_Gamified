@@ -67,7 +67,7 @@ object TrialCopy {
                 "We'll celebrate and move on once you finish."
         }
 
-    /** Shown ~3 minutes after the learner opens a trial simulation. */
+    /** Shown ~5 minutes after the learner opens a trial simulation. */
     fun simTimeExplorePrompt(languageCode: String): Pair<String, String> =
         if (kn(languageCode)) {
             "ಚೆನ್ನಾಗಿ ಅನ್ವೇಷಿಸಿದ್ದೀರಿ! 🎉" to

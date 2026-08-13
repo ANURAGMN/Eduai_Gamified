@@ -22,6 +22,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import com.ncert7.aitutorandlab.domain.examplan.TrialSessionStore
 import com.ncert7.aitutorandlab.ui.components.AgentSessionTimeGate
+import com.ncert7.aitutorandlab.ui.components.LoadStallProceedGate
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -461,9 +462,22 @@ fun ChatbotScreen(
             inTrialMode = TrialSessionStore.activeTrialItemId != null,
             onProceed = {
                 chatViewModel.recordTrialProceed()
+                TrialSessionStore.markSoftProceedToNext()
                 backDispatcher?.onBackPressed()
             },
             modifier = Modifier.align(Alignment.BottomCenter),
+        )
+
+        LoadStallProceedGate(
+            waiting = chatState.isLoading && chatState.messages.isEmpty(),
+            resetKey = chatState.selectedConcept,
+            errorMessage = chatState.messages.lastOrNull { it.isError }?.content
+                ?.takeIf { chatState.isLoading || chatState.messages.none { m -> !m.isError } },
+            onContinue = {
+                chatViewModel.recordTrialProceed()
+                TrialSessionStore.markSoftProceedToNext()
+                backDispatcher?.onBackPressed()
+            },
         )
     }
 

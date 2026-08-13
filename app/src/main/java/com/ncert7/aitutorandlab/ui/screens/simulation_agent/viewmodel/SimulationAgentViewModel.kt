@@ -482,12 +482,22 @@ class SimulationAgentViewModel @Inject constructor(
     }
 
     private fun checkTrialGeProgress(response: SimSessionResponse) {
-        val trialItemId = TrialSessionStore.activeTrialItemId ?: return
         val trajectory = response.learningState.trajectoryStatus?.uppercase()?.trim()
-        if (trajectory == "GE") {
-            viewModelScope.launch {
+        if (trajectory != "GE") return
+
+        val trialItemId = TrialSessionStore.activeTrialItemId
+        viewModelScope.launch {
+            if (trialItemId != null) {
                 planTrialProgressTracker.recordGeReached(trialItemId)
                 DebugLogger.debugLog(TAG, "Trial sim agent reached GE for item $trialItemId")
+            }
+            // Chapter progress: only when the goal is achieved, not when the session opens.
+            val conceptId = currentConceptId
+            val studentId = sharedPrefs.getUserId()
+            if (conceptId != null && studentId != null) {
+                val lang = getCurrentLanguageCode()
+                progressEventTracker.markSimulationAgentCompleted(studentId, conceptId, lang)
+                DebugLogger.debugLog(TAG, "Marked Simulation Agent completed on GE for concept: $conceptId [$lang]")
             }
         }
     }
@@ -535,29 +545,11 @@ class SimulationAgentViewModel @Inject constructor(
      */
 
     /**
-     * Called when simulation webview finishes loading
-     * Marks the simulation URL as completed for progress tracking (50% of simulation component)
+     * Simulation iframe finished loading — does not advance chapter progress.
+     * Progress is recorded when the learning trajectory reaches GE (goal achieved).
      */
     fun onSimulationUrlLoaded(simulationId: String) {
-        viewModelScope.launch {
-            try {
-                val conceptId = currentConceptId ?: fetchConceptIdForSimulation(simulationId)
-                if (conceptId != null) {
-                    val studentId = sharedPrefs.getUserId()
-                    if (studentId != null) {
-                        val lang = getCurrentLanguageCode()
-                        progressEventTracker.markSimulationUrlCompleted(studentId, conceptId, lang)
-                        DebugLogger.debugLog(TAG, " Marked Simulation URL as completed for concept: $conceptId [$lang]")
-                    } else {
-                        DebugLogger.errorLog(TAG, "Could not retrieve studentId for progress tracking")
-                    }
-                } else {
-                    DebugLogger.errorLog(TAG, "Could not find conceptId for simulationId: $simulationId")
-                }
-            } catch (e: Exception) {
-                DebugLogger.errorLog(TAG, "Error tracking simulation URL completion: ${e.message}")
-            }
-        }
+        DebugLogger.debugLog(TAG, "Simulation URL loaded for $simulationId (chapter progress deferred until GE)")
     }
 
     /**
@@ -715,20 +707,11 @@ class SimulationAgentViewModel @Inject constructor(
                     DebugLogger.debugLog(TAG, "Simulation URL: ${response.simulation.htmlUrl}")
 
 
-                    // Track Simulation Agent Progress (skip premature complete during exam trial)
+                    // Track concept id for later GE completion — do NOT mark chapter progress on session start.
                     val conceptId = fetchConceptIdForSimulation(simulationId)
                     if (conceptId != null) {
                         currentConceptId = conceptId
-                        val studentId = sharedPrefs.getUserId()
-                        if (studentId != null && TrialSessionStore.activeTrialItemId == null) {
-                            val lang = getCurrentLanguageCode()
-                            progressEventTracker.markSimulationAgentCompleted(studentId, conceptId, lang)
-                            DebugLogger.debugLog(TAG, " Marked Simulation Agent as completed for concept: $conceptId [$lang]")
-                        } else if (TrialSessionStore.activeTrialItemId != null) {
-                            DebugLogger.debugLog(TAG, "Trial mode — sim agent completion deferred until GE node")
-                        } else {
-                            DebugLogger.errorLog(TAG, "Could not retrieve studentId for progress tracking")
-                        }
+                        DebugLogger.debugLog(TAG, "Session started for concept $conceptId (progress deferred until GE)")
                     } else {
                         DebugLogger.errorLog(TAG, "Could not find conceptId for simulationId: $simulationId")
                     }

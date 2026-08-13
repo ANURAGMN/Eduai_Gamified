@@ -249,6 +249,12 @@
     <string name="sim_you_label">You 👤</string>
     <string name="sim_loading_simulation">Loading simulation...</string>
     <string name="sim_error_loading">Error loading simulation</string>
+    <string name="load_stall_title">Still loading</string>
+    <string name="load_stall_message">While we figure out the issue, you can continue to the next section without waiting longer.</string>
+    <string name="load_stall_continue">Continue to next</string>
+    <string name="load_stall_keep_waiting">Keep waiting</string>
+    <string name="load_stall_error_title">Something went wrong</string>
+    <string name="load_stall_dismiss_error">Stay here</string>
 
     <!-- TTS/STT Common Strings -->
     <string name="ready_for_speech">Ready for speech…</string>

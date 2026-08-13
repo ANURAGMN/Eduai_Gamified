@@ -26,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.ncert7.aitutorandlab.domain.examplan.TrialSessionStore
 import com.ncert7.aitutorandlab.ui.components.AgentSessionTimeGate
+import com.ncert7.aitutorandlab.ui.components.LoadStallProceedGate
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -578,9 +579,23 @@ fun MathAgentScreen(
             inTrialMode = TrialSessionStore.activeTrialItemId != null,
             onProceed = {
                 chatViewModel.recordTrialProceed()
+                TrialSessionStore.markSoftProceedToNext()
                 backDispatcher?.onBackPressed()
             },
             modifier = Modifier.align(Alignment.BottomCenter),
+        )
+
+        LoadStallProceedGate(
+            waiting = mathState.isLoading && mathState.messages.isEmpty(),
+            resetKey = problemId,
+            errorMessage = mathState.errorMessage?.takeIf { it.isNotBlank() }
+                ?: mathState.messages.lastOrNull { it.isError }?.content
+                    ?.takeIf { mathState.isLoading || mathState.messages.none { m -> !m.isError } },
+            onContinue = {
+                chatViewModel.recordTrialProceed()
+                TrialSessionStore.markSoftProceedToNext()
+                backDispatcher?.onBackPressed()
+            },
         )
     }
 }

@@ -8,7 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -31,6 +31,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.ncert7.aitutorandlab.config.LocalNativeTutorAvatarEnabled
+import com.ncert7.aitutorandlab.R
 import com.ncert7.aitutorandlab.data.local.SharedPreferenceUtils
 import com.ncert7.aitutorandlab.debug.DebugLogger
 import com.ncert7.aitutorandlab.domain.examplan.TrialSessionStore
@@ -38,7 +39,12 @@ import com.ncert7.aitutorandlab.service.analytics.InteractionTracker
 import com.ncert7.aitutorandlab.service.analytics.ScreenName
 import com.ncert7.aitutorandlab.service.analytics.TrackScreenEvent
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.AgentTutorAvatarBubble
+import com.ncert7.aitutorandlab.ui.components.LoadStallProceedGate
+import com.ncert7.aitutorandlab.ui.components.LoadingInsightPanel
 import com.ncert7.aitutorandlab.ui.screens.conceptscreen.viewmodel.ConceptSimulationViewModel
+import androidx.compose.ui.res.stringResource
+import com.ncert7.aitutorandlab.ui.theme.BackgroundPrimary
+import com.ncert7.aitutorandlab.ui.theme.LocalDimensions
 import com.ncert7.aitutorandlab.ui.screens.simulation_agent.components.SimulationWebView
 import com.ncert7.aitutorandlab.ui.screens.simulation_agent.components.rememberSimulationKeyConceptTts
 import com.ncert7.aitutorandlab.ui.viewModel.TextToSpeech
@@ -62,6 +68,8 @@ fun ConceptSimulationViewer(
     subjectName: String = "",
     chapterName: String = "",
     onBackClick: () -> Unit = {},
+    /** Navigate to a resolved route (next sim / next chapter plan) for the header "Next" button. */
+    onNext: (String) -> Unit = {},
     viewModel: ConceptSimulationViewModel = hiltViewModel()
 ) {
     val decodedConceptId = remember(conceptId) {
@@ -159,6 +167,10 @@ fun ConceptSimulationViewer(
 
     var progressMarked by remember(decodedUrl) { mutableStateOf(false) }
 
+    // Iframe / init stall — after 15s offer "continue to next" (EN/KN via string resources).
+    var pageReady by remember(decodedUrl) { mutableStateOf(false) }
+    var pageFailed by remember(decodedUrl) { mutableStateOf(false) }
+
     var guideDoc by remember(decodedUrl) { mutableStateOf<SimGuideDoc?>(null) }
     var guideFetchDone by remember(decodedUrl) { mutableStateOf(false) }
 
@@ -193,6 +205,10 @@ fun ConceptSimulationViewer(
             introText = text
             viewModel.markIntroHandled(decodedUrl)
         }
+        // Belt-and-suspenders: JS bridge activity means the page is usable even if
+        // onPageFinished was skipped (redirect / race).
+        pageReady = true
+        pageFailed = false
     }
 
     val guideSteps =
@@ -252,35 +268,38 @@ fun ConceptSimulationViewer(
         }
     }
 
+    // rememberUpdatedState holds the handler itself — do NOT wrap another lambda inside or
+    // onPageFinished only returns it and never runs (pageReady stays false → false stall dialog).
     val onPageFinishedHandler by rememberUpdatedState {
-        {
-            if (viewModel.shouldHandlePageReady(decodedUrl)) {
-                viewModel.markPageReadyHandled(decodedUrl)
-                viewModel.captureTrialItemId()
-                DebugLogger.debugLog(
-                    "ConceptSimulationViewer",
-                    "Simulation page ready — overlay in ${viewModel.remainingOverlayDelayMs() / 1000}s",
-                )
-            }
-            if (decodedConceptId.isNotEmpty() && decodedConceptId != "empty" && !progressMarked) {
-                progressMarked = true
-                // Always notify VM: trial skips chapter progress but still records streak.
-                viewModel.markSimulationCompleted(decodedConceptId)
-                DebugLogger.debugLog(
-                    "ConceptSimulationViewer",
-                    "Simulation page loaded for concept: $decodedConceptId",
-                )
-            }
-            // If the page never reported readable intro text, fall back to the title so the
-            // guide's first step still has something to say (it's narrated as step 0, not here).
-            if (viewModel.shouldHandleIntro(decodedUrl)) {
-                scope.launch {
-                    delay(3_000)
-                    if (!viewModel.shouldHandleIntro(decodedUrl)) return@launch
-                    viewModel.markIntroHandled(decodedUrl)
-                    if (introText == null) {
-                        introText = introTitle.takeIf { it.isNotBlank() } ?: decodedTitle
-                    }
+        pageReady = true
+        pageFailed = false
+        if (viewModel.shouldHandlePageReady(decodedUrl)) {
+            viewModel.markPageReadyHandled(decodedUrl)
+            viewModel.captureTrialItemId()
+            DebugLogger.debugLog(
+                "ConceptSimulationViewer",
+                "Simulation page ready — overlay in ${viewModel.remainingOverlayDelayMs() / 1000}s",
+            )
+        }
+        if (decodedConceptId.isNotEmpty() && decodedConceptId != "empty" && !progressMarked) {
+            progressMarked = true
+            // Opening the page is NOT chapter progress — only streak / session bookkeeping.
+            // Completion is recorded after real engagement (coach conclude or enough taps).
+            viewModel.onSimulationOpened(decodedConceptId)
+            DebugLogger.debugLog(
+                "ConceptSimulationViewer",
+                "Simulation page loaded for concept: $decodedConceptId (progress deferred)",
+            )
+        }
+        // If the page never reported readable intro text, fall back to the title so the
+        // guide's first step still has something to say (it's narrated as step 0, not here).
+        if (viewModel.shouldHandleIntro(decodedUrl)) {
+            scope.launch {
+                delay(3_000)
+                if (!viewModel.shouldHandleIntro(decodedUrl)) return@launch
+                viewModel.markIntroHandled(decodedUrl)
+                if (introText == null) {
+                    introText = introTitle.takeIf { it.isNotBlank() } ?: decodedTitle
                 }
             }
         }
@@ -292,7 +311,7 @@ fun ConceptSimulationViewer(
         val remaining = viewModel.remainingOverlayDelayMs()
         DebugLogger.debugLog(
             "ConceptSimulationViewer",
-            "3-min overlay timer — ${remaining / 1000}s remaining for $decodedUrl",
+            "5-min overlay timer — ${remaining / 1000}s remaining for $decodedUrl",
         )
         delay(remaining)
         viewModel.showTimeBasedExplorePromptIfNeeded()
@@ -339,9 +358,12 @@ fun ConceptSimulationViewer(
 
             keyConceptTts.stop()
             viewModel.resetViewerSession()
+            val count = InteractionTracker.sessionInteractionCount.value
+            if (decodedConceptId.isNotEmpty() && decodedConceptId != "empty") {
+                viewModel.maybeMarkCompletedAfterEngagement(decodedConceptId, count)
+            }
             val trialItemId = TrialSessionStore.activeTrialItemId
             if (trialItemId != null) {
-                val count = InteractionTracker.sessionInteractionCount.value
                 TrialSessionStore.recordPendingSessionProgress(trialItemId, count)
                 runBlocking {
                     viewModel.flushTrialSimClickCount(count)
@@ -352,9 +374,12 @@ fun ConceptSimulationViewer(
     }
 
     val handleBack = {
+        val count = InteractionTracker.sessionInteractionCount.value
+        if (decodedConceptId.isNotEmpty() && decodedConceptId != "empty") {
+            viewModel.maybeMarkCompletedAfterEngagement(decodedConceptId, count)
+        }
         val trialItemId = TrialSessionStore.activeTrialItemId
         if (trialItemId != null) {
-            val count = InteractionTracker.sessionInteractionCount.value
             TrialSessionStore.recordPendingSessionProgress(trialItemId, count)
             runBlocking {
                 viewModel.flushTrialSimClickCount(count)
@@ -373,9 +398,9 @@ fun ConceptSimulationViewer(
     val coachMission = coach.mission?.takeIf { it.isNotBlank() }
         ?: decodedTitle.takeIf { it.isNotBlank() }
 
-    // Selected coaching style (v1 scripted / v2 adaptive / v3 fully guided), persisted so the choice
-    // sticks across sims for side-by-side comparison.
-    var coachMode by remember { mutableStateOf(SimCoachMode.fromKey(sharedPrefs.getSimCoachMode())) }
+    // Coaching style is pinned to the production one-clock coach (V4). The V1/V2/V3 comparison
+    // selector was removed from the header, so there's no longer a way (or need) to switch.
+    val coachMode = SimCoachMode.ONE_CLOCK
 
     // ---- Coach state (shared by phases; reset per-URL and on a style switch) ----
     var coachMessage by remember(decodedUrl) { mutableStateOf<String?>(null) }
@@ -619,6 +644,9 @@ fun ConceptSimulationViewer(
         val doneMsg = practiceDoc?.done?.takeIf { hasPractice && sawVerdict } ?: coach.doneMessage
         postCoach(doneMsg, CoachTone.CORRECT)
         viewModel.easeOffCoach(decodedUrl)
+        if (decodedConceptId.isNotEmpty() && decodedConceptId != "empty") {
+            viewModel.markSimulationCompleted(decodedConceptId)
+        }
         // Explore / next overlay is time-gated only (see TRIAL_OVERLAY_MS) — do not show on coach end.
     }
     val advanceScripted: () -> Unit = {
@@ -630,23 +658,6 @@ fun ConceptSimulationViewer(
             // exploration that keeps going until every element has been covered.
             SimCoachMode.ADAPTIVE, SimCoachMode.GUIDED -> enterPhaseB()
             SimCoachMode.ONE_CLOCK -> Unit
-        }
-    }
-
-    // Switching style restarts the coach from the top so the new style is seen from the beginning.
-    val onCoachModeChange: (SimCoachMode) -> Unit = { mode ->
-        if (mode != coachMode) {
-            coachMode = mode
-            sharedPrefs.setSimCoachMode(mode.name)
-            coachMessage = null
-            coachTone = CoachTone.NEUTRAL
-            wrongCursor = 0; correctCursor = 0; stuckCursor = 0; deviateCursor = 0
-            suggestIndex = 0; correctRounds = 0; sawVerdict = false
-            exploreSelectedIdx = null; coachObserving = false
-            practiceStepIdx = 0; practiceRound = 0
-            exploredOptions.clear()
-            keyConceptTts.stop()
-            viewModel.restartCoach(decodedUrl)
         }
     }
 
@@ -972,13 +983,29 @@ fun ConceptSimulationViewer(
         if (guideDismissed) keyConceptTts.stop()
     }
 
+    val loadStalled = isInitPending ||
+        decodedUrl.isBlank() ||
+        pageFailed ||
+        (!isInitPending && decodedUrl.isNotBlank() && !pageReady)
+
+    Box(modifier = Modifier.fillMaxSize()) {
     when {
         isInitPending -> {
+            val dimens = LocalDimensions.current
             Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(BackgroundPrimary),
+                contentAlignment = Alignment.Center,
             ) {
-                CircularProgressIndicator()
+                LoadingInsightPanel(
+                    statusText = stringResource(R.string.sim_loading_simulation),
+                    languageCode = languageCode,
+                    centered = true,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(dimens.spaceMedium),
+                )
             }
         }
         else -> Column(
@@ -990,10 +1017,14 @@ fun ConceptSimulationViewer(
                 voiceEnabled = voiceEnabled,
                 onVoiceEnabledChange = { voiceEnabled = it },
                 languageCode = languageCode,
-                coachMode = coachMode,
-                onCoachModeChange = onCoachModeChange,
                 showVoiceToggle = false, // voice on/off now lives in the Settings sheet
                 onSettingsClick = { showCoachSettings = true },
+                onNextClick = {
+                    scope.launch {
+                        val route = viewModel.resolveNextRoute(decodedConceptId, subjectName, chapterName)
+                        if (route != null) onNext(route) else handleBack()
+                    }
+                },
             )
 
             if (showCoachSettings) {
@@ -1054,9 +1085,16 @@ fun ConceptSimulationViewer(
                     .fillMaxWidth()
                     .background(Color.White)
             ) {
+                val dimens = LocalDimensions.current
+                // Keep WebView mounting while we overlay loading so onPageFinished still fires.
                 SimulationWebView(
+                    // The V4/V5 floating coach overlays the bottom of this Box (SimFloatingCoach,
+                    // BottomCenter). Reserve a band so the sim's own content — including its bottom
+                    // concept text and the Explain/Hint pills — never renders under the coach.
+                    modifier = if (coachV4Active) Modifier.padding(bottom = 120.dp) else Modifier,
                     url = decodedUrl,
                     onPageFinished = { onPageFinishedHandler() },
+                    onLoadFailed = { pageFailed = true },
                     onInteractionTrackingReady = {
                         if (TrialSessionStore.activeTrialItemId != null) {
                             InteractionTracker.setSessionCountingEnabled(true)
@@ -1071,6 +1109,8 @@ fun ConceptSimulationViewer(
                     onSimulationIntroReported = onSimulationIntroReported,
                     onSimulationFooterReported = onSimulationFooterReported,
                     onGuideStructureReported = { json ->
+                        pageReady = true
+                        pageFailed = false
                         viewModel.storeHarvestJson(decodedUrl, json)
                     },
                     onGuideTap = { tapped ->
@@ -1228,8 +1268,13 @@ fun ConceptSimulationViewer(
                         exploreLabel = TrialCopy.simKeepExploringLabel(languageCode),
                         onProceed = {
                             scope.launch {
-                                viewModel.completeTrialSimProceed(sessionInteractions)
+                                val count = sessionInteractions
+                                viewModel.completeTrialSimProceed(count)
+                                if (decodedConceptId.isNotEmpty() && decodedConceptId != "empty") {
+                                    viewModel.maybeMarkCompletedAfterEngagement(decodedConceptId, count)
+                                }
                                 viewModel.clearTrialPrompt()
+                                TrialSessionStore.markSoftProceedToNext()
                                 handleBack()
                             }
                         },
@@ -1244,7 +1289,7 @@ fun ConceptSimulationViewer(
 
                 // V5 floating coach — overlays the sim (Layout C): small bubble + one-line peek +
                 // floating Hint. Frees the vertical space the bottom card used to take.
-                if (trialPrompt == null && isV4 && coachV4Active && v4Line.isNotBlank()) {
+                if (pageReady && trialPrompt == null && isV4 && coachV4Active && v4Line.isNotBlank()) {
                     SimFloatingCoach(
                         message = v4Line.ifBlank { coachMission ?: "Follow the glowing hint." },
                         hintMode = hintMode,
@@ -1259,6 +1304,26 @@ fun ConceptSimulationViewer(
                         // stays fully touchable — a full transparent overlay can eat WebView taps.
                         modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth(),
                     )
+                }
+
+                // Same loading treatment as SimAgent — covers the white WebView flash until HTML paints.
+                if (!pageReady && !pageFailed && decodedUrl.isNotBlank()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(BackgroundPrimary)
+                            .zIndex(3f),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        LoadingInsightPanel(
+                            statusText = stringResource(R.string.sim_loading_simulation),
+                            languageCode = languageCode,
+                            centered = true,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(dimens.spaceMedium),
+                        )
+                    }
                 }
             }
 
@@ -1309,6 +1374,28 @@ fun ConceptSimulationViewer(
             // (V5 one-clock coach now renders as SimFloatingCoach overlaying the sim above,
             // instead of a bottom card here — see the Box content.)
         }
+    }
+
+    LoadStallProceedGate(
+        waiting = loadStalled,
+        resetKey = decodedUrl,
+        errorMessage = when {
+            pageFailed -> stringResource(R.string.sim_error_loading)
+            decodedUrl.isBlank() && !isInitPending -> stringResource(R.string.sim_no_simulation)
+            else -> null
+        },
+        onContinue = {
+            scope.launch {
+                val count = InteractionTracker.sessionInteractionCount.value
+                viewModel.completeTrialSimProceed(count)
+                if (decodedConceptId.isNotEmpty() && decodedConceptId != "empty") {
+                    viewModel.maybeMarkCompletedAfterEngagement(decodedConceptId, count)
+                }
+                TrialSessionStore.markSoftProceedToNext()
+                handleBack()
+            }
+        },
+    )
     }
 }
 
