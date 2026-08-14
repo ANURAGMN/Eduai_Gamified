@@ -27,6 +27,8 @@ import com.ncert7.aitutorandlab.ui.screens.plan.PlanTrialScreen
 import com.ncert7.aitutorandlab.ui.screens.revisionscreen.RevisionScreen
 import com.ncert7.aitutorandlab.ui.screens.simulation_agent.SimulationAgentScreen
 import com.ncert7.aitutorandlab.ui.screens.subjectscreen.SubjectScreen
+import com.ncert7.aitutorandlab.ui.screens.textbook.TextbookWebScreen
+import com.ncert7.aitutorandlab.ui.screens.textbook.TextbooksScreen
 
 object LearningRoutes {
     const val HOME = "home"
@@ -60,6 +62,7 @@ fun LearningNavigator(
             composable(LearningRoutes.HOME) {
                 HomeScreen(
                     onNavigateToLearning = { navController.navigate("learning") },
+                    onOpenTextbooks = { navController.navigate("textbooks") },
                     onNavigateToChapters = { subjectId ->
                         navController.navigate("chapters/$subjectId")
                     },
@@ -293,6 +296,43 @@ fun LearningNavigator(
                 RevisionScreen(
                     chapterId = chapterId,
                     onBackClick = { navController.popBackStack() }
+                )
+            }
+
+            composable("textbooks") {
+                TextbooksScreen(
+                    onBack = { navController.popBackStack() },
+                    onOpenBook = { book ->
+                        val encUrl = java.net.URLEncoder.encode(book.url, "UTF-8")
+                        val encTitle = java.net.URLEncoder.encode(book.title, "UTF-8")
+                        navController.navigate("textbook/$encUrl/$encTitle")
+                    },
+                )
+            }
+
+            composable(
+                route = "textbook/{url}/{title}",
+                arguments = listOf(
+                    navArgument("url") { type = NavType.StringType },
+                    navArgument("title") { type = NavType.StringType },
+                ),
+            ) { backStackEntry ->
+                val rawUrl = backStackEntry.arguments?.getString("url") ?: ""
+                val rawTitle = backStackEntry.arguments?.getString("title") ?: "Textbook"
+                val url = try {
+                    java.net.URLDecoder.decode(rawUrl, "UTF-8")
+                } catch (_: Exception) {
+                    rawUrl
+                }
+                val title = try {
+                    java.net.URLDecoder.decode(rawTitle, "UTF-8")
+                } catch (_: Exception) {
+                    rawTitle
+                }
+                TextbookWebScreen(
+                    url = url,
+                    title = title,
+                    onBack = { navController.popBackStack() },
                 )
             }
         }

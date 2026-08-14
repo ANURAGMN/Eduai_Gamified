@@ -34,6 +34,7 @@ import com.ncert7.aitutorandlab.ui.screens.home.components.TodayProgressCard
 import com.ncert7.aitutorandlab.ui.theme.BackgroundSecondary
 import com.ncert7.aitutorandlab.ui.theme.LocalDimensions
 import com.ncert7.aitutorandlab.ui.screens.home.viewmodel.HomeViewModel
+import com.ncert7.aitutorandlab.ui.screens.textbook.TextbookEntryCard
 import java.time.LocalTime
 
 @Composable
@@ -51,6 +52,7 @@ private fun rememberTimeBasedGreeting(): String {
 @Composable
 fun HomeScreen(
     onNavigateToLearning: () -> Unit = {},
+    onOpenTextbooks: () -> Unit = {},
     onNavigateToChapters: (String) -> Unit = {},
     onLessonClick: (String) -> Unit = {},
     onSimulationClick: (String, String) -> Unit = { _, _ -> },
@@ -151,6 +153,8 @@ fun HomeScreen(
                         onSimulationUrlClick(title, url, conceptId)
                     }
                 )
+                Spacer(modifier = Modifier.height(dimens.spaceSmall))
+                TextbookEntryCard(onClick = onOpenTextbooks)
             }
         }
     }

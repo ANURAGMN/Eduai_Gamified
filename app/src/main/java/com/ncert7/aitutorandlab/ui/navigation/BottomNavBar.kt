@@ -50,6 +50,8 @@ import com.ncert7.aitutorandlab.ui.screens.conceptscreen.components.ConceptSimul
 import com.ncert7.aitutorandlab.ui.screens.friends.FriendsScreen
 import com.ncert7.aitutorandlab.ui.screens.home.GamifiedHomeRoute
 import com.ncert7.aitutorandlab.ui.screens.home.HomeScreen
+import com.ncert7.aitutorandlab.ui.screens.textbook.TextbookWebScreen
+import com.ncert7.aitutorandlab.ui.screens.textbook.TextbooksScreen
 import com.ncert7.aitutorandlab.ui.screens.leagues.LeaguesScreen
 import com.ncert7.aitutorandlab.ui.screens.plan.PlanDayActions
 import com.ncert7.aitutorandlab.ui.screens.plan.PlanOverviewScreen
@@ -279,6 +281,7 @@ private fun BottomNavBarContent(
                         },
                         onNavigateToTrial = navigateToTrial,
                         onNavigateToRoute = { route -> navController.navigate(route) },
+                        onOpenTextbooks = { navController.navigate("textbooks") },
                         onSimulationClick = { simulationId, conceptId ->
                             navController.navigate("simulation_agent/$simulationId?conceptId=$conceptId")
                         },
@@ -298,6 +301,7 @@ private fun BottomNavBarContent(
                 } else {
                     HomeScreen(
                         onNavigateToLearning = { navController.navigate("learning") },
+                        onOpenTextbooks = { navController.navigate("textbooks") },
                         onNavigateToChapters = { subjectId ->
                             navController.navigate("chapters/$subjectId")
                         },
@@ -760,7 +764,45 @@ private fun BottomNavBarContent(
                     conceptId = conceptId,
                     subjectName = subjectName,
                     chapterName = chapterName,
-                    onBackClick = { navController.popBackStack() }
+                    onBackClick = { navController.popBackStack() },
+                    onNext = { route -> navController.navigate(route) },
+                )
+            }
+
+            composable("textbooks") {
+                TextbooksScreen(
+                    onBack = { navController.popBackStack() },
+                    onOpenBook = { book ->
+                        val encUrl = java.net.URLEncoder.encode(book.url, "UTF-8")
+                        val encTitle = java.net.URLEncoder.encode(book.title, "UTF-8")
+                        navController.navigate("textbook/$encUrl/$encTitle")
+                    },
+                )
+            }
+
+            composable(
+                route = "textbook/{url}/{title}",
+                arguments = listOf(
+                    navArgument("url") { type = NavType.StringType },
+                    navArgument("title") { type = NavType.StringType },
+                ),
+            ) { backStackEntry ->
+                val rawUrl = backStackEntry.arguments?.getString("url") ?: ""
+                val rawTitle = backStackEntry.arguments?.getString("title") ?: "Textbook"
+                val url = try {
+                    java.net.URLDecoder.decode(rawUrl, "UTF-8")
+                } catch (_: Exception) {
+                    rawUrl
+                }
+                val title = try {
+                    java.net.URLDecoder.decode(rawTitle, "UTF-8")
+                } catch (_: Exception) {
+                    rawTitle
+                }
+                TextbookWebScreen(
+                    url = url,
+                    title = title,
+                    onBack = { navController.popBackStack() },
                 )
             }
         }

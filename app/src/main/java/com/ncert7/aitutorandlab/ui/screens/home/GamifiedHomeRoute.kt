@@ -3,7 +3,11 @@ package com.ncert7.aitutorandlab.ui.screens.home
 import android.app.Activity
 import android.content.Intent
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.material3.CircularProgressIndicator
@@ -20,7 +24,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -58,6 +61,7 @@ import com.ncert7.aitutorandlab.ui.components.QuestClaimDialog
 import com.ncert7.aitutorandlab.ui.navigation.GatedNavigationAction
 import com.anurag.eduai.uikit.screens.YoutubeVideoItem
 import com.ncert7.aitutorandlab.ui.screens.home.components.YoutubeVideosSection
+import com.ncert7.aitutorandlab.ui.screens.textbook.TextbookEntryCard
 import com.ncert7.aitutorandlab.ui.screens.home.viewmodel.HomeViewModel
 import com.ncert7.aitutorandlab.ui.screens.youtube.YoutubePlayerDialog
 import com.ncert7.aitutorandlab.ui.screens.garden.AvatarTabNavigation
@@ -73,16 +77,13 @@ import com.ncert7.aitutorandlab.rating.AppRatingGate
 import com.ncert7.aitutorandlab.rating.AppReviewManager
 import com.ncert7.aitutorandlab.rating.ReviewRequestDecision
 import java.time.LocalTime
-import java.util.Locale
 import kotlinx.coroutines.launch
 
 import com.ncert7.aitutorandlab.ui.screens.quests.questClaimDialogCopy
 import com.ncert7.aitutorandlab.ui.screens.quests.questClaimResultMessage
 
-private fun formatLeagueName(tier: String?): String {
-    val raw = tier?.takeIf { it.isNotBlank() } ?: "BRONZE"
-    return raw.lowercase(Locale.US).replaceFirstChar { it.titlecase(Locale.US) }
-}
+private fun formatLeagueName(tier: String?, languageCode: String): String =
+    HomeCopy.leagueCaption(tier, languageCode)
 
 @Composable
 private fun rememberGamifiedTimeBasedGreeting(): String {
@@ -112,6 +113,7 @@ fun GamifiedHomeRoute(
     onLessonClick: (String) -> Unit,
     onNavigateToTrial: (Int) -> Unit,
     onNavigateToRoute: (String) -> Unit,
+    onOpenTextbooks: () -> Unit = {},
     onSimulationClick: (String, String) -> Unit,
     onSessionInvalid: () -> Unit,
     // First-run home-rail tour, driven by the parent (BottomNavBar) which owns both tour phases.
@@ -231,18 +233,22 @@ fun GamifiedHomeRoute(
         }
     }
 
-    // Fully policy-compliant rating ask: on the first return to home after finishing a task, request
-    // the Google Play In-App Review flow. Google shows its own card (or nothing) — no custom prompt,
-    // no sentiment gating, no store deep-link. The gate throttles to once/day, up to 3 times.
+    // Fully policy-compliant rating ask: after finishing a task, flag pending review; on the next
+    // home visit, request Google Play In-App Review. Google shows its own card (or nothing) — no
+    // custom prompt. The gate throttles to once/day, up to 3 times.
     LaunchedEffect(Unit) {
         val hostActivity = activity ?: return@LaunchedEffect
-        if (!sharedPreferenceUtils.hasCompletedAnyTask()) return@LaunchedEffect
+        if (!sharedPreferenceUtils.isPendingReviewOnHome()) return@LaunchedEffect
         when (val decision = AppRatingGate.decideReviewRequest(context, sharedPreferenceUtils)) {
             ReviewRequestDecision.Proceed -> {
+                sharedPreferenceUtils.setPendingReviewOnHome(false)
                 EngagementAnalyticsTracker.reviewRequested("first_task_return")
                 AppReviewManager.requestInAppReview(hostActivity)
             }
             is ReviewRequestDecision.Throttled -> {
+                if (decision.reason == "max_requests") {
+                    sharedPreferenceUtils.setPendingReviewOnHome(false)
+                }
                 EngagementAnalyticsTracker.reviewThrottled(decision.reason)
             }
             ReviewRequestDecision.NotEligible -> Unit
@@ -296,7 +302,7 @@ fun GamifiedHomeRoute(
                 progressSimulations = progressSimulations,
                 languageCode = currentLanguage,
                 gems = gamificationProfile?.gems ?: 0,
-                leagueName = formatLeagueName(gamificationProfile?.leagueTier),
+                leagueName = formatLeagueName(gamificationProfile?.leagueTier, currentLanguage),
                 leagueRank = leagueRank,
                 weeklyXp = gamificationProfile?.weeklyXp ?: 0,
                 planDays = planDays,
@@ -605,11 +611,15 @@ fun GamifiedHomeRoute(
                     SubjectRailIcon(subject = subject, tint = tint)
                 },
                 belowSubjectsContent = {
-                    YoutubeVideosSection(
-                        title = HomeCopy.youtubeSectionTitle(currentLanguage),
-                        videos = youtubeItems,
-                        onVideoClick = { selectedYoutubeVideo = it },
-                    )
+                    Column {
+                        TextbookEntryCard(onClick = onOpenTextbooks)
+                        Spacer(modifier = Modifier.height(12.dp))
+                        YoutubeVideosSection(
+                            title = HomeCopy.youtubeSectionTitle(currentLanguage),
+                            videos = youtubeItems,
+                            onVideoClick = { selectedYoutubeVideo = it },
+                        )
+                    }
                 },
             )
         }
