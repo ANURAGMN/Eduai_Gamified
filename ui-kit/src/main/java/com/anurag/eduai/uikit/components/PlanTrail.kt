@@ -88,6 +88,14 @@ fun PlanTrail(
     onAddPlan: () -> Unit = onSeeAll,
     onDayClick: (PlanDayNode) -> Unit = {},
     modifier: Modifier = Modifier,
+    sectionTitle: String = "Your exam prep plan",
+    seeAllLabel: String = "See all",
+    addPlanLabel: String = "Add plan",
+    emptyTitle: String = "No exam plan yet",
+    emptyBody: String = "Set exam type, chapters, and daily study time to build your prep trail.",
+    todayLabel: String = "Today",
+    dayLabelFor: (Int) -> String = { "Day $it" },
+    growHint: String = "Finish a day to grow your world — every task plants something new.",
 ) {
     val colors = EduAiTheme.colors
     val shown = days.take(9)
@@ -106,8 +114,8 @@ fun PlanTrail(
 
     Column(modifier = modifier.fillMaxWidth()) {
         SectionHeader(
-            title = "Your exam prep plan",
-            seeAllLabel = if (hasPlan) "See all" else "Add plan",
+            title = sectionTitle,
+            seeAllLabel = if (hasPlan) seeAllLabel else addPlanLabel,
             onSeeAllClick = if (hasPlan) onSeeAll else onAddPlan,
         )
 
@@ -122,19 +130,19 @@ fun PlanTrail(
                         .padding(16.dp),
             ) {
                 Text(
-                    text = "No exam plan yet",
+                    text = emptyTitle,
                     color = colors.text,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold,
                 )
                 Text(
-                    text = "Set exam type, chapters, and daily study time to build your prep trail.",
+                    text = emptyBody,
                     color = colors.textSecondary,
                     fontSize = 12.sp,
                     modifier = Modifier.padding(top = 6.dp, bottom = 12.dp),
                 )
                 Button(onClick = onAddPlan) {
-                    Text("Add plan")
+                    Text(addPlanLabel)
                 }
             }
             return@Column
@@ -253,7 +261,7 @@ fun PlanTrail(
 
                 // Label centered under node (native Paint Align.CENTER = prototype translateX(-50%))
                 val label =
-                    if (day.status == PlanDayStatus.Today) "Today" else "Day ${day.day}"
+                    if (day.status == PlanDayStatus.Today) todayLabel else dayLabelFor(day.day)
                 val labelColor =
                     if (day.status == PlanDayStatus.Today) colors.accent else colors.textMuted
                 val paint =
@@ -275,7 +283,7 @@ fun PlanTrail(
 
         // Connects the plan to the reward world: finishing plan days grows the garden/space.
         Text(
-            text = "Finish a day to grow your world — every task plants something new.",
+            text = growHint,
             color = colors.accent,
             fontSize = 11.sp,
             fontWeight = FontWeight.Medium,

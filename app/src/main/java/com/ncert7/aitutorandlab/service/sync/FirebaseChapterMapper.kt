@@ -13,7 +13,7 @@ object FirebaseChapterMapper {
         val chapterId = document.getString("chapter_id") ?: error("chapterId missing for concept ${document.id}")
         val subjectId = document.getString("subject_id") ?: error("subjectId missing for concept ${document.id}")
         val chapterName = document.getString("unit_name") ?: error("chapterName missing for concept ${document.id}")
-        val kannadaChapterName = document.getString("unit_name_kn") ?: document.getString("unit_name") ?: ""
+        val kannadaChapterName = document.getString("unit_name_kn").orEmpty()
         val revisionId = document.getString("revision_id") ?: "" // Default to empty string if missing
         val orderIndex = document.getLong("chapter_order")?.toInt()
             ?: 0

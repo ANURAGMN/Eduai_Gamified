@@ -23,7 +23,11 @@ import com.anurag.eduai.uikit.garden.quest.starterSlot
 import com.anurag.eduai.uikit.garden.quest.Theme
 import com.anurag.eduai.uikit.garden.quest.ThemeCopy
 import com.anurag.eduai.uikit.garden.quest.ZONES
+import com.anurag.eduai.uikit.garden.quest.themeCapacity
 import com.anurag.eduai.uikit.garden.quest.placeBased
+import com.anurag.eduai.uikit.garden.world.COLONY_PALETTE
+import com.anurag.eduai.uikit.garden.world.ISLAND_CELLS
+import com.anurag.eduai.uikit.garden.world.LANDMARKS
 import com.ncert7.aitutorandlab.domain.garden.GardenSlotResolver
 import com.ncert7.aitutorandlab.data.local.entities.GardenTheme
 import com.anurag.eduai.uikit.garden.CollectionShelfState
@@ -96,6 +100,8 @@ object GamifiedHomeMapper {
         gardenHighlightNewPlant: Boolean = false,
         gardenHighlightStarterPlant: Boolean = false,
         gardenPlantedItems: List<GrownItemEntity> = emptyList(),
+        /** Display-time trial titles keyed by item id (from TrialTitleResolver). */
+        localizedTrialTitles: Map<Long, String> = emptyMap(),
     ): Pair<HomeUiState, GamifiedHomeFocus> {
         val planConceptId = ExamPlanUiMapper.firstConceptId(todayPlanDay)
         val focusConcept = pickFocusConcept(progressConcepts, planConceptId)
@@ -121,7 +127,12 @@ object GamifiedHomeMapper {
             planDays.firstOrNull { it.status == PlanDayStatus.Today }?.label
                 ?: todayPlanDay?.label.orEmpty()
         val nextPending = TrialQuestNavigation.firstPendingInQueue(todayTrialItems)
-        val nextPendingItem = nextPending?.let { id -> todayTrialItems.firstOrNull { it.id == id.itemId } }
+        val nextPendingItem =
+            nextPending?.let { id -> todayTrialItems.firstOrNull { it.id == id.itemId } }
+                ?.let { item ->
+                    localizedTrialTitles[item.id]?.let { localized -> item.copy(title = localized) }
+                        ?: item
+                }
         val heroContent =
             buildHeroContent(
                 todayPlanDay = todayPlanDay,
@@ -165,6 +176,8 @@ object GamifiedHomeMapper {
                 gems = gems,
                 leagueName = leagueName,
                 leagueRank = leagueRank,
+                streakCaption = HomeCopy.streakCaption(languageCode),
+                gemsCaption = HomeCopy.gemsCaption(languageCode),
                 weeklyXp = weeklyXp,
                 todayDone = todayDone,
                 heroEyebrow = heroContent.eyebrow,
@@ -181,12 +194,32 @@ object GamifiedHomeMapper {
                 friendCount = friendCount,
                 bookmarks = mapBookmarks(progressConcepts, progressSimulations, languageCode),
                 revision = mapRevision(progressConcepts, languageCode),
-                subjectsSectionTitle = if (isKannadaLanguage(languageCode)) "ವಿಷಯಗಳು" else "Subjects",
+                subjectsSectionTitle = HomeCopy.subjectsSectionTitle(languageCode),
                 subjects = mapSubjectTiles(availableSubjects, languageCode, selectedSubjectName, selectedSubjectId),
                 tutorTitle = HomeCopy.tutorTitle(languageCode),
                 tutorMessage = HomeCopy.tutorMessage(languageCode),
                 garden = gardenRail,
                 collectionShelf = standaloneCollection,
+                planSectionTitle = HomeCopy.planSectionTitle(languageCode),
+                planAddLabel = HomeCopy.planAddLabel(languageCode),
+                planEmptyTitle = HomeCopy.planEmptyTitle(languageCode),
+                planEmptyBody = HomeCopy.planEmptyBody(languageCode),
+                planTodayLabel = HomeCopy.planTodayLabel(languageCode),
+                planDayPrefix = HomeCopy.planDayPrefix(languageCode),
+                planGrowHint = HomeCopy.planGrowHint(languageCode),
+                questsSectionTitle = HomeCopy.questsSectionTitle(languageCode),
+                revisionSectionTitle = HomeCopy.revisionSectionTitle(languageCode),
+                revisionLastQuizTemplate = HomeCopy.revisionLastQuizTemplate(languageCode),
+                bookmarksSectionTitle = HomeCopy.bookmarksSectionTitle(languageCode),
+                seeAllLabel = HomeCopy.seeAllLabel(languageCode),
+                friendsSectionTitle = HomeCopy.friendsSectionTitle(languageCode),
+                friendsAddLabel = HomeCopy.friendsAddLabel(languageCode),
+                friendsAddCardTitle = HomeCopy.friendsAddCardTitle(languageCode),
+                friendsAddCardBody = HomeCopy.friendsAddCardBody(languageCode),
+                inviteFriendsTitle = HomeCopy.inviteFriendsTitle(languageCode),
+                inviteFriendsSubtitle = HomeCopy.inviteFriendsSubtitle(languageCode),
+                shareLabel = HomeCopy.shareLabel(languageCode),
+                acceptLabel = HomeCopy.acceptLabel(languageCode),
             )
 
         val focusConceptId = planConceptId ?: focusConcept?.conceptId
@@ -208,7 +241,7 @@ object GamifiedHomeMapper {
         return state to focus
     }
 
-    /** Garden home rail — Phase 2: Garden theme only, read-only display. */
+    /** Garden home rail — all journey themes (Garden, Space, Island, Space colony). */
     fun mapGarden(
         enabled: Boolean,
         progress: GardenProgress?,
@@ -228,8 +261,6 @@ object GamifiedHomeMapper {
                 GardenTheme.COLONY -> Theme.COLONY
                 else -> Theme.GARDEN
             }
-        // Island / colony home rail deferred until Phase 2 perf gate passes.
-        if (!theme.placeBased) return null
         val copy = GardenCopyFactory.themeCopy(languageCode, theme)
         val homeCopy = GardenCopyFactory.homeCopy(languageCode)
         val zoneIndex = progress.currentZone.coerceIn(0, ZONES.lastIndex)
@@ -253,15 +284,38 @@ object GamifiedHomeMapper {
                 ready -> homeCopy.readyToGrow
                 else -> homeCopy.stepsOf(steps, progress.stepsPerPlant)
             }
-        val zoneName = GardenWorldLabels.zoneName(zone, theme, languageCode).lowercase()
-        val statusCore = "${progress.filledInZone}/${progress.zoneCapacity} · $zoneName"
+        val placeName =
+            if (theme.placeBased) {
+                GardenWorldLabels.zoneName(zone, theme, languageCode).lowercase()
+            } else {
+                copy.placeCollection.lowercase()
+            }
+        val capacity =
+            if (theme.placeBased) {
+                progress.zoneCapacity
+            } else {
+                themeCapacity(theme)
+            }
+        val filled =
+            if (theme.placeBased) {
+                progress.filledInZone
+            } else {
+                progress.totalPlanted
+            }
+        val statusCore = "$filled/$capacity · $placeName"
         val milestone = nextGardenMilestone(progress.totalPlanted, copy)
-        val remainingScenes = GardenSlotResolver.remainingScenes(progress.currentZone)
-        // Indicate that filling this scene unlocks the next one — only while there's a next to unlock
-        // and the current place isn't already full.
+        val remainingScenes =
+            if (theme.placeBased) {
+                GardenSlotResolver.remainingScenes(progress.currentZone)
+            } else {
+                (capacity - progress.totalPlanted).coerceAtLeast(0)
+            }
         val unlockHint =
-            if (remainingScenes > 0 && progress.filledInZone < progress.zoneCapacity) {
-                "  ·  " + homeCopy.placeUnlockHint(zoneName)
+            if (theme.placeBased &&
+                remainingScenes > 0 &&
+                progress.filledInZone < progress.zoneCapacity
+            ) {
+                "  ·  " + homeCopy.placeUnlockHint(placeName)
             } else {
                 ""
             }
@@ -276,9 +330,9 @@ object GamifiedHomeMapper {
                 homeCopy.celebrationLine(
                     progress.totalPlanted,
                     copy.done,
-                    progress.filledInZone,
-                    progress.zoneCapacity,
-                    zoneName,
+                    filled,
+                    capacity,
+                    placeName,
                     remainingScenes,
                 )
             } else {
@@ -288,14 +342,16 @@ object GamifiedHomeMapper {
         val growNudgeLine =
             when {
                 highlightNewPlant -> null
-                highlightStarterPlant -> {
-                    val starterName = GardenWorldLabels.slotName(zone, theme, theme.starterSlot(), languageCode).lowercase()
+                highlightStarterPlant && theme.placeBased -> {
+                    val starterName =
+                        GardenWorldLabels.slotName(zone, theme, theme.starterSlot(), languageCode)
+                            .lowercase()
                     homeCopy.starterPlantHomeNudge(starterName)
                 }
                 else ->
                     mapGardenGrowNudge(
                         progress = progress,
-                        zoneName = zoneName,
+                        zoneName = placeName,
                         theme = theme,
                         steps = steps,
                         ready = ready,
@@ -319,8 +375,8 @@ object GamifiedHomeMapper {
             statusLine = statusLine,
             hintLine =
                 when {
-                    progress.filledInZone > 0 && steps == 0 && !ready ->
-                        homeCopy.hintPlantedKeepGoing(progress.filledInZone, copy.done)
+                    filled > 0 && steps == 0 && !ready ->
+                        homeCopy.hintPlantedKeepGoing(filled, copy.done)
                     else -> homeCopy.hintKeepLearning
                 },
             currentZone = zoneIndex,
@@ -330,12 +386,13 @@ object GamifiedHomeMapper {
             theme = theme,
             ready = ready,
             highlightNewPlant = highlightNewPlant,
-            highlightStarterPlant = highlightStarterPlant,
+            highlightStarterPlant = highlightStarterPlant && theme.placeBased,
             celebrationLine = celebrationLine,
             growNudgeLine = growNudgeLine,
             slotPickerTitle = copy.pickerTitle,
             surpriseLabel = homeCopy.surpriseLabel,
             surprisePreview = homeCopy.surprisePreview,
+            totalPlanted = progress.totalPlanted,
             collection = mapCollectionShelfFromEntities(progress, plantedItems, languageCode),
         )
     }
@@ -359,33 +416,96 @@ object GamifiedHomeMapper {
         val theme = themeFromProgress(progress)
         val copy = GardenCopyFactory.themeCopy(languageCode, theme)
         val homeCopy = GardenCopyFactory.homeCopy(languageCode)
+        val moduleNames = COLONY_PALETTE.moduleNames
+        // Home shelf stays short — full history lives in Scene / See all.
+        val shelfCap = 3
+        val earnedCount = planted.size
         val items =
-            planted.map { item ->
-                CollectionShelfItem(
-                    zone = item.zone,
-                    slot = item.slot,
-                    label =
-                        if (theme.placeBased) {
-                            ""
-                        } else {
-                            (item.plot + 1).toString()
-                        },
-                )
+            when (theme) {
+                Theme.COLONY ->
+                    planted
+                        .mapIndexed { index, item ->
+                            val moduleSlot = index % moduleNames.size
+                            CollectionShelfItem(
+                                zone = item.zone,
+                                slot = moduleSlot,
+                                label = moduleNames[moduleSlot],
+                            )
+                        }
+                        .takeLast(shelfCap)
+                Theme.ISLAND -> {
+                    // Island “components” are landmarks, not every cleared tile.
+                    val earnedLandmarks =
+                        LANDMARKS.filter { it.cellIndex < earnedCount }
+                    if (earnedLandmarks.isNotEmpty()) {
+                        earnedLandmarks.takeLast(shelfCap).map { landmark ->
+                            CollectionShelfItem(
+                                zone = 0,
+                                slot = landmark.cellIndex,
+                                label = landmark.name,
+                            )
+                        }
+                    } else if (earnedCount > 0) {
+                        // Before the first landmark, show the latest few tiles only.
+                        ((earnedCount - shelfCap).coerceAtLeast(0) until earnedCount).map { index ->
+                            val cell = ISLAND_CELLS.getOrNull(index)
+                            CollectionShelfItem(
+                                zone = 0,
+                                slot = index,
+                                label = cell?.region?.name ?: "Tile",
+                            )
+                        }
+                    } else {
+                        emptyList()
+                    }
+                }
+                else ->
+                    planted
+                        .map { item ->
+                            CollectionShelfItem(
+                                zone = item.zone,
+                                slot = item.slot,
+                                label = "",
+                            )
+                        }
+                        .takeLast(shelfCap)
+            }
+        val upcomingLabels =
+            when (theme) {
+                Theme.COLONY ->
+                    (0 until shelfCap).map { offset ->
+                        moduleNames[(earnedCount + offset) % moduleNames.size]
+                    }
+                Theme.ISLAND ->
+                    LANDMARKS
+                        .filter { it.cellIndex >= earnedCount }
+                        .take(shelfCap)
+                        .map { it.name }
+                else -> emptyList()
+            }
+        val displayTotal =
+            when (theme) {
+                Theme.ISLAND ->
+                    LANDMARKS.count { it.cellIndex < earnedCount }.coerceAtLeast(
+                        earnedCount.coerceAtMost(shelfCap),
+                    )
+                else -> earnedCount
             }
         return CollectionShelfState(
             theme = theme,
             items = items,
-            totalCount = planted.size,
+            totalCount = displayTotal,
             emptyMessage = copy.sceneEmpty,
             sectionTitle = homeCopy.yourCollection(copy.placeCollection),
             seeAllLabel =
-                if (planted.isNotEmpty()) {
-                    homeCopy.seeAllCollected(planted.size)
+                if (earnedCount > 0) {
+                    homeCopy.seeAllCollected(earnedCount)
                 } else {
                     homeCopy.openLabel
                 },
-            lockedSlotCount = 3,
+            lockedSlotCount = shelfCap,
             lockedSlotHint = homeCopy.collectionUnlockHint,
+            upcomingLabels = upcomingLabels,
         )
     }
 
@@ -411,7 +531,7 @@ object GamifiedHomeMapper {
         val nextZoneName = ZONES[nextZoneIndex].name(theme).lowercase()
 
         return when {
-            placeFull && progress.currentZone < ZONES.lastIndex ->
+            theme.placeBased && placeFull && progress.currentZone < ZONES.lastIndex ->
                 homeCopy.nudgePlaceComplete(zoneName, nextZoneName)
             ready -> homeCopy.nudgeReady
             stepsLeft in 1..2 -> homeCopy.nudgeStepsLeft(stepsLeft)
@@ -661,7 +781,7 @@ object GamifiedHomeMapper {
                     concept?.let {
                         BookmarkItem(
                             key = it.getLocalizedName(languageCode),
-                            typeLabel = "Concept",
+                            typeLabel = HomeCopy.bookmarkTypeConcept(languageCode),
                             role = EduChipRole.Accent,
                             conceptId = it.conceptId,
                         )
@@ -674,7 +794,7 @@ object GamifiedHomeMapper {
                     concept?.let {
                         BookmarkItem(
                             key = it.getLocalizedName(languageCode),
-                            typeLabel = "Simulation",
+                            typeLabel = HomeCopy.bookmarkTypeSimulation(languageCode),
                             role = EduChipRole.Pro,
                             conceptId = it.conceptId,
                             simulationId = it.simulationId,
@@ -683,7 +803,12 @@ object GamifiedHomeMapper {
                 }
         return (conceptBookmarks + simulationBookmarks).take(3).ifEmpty {
             listOf(
-                BookmarkItem("Your saved topics", "Bookmark", EduChipRole.Warning, isPlaceholder = true),
+                BookmarkItem(
+                    HomeCopy.bookmarkPlaceholderKey(languageCode),
+                    HomeCopy.bookmarkTypeGeneric(languageCode),
+                    EduChipRole.Warning,
+                    isPlaceholder = true,
+                ),
             )
         }
     }

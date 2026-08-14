@@ -15,6 +15,7 @@ import com.ncert7.aitutorandlab.data.local.entities.GamificationProfileEntity
 import com.ncert7.aitutorandlab.data.local.entities.StudentEntity
 import com.ncert7.aitutorandlab.data.local.entities.SubjectEntity
 import com.ncert7.aitutorandlab.debug.DebugLogger
+import com.ncert7.aitutorandlab.domain.gamification.FriendFeedService
 import com.ncert7.aitutorandlab.domain.gamification.QuestClaimResult
 import com.ncert7.aitutorandlab.domain.gamification.QuestClaimType
 import com.ncert7.aitutorandlab.domain.gamification.QuestGemRewardService
@@ -76,6 +77,7 @@ class HomeViewModel @Inject constructor(
     private val gamificationRepository: GamificationRepository,
     private val leagueRepository: LeagueRepository,
     private val friendRepository: FriendRepository,
+    private val friendFeedService: FriendFeedService,
     private val examPlanRepository: ExamPlanRepository,
     private val planTrialRepository: PlanTrialRepository,
     private val questRepository: QuestRepository,
@@ -162,6 +164,10 @@ class HomeViewModel @Inject constructor(
     private val _todayTrialItems = MutableStateFlow<List<PlanTrialItemEntity>>(emptyList())
     val todayTrialItems: StateFlow<List<PlanTrialItemEntity>> = _todayTrialItems
 
+    /** Display-time titles for today's trial items (language-aware). */
+    private val _localizedTrialTitles = MutableStateFlow<Map<Long, String>>(emptyMap())
+    val localizedTrialTitles: StateFlow<Map<Long, String>> = _localizedTrialTitles
+
     private val _rewardedAdReady = MutableStateFlow(false)
     val rewardedAdReady: StateFlow<Boolean> = _rewardedAdReady
 
@@ -206,7 +212,30 @@ class HomeViewModel @Inject constructor(
                 remapLocalizedPlanDays(cachedPlanDayEntities, normalized)
             }
         }
+        viewModelScope.launch {
+            remapLocalizedTrialTitles(_todayTrialItems.value, normalized)
+        }
         refreshSelectedSubjectName()
+    }
+
+    private suspend fun remapLocalizedTrialTitles(
+        items: List<PlanTrialItemEntity>,
+        language: String,
+    ) {
+        if (items.isEmpty()) {
+            _localizedTrialTitles.value = emptyMap()
+            return
+        }
+        _localizedTrialTitles.value =
+            items.associate { item ->
+                item.id to
+                    TrialTitleResolver.localizedItemTitle(
+                        entity = item,
+                        languageCode = language,
+                        conceptDao = conceptDao,
+                        chapterDao = chapterDao,
+                    )
+            }
     }
 
     private suspend fun remapLocalizedPlanDays(
@@ -495,6 +524,9 @@ class HomeViewModel @Inject constructor(
     private fun observeFriendFeed() {
         viewModelScope.launch {
             if (userId.isEmpty()) return@launch
+            friendRepository.debugPurgeSelfFeed(userId)
+            friendRepository.seedDemoFriendRequestsIfNeeded(userId)
+            friendFeedService.simulateBotFriendFeedIfNeeded(userId)
             friendRepository.syncFriendSocialData(userId)
         }
         viewModelScope.launch {
@@ -502,15 +534,19 @@ class HomeViewModel @Inject constructor(
             combine(
                 friendRepository.observeHomeFeed(userId),
                 friendRepository.observeConnections(userId),
-            ) { items, connections ->
+                friendRepository.observePendingRequests(userId),
+                _currentLanguage,
+            ) { items, connections, pending, language ->
                 _friendFeedItems.value = items
                 _friendCount.value = connections.size
-                _friendUpdates.value =
+                val requests = FriendUiMapper.toFriendRequestUpdates(pending, language)
+                val feedOrLinked =
                     when {
-                        items.isNotEmpty() -> FriendUiMapper.toFriendUpdates(items)
-                        connections.isNotEmpty() -> FriendUiMapper.toLinkedFriendUpdates(connections)
+                        items.isNotEmpty() -> FriendUiMapper.toFriendUpdates(items, userId, language)
+                        connections.isNotEmpty() -> FriendUiMapper.toLinkedFriendUpdates(connections, language)
                         else -> emptyList()
                     }
+                _friendUpdates.value = requests + feedOrLinked
             }.collectLatest { }
         }
         viewModelScope.launch {
@@ -531,8 +567,24 @@ class HomeViewModel @Inject constructor(
     fun cheerFriendAtIndex(index: Int) {
         viewModelScope.launch {
             if (userId.isEmpty()) return@launch
-            val item = _friendFeedItems.value.getOrNull(index) ?: return@launch
-            friendRepository.cheerFeedItem(userId, item.id)
+            val update = _friendUpdates.value.getOrNull(index) ?: return@launch
+            if (update.isRequest) {
+                val accepted = friendRepository.acceptFriendRequest(userId, update.requestFriendId)
+                if (accepted) {
+                    val bot = friendRepository.getAcceptedDemoBots(userId)
+                        .firstOrNull { it.friendStudentId == update.requestFriendId }
+                    if (bot != null) {
+                        friendFeedService.seedFeedFromAcceptedBot(
+                            ownerStudentId = userId,
+                            botId = bot.friendStudentId,
+                            botName = bot.displayName,
+                        )
+                    }
+                }
+                return@launch
+            }
+            if (update.feedItemId < 0L) return@launch
+            friendRepository.cheerFeedItem(userId, update.feedItemId)
             GamificationAnalyticsTracker.cheerSent()
         }
     }
@@ -644,6 +696,7 @@ class HomeViewModel @Inject constructor(
                     }
                 }.collect { items ->
                     _todayTrialItems.value = items
+                    remapLocalizedTrialTitles(items, _currentLanguage.value)
                 }
         }
     }

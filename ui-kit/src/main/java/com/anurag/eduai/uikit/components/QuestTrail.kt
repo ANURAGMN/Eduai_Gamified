@@ -84,6 +84,8 @@ fun QuestTrail(
     onQuizClick: () -> Unit = onStudyClick,
     onBonusClick: () -> Unit = {},
     modifier: Modifier = Modifier,
+    sectionTitle: String = "Today's quests",
+    seeAllLabel: String = "See all",
 ) {
     val colors = EduAiTheme.colors
     val feedback = rememberEduFeedback(soundEnabled = true)
@@ -158,7 +160,7 @@ fun QuestTrail(
         }
 
     Column(modifier = modifier.fillMaxWidth()) {
-        SectionHeader(title = "Today's quests", seeAllLabel = "See all", onSeeAllClick = onSeeAll)
+        SectionHeader(title = sectionTitle, seeAllLabel = seeAllLabel, onSeeAllClick = onSeeAll)
         BoxWithConstraints(
             modifier =
                 Modifier

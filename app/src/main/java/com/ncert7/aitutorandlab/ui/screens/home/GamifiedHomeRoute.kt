@@ -148,6 +148,7 @@ fun GamifiedHomeRoute(
     val todayPlanDay by viewModel.todayPlanDay.collectAsState()
     val todayQuest by viewModel.todayQuest.collectAsState()
     val todayTrialItems by viewModel.todayTrialItems.collectAsState()
+    val localizedTrialTitles by viewModel.localizedTrialTitles.collectAsState()
     val rewardedAdReady by viewModel.rewardedAdReady.collectAsState()
     val friendFeed by viewModel.friendFeed.collectAsState()
     val friendCount by viewModel.friendCount.collectAsState()
@@ -281,6 +282,7 @@ fun GamifiedHomeRoute(
             todayQuest?.studyClaimed,
             todayQuest?.bonusClaimed,
             todayTrialItems,
+            localizedTrialTitles,
             friendFeed,
             friendCount,
             availableSubjects,
@@ -317,6 +319,7 @@ fun GamifiedHomeRoute(
                 gardenHighlightNewPlant = gardenHighlightNewPlant,
                 gardenHighlightStarterPlant = gardenHighlightStarterPlant,
                 gardenPlantedItems = gardenPlantedItems,
+                localizedTrialTitles = localizedTrialTitles,
             )
         }
 

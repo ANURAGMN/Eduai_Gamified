@@ -29,6 +29,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.runtime.SideEffect
+import com.ncert7.aitutorandlab.utils.HomeCopy
 import com.ncert7.aitutorandlab.utils.getCurrentLanguageCode
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -166,7 +167,12 @@ fun QuestsRoute(
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text("Today's quests", fontWeight = FontWeight.SemiBold) },
+                    title = {
+                        Text(
+                            HomeCopy.questsSectionTitle(getCurrentLanguageCode()),
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    },
                     colors = TopAppBarDefaults.topAppBarColors(),
                 )
             },
@@ -192,13 +198,13 @@ fun QuestsRoute(
                                     .padding(horizontal = 16.dp, vertical = 14.dp),
                         ) {
                             Text(
-                                text = "Complete daily quests to earn gems. Watch a short video to claim rewards.",
+                                text = HomeCopy.questsScreenSubtitle(getCurrentLanguageCode()),
                                 color = EduAiTheme.colors.textSecondary,
                                 modifier = Modifier.padding(bottom = 16.dp),
                             )
                             if (focus.conceptId == null && todayQuest == null) {
                                 Text(
-                                    text = "Quests refresh when you open Home or start learning today.",
+                                    text = HomeCopy.questsEmptyHint(getCurrentLanguageCode()),
                                     color = EduAiTheme.colors.textMuted,
                                 )
                             } else {
@@ -219,6 +225,8 @@ fun QuestsRoute(
                                 QuestTrail(
                                     state = questState,
                                     onSeeAll = onNavigateToPlan,
+                                    sectionTitle = HomeCopy.questsSectionTitle(getCurrentLanguageCode()),
+                                    seeAllLabel = HomeCopy.seeAllLabel(getCurrentLanguageCode()),
                                     onSimsClick = {
                                         TrialQuestClickActions.handleSimsClick(
                                             quest = todayQuest,

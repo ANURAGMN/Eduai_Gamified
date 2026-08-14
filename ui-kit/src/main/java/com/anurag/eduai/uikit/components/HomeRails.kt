@@ -54,6 +54,11 @@ data class FriendUpdate(
     val cheers: Int,
     val role: EduChipRole = EduChipRole.Accent,
     val seen: Boolean = false,
+    /** Pending friend request — rail tap accepts instead of cheering. */
+    val isRequest: Boolean = false,
+    val requestFriendId: String = "",
+    /** Feed cheer target; -1 when this card is a request or placeholder. */
+    val feedItemId: Long = -1L,
 )
 
 data class RevisionItem(
@@ -146,28 +151,40 @@ fun FriendsInviteRail(
     onAddFriend: () -> Unit = {},
     onInviteShare: () -> Unit = {},
     modifier: Modifier = Modifier,
+    sectionTitle: String = "Friends' updates",
+    addLabel: String = "Add",
+    addCardTitle: String = "Add a friend",
+    addCardBody: String = "Enter their friend code to link accounts.",
+    inviteTitle: String = "Invite friends",
+    inviteSubtitle: String = "Share your code",
+    shareLabel: String = "Share",
 ) {
     val colors = EduAiTheme.colors
     Column(modifier = modifier.fillMaxWidth().padding(bottom = 18.dp)) {
-        SectionHeader(title = "Friends' updates", seeAllLabel = "Add", onSeeAllClick = onAddFriend)
+        SectionHeader(title = sectionTitle, seeAllLabel = addLabel, onSeeAllClick = onAddFriend)
         HorizontalRail {
             RailCard(onClick = onAddFriend, modifier = Modifier.width(170.dp)) {
                 IconBubble(icon = Icons.Outlined.EmojiEvents, fg = colors.pro, bg = colors.proBg)
                 Spacer(modifier = Modifier.height(10.dp))
                 Text(
-                    text = "Add a friend",
+                    text = addCardTitle,
                     color = colors.text,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold,
                 )
                 Text(
-                    text = "Enter their friend code to link accounts.",
+                    text = addCardBody,
                     color = colors.textSecondary,
                     fontSize = 11.sp,
                     lineHeight = 14.sp,
                 )
             }
-            InviteCard(onInvite = onInviteShare)
+            InviteCard(
+                onInvite = onInviteShare,
+                title = inviteTitle,
+                subtitle = inviteSubtitle,
+                shareLabel = shareLabel,
+            )
         }
     }
 }
@@ -178,10 +195,13 @@ fun FriendsUpdatesRail(
     onSeeAll: () -> Unit = {},
     onCheer: (Int) -> Unit = {},
     modifier: Modifier = Modifier,
+    sectionTitle: String = "Friends' updates",
+    seeAllLabel: String = "See all",
+    acceptLabel: String = "Accept",
 ) {
     val colors = EduAiTheme.colors
     Column(modifier = modifier.fillMaxWidth().padding(bottom = 18.dp)) {
-        SectionHeader(title = "Friends' updates", seeAllLabel = "See all", onSeeAllClick = onSeeAll)
+        SectionHeader(title = sectionTitle, seeAllLabel = seeAllLabel, onSeeAllClick = onSeeAll)
         HorizontalRail {
             friends.forEachIndexed { index, friend ->
                 val (fg, bg) = colors.forRole(friend.role)
@@ -225,9 +245,10 @@ fun FriendsUpdatesRail(
                         overflow = TextOverflow.Ellipsis,
                     )
                     Text(
-                        text = "👍 ${friend.cheers}",
-                        color = colors.textMuted,
+                        text = if (friend.isRequest) acceptLabel else "👍 ${friend.cheers}",
+                        color = if (friend.isRequest) colors.accent else colors.textMuted,
                         fontSize = 11.sp,
+                        fontWeight = if (friend.isRequest) FontWeight.SemiBold else FontWeight.Normal,
                         modifier = Modifier.padding(top = 4.dp),
                     )
                 }
@@ -242,13 +263,15 @@ fun BookmarksRail(
     onSeeAll: () -> Unit = {},
     onOpen: (BookmarkItem) -> Unit = {},
     modifier: Modifier = Modifier,
+    sectionTitle: String = "Bookmarks",
+    seeAllLabel: String = "See all (${bookmarks.size})",
 ) {
     if (bookmarks.isEmpty()) return
     val colors = EduAiTheme.colors
     Column(modifier = modifier.fillMaxWidth().padding(bottom = 18.dp)) {
         SectionHeader(
-            title = "Bookmarks",
-            seeAllLabel = "See all (${bookmarks.size})",
+            title = sectionTitle,
+            seeAllLabel = seeAllLabel,
             onSeeAllClick = onSeeAll,
         )
         HorizontalRail {
@@ -276,11 +299,13 @@ fun RevisionRail(
     items: List<RevisionItem>,
     modifier: Modifier = Modifier,
     onOpen: (RevisionItem) -> Unit = {},
+    sectionTitle: String = "Needs revision",
+    scoreLabelFor: (Int) -> String = { "$it% last quiz" },
 ) {
     val colors = EduAiTheme.colors
     Column(modifier = modifier.fillMaxWidth()) {
         Text(
-            text = "Needs revision",
+            text = sectionTitle,
             color = colors.text,
             fontSize = 14.sp,
             fontWeight = FontWeight.SemiBold,
@@ -324,7 +349,7 @@ fun RevisionRail(
                         modifier = Modifier.padding(top = 8.dp),
                     )
                     Text(
-                        text = "${item.score}% last quiz",
+                        text = scoreLabelFor(item.score),
                         color = colors.warning,
                         fontSize = 11.sp,
                     )
@@ -450,13 +475,18 @@ private fun bookmarkIcon(role: EduChipRole): ImageVector =
     }
 
 @Composable
-private fun InviteCard(onInvite: () -> Unit) {
+private fun InviteCard(
+    onInvite: () -> Unit,
+    title: String = "Invite friends",
+    subtitle: String = "Share your code",
+    shareLabel: String = "Share",
+) {
     val colors = EduAiTheme.colors
     RailCard(onClick = onInvite, modifier = Modifier.width(150.dp)) {
         IconBubble(icon = Icons.Outlined.PersonAddAlt, fg = colors.accent, bg = colors.accentBg)
         Spacer(modifier = Modifier.height(10.dp))
-        Text(text = "Invite friends", color = colors.text, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-        Text(text = "Share your code", color = colors.textSecondary, fontSize = 11.sp, lineHeight = 14.sp)
+        Text(text = title, color = colors.text, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+        Text(text = subtitle, color = colors.textSecondary, fontSize = 11.sp, lineHeight = 14.sp)
         Spacer(modifier = Modifier.height(8.dp))
         Row(
             modifier =
@@ -466,7 +496,7 @@ private fun InviteCard(onInvite: () -> Unit) {
                     .padding(horizontal = 12.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(text = "Share", color = colors.onAccent, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+            Text(text = shareLabel, color = colors.onAccent, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
         }
     }
 }

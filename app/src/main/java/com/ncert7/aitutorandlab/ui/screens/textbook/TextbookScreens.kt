@@ -28,6 +28,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.ncert7.aitutorandlab.ui.screens.conceptscreen.components.SimulationHeader
+import com.ncert7.aitutorandlab.utils.HomeCopy
+import com.ncert7.aitutorandlab.utils.getCurrentLanguageCode
 import com.ncert7.aitutorandlab.utils.isKannada
 
 /** An NCERT class-7 textbook the student can open in the in-app browser. */
@@ -38,23 +40,27 @@ data class NcertBook(val title: String, val subtitle: String, val url: String)
  * Part 1 & Part 2; Kannada has Science plus Maths Part 1. URLs are the official ncert.nic.in
  * textbook pages supplied for the class-7 syllabus.
  */
-fun ncertTextbooks(kannada: Boolean): List<NcertBook> =
-    if (kannada) {
+fun ncertTextbooks(kannada: Boolean): List<NcertBook> {
+    val lang = if (kannada) "kn" else "en"
+    val subtitle = HomeCopy.textbookClassSubtitle(lang)
+    return if (kannada) {
         listOf(
-            NcertBook("Science", "Class 7 · Kannada", "https://ncert.nic.in/textbook.php?gkncu1=0-12"),
-            NcertBook("Mathematics – Part 1", "Class 7 · Kannada", "https://ncert.nic.in/textbook.php?gkngp1=0-8"),
+            NcertBook(HomeCopy.textbookScienceTitle(lang), subtitle, "https://ncert.nic.in/textbook.php?gkncu1=0-12"),
+            NcertBook(HomeCopy.textbookMathPart1Title(lang), subtitle, "https://ncert.nic.in/textbook.php?gkngp1=0-8"),
         )
     } else {
         listOf(
-            NcertBook("Science", "Class 7 · English", "https://ncert.nic.in/textbook.php?gecu1=0-12"),
-            NcertBook("Mathematics – Part 1", "Class 7 · English", "https://ncert.nic.in/textbook.php?gegp1=0-8"),
-            NcertBook("Mathematics – Part 2", "Class 7 · English", "https://ncert.nic.in/textbook.php?gegp2=0-7"),
+            NcertBook(HomeCopy.textbookScienceTitle(lang), subtitle, "https://ncert.nic.in/textbook.php?gecu1=0-12"),
+            NcertBook(HomeCopy.textbookMathPart1Title(lang), subtitle, "https://ncert.nic.in/textbook.php?gegp1=0-8"),
+            NcertBook(HomeCopy.textbookMathPart2Title(lang), subtitle, "https://ncert.nic.in/textbook.php?gegp2=0-7"),
         )
     }
+}
 
 /** Home-screen entry card that opens the textbooks chooser. */
 @Composable
 fun TextbookEntryCard(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val lang = getCurrentLanguageCode()
     Card(
         modifier = modifier
             .fillMaxWidth()
@@ -76,13 +82,13 @@ fun TextbookEntryCard(onClick: () -> Unit, modifier: Modifier = Modifier) {
             Spacer(Modifier.size(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "NCERT textbooks",
+                    text = HomeCopy.textbooksSectionTitle(lang),
                     fontWeight = FontWeight.Bold,
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Text(
-                    text = "Read the official Science & Maths books",
+                    text = HomeCopy.textbooksSectionSubtitle(lang),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -105,7 +111,7 @@ fun TextbooksScreen(
     Surface(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
             SimulationHeader(
-                title = "NCERT textbooks",
+                title = HomeCopy.textbooksSectionTitle(getCurrentLanguageCode()),
                 onBackClick = onBack,
                 showVoiceToggle = false,
             )

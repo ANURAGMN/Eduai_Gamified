@@ -87,6 +87,8 @@ data class HomeUiState(
     val gems: Int = 240,
     val leagueName: String = "Silver",
     val leagueRank: Int = 4,
+    val streakCaption: String = "Streak",
+    val gemsCaption: String = "Badge",
     val weeklyXp: Int = 0,
     val todayDone: Boolean = false,
     val heroEyebrow: String = "Today's focus · 18 min",
@@ -100,7 +102,7 @@ data class HomeUiState(
     val quests: QuestTrailState = QuestTrailState(),
     /** When non-null, replaces the quest trail (garden feature flag). */
     val garden: GardenRailState? = null,
-    /** Island/colony collection strip when the grow rail is hidden. */
+    /** Island/colony fallback shelf when the grow rail is unavailable. */
     val collectionShelf: CollectionShelfState? = null,
     val friends: List<FriendUpdate> = emptyList(),
     val friendCount: Int = 0,
@@ -135,6 +137,28 @@ data class HomeUiState(
         ),
     val tutorTitle: String = "Your tutor",
     val tutorMessage: String = "Ready for today's quests? Let's go!",
+    // Section chrome — filled by the app from HomeCopy so EN↔KN toggles update rails.
+    val planSectionTitle: String = "Your exam prep plan",
+    val planAddLabel: String = "Add plan",
+    val planEmptyTitle: String = "No exam plan yet",
+    val planEmptyBody: String = "Set exam type, chapters, and daily study time to build your prep trail.",
+    val planTodayLabel: String = "Today",
+    val planDayPrefix: String = "Day",
+    val planGrowHint: String = "Finish a day to grow your world — every task plants something new.",
+    val questsSectionTitle: String = "Today's quests",
+    val revisionSectionTitle: String = "Needs revision",
+    /** Use `%d` for the quiz percent, e.g. `%d%% last quiz` / `ಕೊನೆಯ ರಸಪ್ರಶ್ನೆ %d%%`. */
+    val revisionLastQuizTemplate: String = "%d%% last quiz",
+    val bookmarksSectionTitle: String = "Bookmarks",
+    val seeAllLabel: String = "See all",
+    val friendsSectionTitle: String = "Friends' updates",
+    val friendsAddLabel: String = "Add",
+    val friendsAddCardTitle: String = "Add a friend",
+    val friendsAddCardBody: String = "Enter their friend code to link accounts.",
+    val inviteFriendsTitle: String = "Invite friends",
+    val inviteFriendsSubtitle: String = "Share your code",
+    val shareLabel: String = "Share",
+    val acceptLabel: String = "Accept",
 )
 
 /** Lightweight card model for the home YouTube rail (below subjects). */
@@ -245,6 +269,8 @@ fun EduHomeScreen(
                 gems = state.gems,
                 leagueName = state.leagueName,
                 leagueRank = state.leagueRank,
+                streakCaption = state.streakCaption,
+                gemsCaption = state.gemsCaption,
                 showFriendDot = showFriendDot,
                 showGemsDot = false,
                 showLeagueDot = false,
@@ -328,6 +354,8 @@ fun EduHomeScreen(
                         onSimsClick = onSimsQuestClick,
                         onStudyClick = onStudyQuestClick,
                         onBonusClick = onBonusQuestClick,
+                        sectionTitle = state.questsSectionTitle,
+                        seeAllLabel = state.seeAllLabel,
                     )
             }
         }
@@ -338,12 +366,22 @@ fun EduHomeScreen(
                 FriendsInviteRail(
                     onAddFriend = onAddFriend,
                     onInviteShare = onInviteShare,
+                    sectionTitle = state.friendsSectionTitle,
+                    addLabel = state.friendsAddLabel,
+                    addCardTitle = state.friendsAddCardTitle,
+                    addCardBody = state.friendsAddCardBody,
+                    inviteTitle = state.inviteFriendsTitle,
+                    inviteSubtitle = state.inviteFriendsSubtitle,
+                    shareLabel = state.shareLabel,
                 )
             } else {
                 FriendsUpdatesRail(
                     friends = state.friends,
                     onSeeAll = onFriendsSeeAll,
                     onCheer = onCheerFriend,
+                    sectionTitle = state.friendsSectionTitle,
+                    seeAllLabel = state.seeAllLabel,
+                    acceptLabel = state.acceptLabel,
                 )
             }
         }
@@ -355,6 +393,14 @@ fun EduHomeScreen(
                 onSeeAll = onPlanSeeAll,
                 onAddPlan = onPlanAdd,
                 onDayClick = onPlanDayClick,
+                sectionTitle = state.planSectionTitle,
+                seeAllLabel = state.seeAllLabel,
+                addPlanLabel = state.planAddLabel,
+                emptyTitle = state.planEmptyTitle,
+                emptyBody = state.planEmptyBody,
+                todayLabel = state.planTodayLabel,
+                dayLabelFor = { day -> "${state.planDayPrefix} $day" },
+                growHint = state.planGrowHint,
             )
         }
         } // end rail-3 bounds
@@ -362,7 +408,14 @@ fun EduHomeScreen(
         Spacer(modifier = Modifier.height(12.dp))
 
         Entrance(delayMillis = 480) {
-            RevisionRail(items = state.revision, onOpen = onRevisionOpen)
+            RevisionRail(
+                items = state.revision,
+                onOpen = onRevisionOpen,
+                sectionTitle = state.revisionSectionTitle,
+                scoreLabelFor = { score ->
+                    state.revisionLastQuizTemplate.replace("%d", score.toString())
+                },
+            )
         }
 
         // Video lessons.
@@ -376,6 +429,8 @@ fun EduHomeScreen(
                 bookmarks = state.bookmarks,
                 onSeeAll = onBookmarksSeeAll,
                 onOpen = onBookmarkOpen,
+                sectionTitle = state.bookmarksSectionTitle,
+                seeAllLabel = "${state.seeAllLabel} (${state.bookmarks.size})",
             )
         }
         } // end scrolling Column
