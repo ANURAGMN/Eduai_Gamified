@@ -131,13 +131,17 @@ class ChatViewModel @Inject constructor(
     /**
      * Soft exit from the time-based proceed overlay.
      * Does not force the trial item DONE — study/math bites still come from real exchanges.
+     * @return true if the item is already DONE (caller must not soft-proceed past celebration).
      */
-    fun recordTrialProceed() {
-        val trialItemId = TrialSessionStore.activeTrialItemId ?: return
-        viewModelScope.launch {
-            planTrialProgressTracker.reconcileCompletion(trialItemId)
-            DebugLogger.debugLog("ChatViewModel", "Trial soft proceed (no forced complete) for item $trialItemId")
-        }
+    suspend fun recordTrialProceed(): Boolean {
+        val trialItemId = TrialSessionStore.activeTrialItemId ?: return false
+        planTrialProgressTracker.reconcileCompletion(trialItemId)
+        val done = planTrialProgressTracker.isDone(trialItemId)
+        DebugLogger.debugLog(
+            "ChatViewModel",
+            "Trial soft proceed for item $trialItemId done=$done",
+        )
+        return done
     }
 
     /** Session API keys are always the English concept title stored at start time. */

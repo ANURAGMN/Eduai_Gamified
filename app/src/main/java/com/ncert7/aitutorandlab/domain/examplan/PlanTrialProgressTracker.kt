@@ -13,6 +13,10 @@ class PlanTrialProgressTracker @Inject constructor(
     private val gardenRepository: GardenRepository,
     private val gardenMomentCoordinator: GardenMomentCoordinator,
 ) {
+    /** Whether the trial item is currently DONE (used to decide if a soft-proceed should skip celebration). */
+    suspend fun isDone(trialItemId: Long): Boolean =
+        planTrialItemDao.getItemById(trialItemId)?.status == PlanTrialItemStatus.DONE
+
     suspend fun recordIncrement(trialItemId: Long) {
         val item = planTrialItemDao.getItemById(trialItemId) ?: return
         if (item.status == PlanTrialItemStatus.DONE) return

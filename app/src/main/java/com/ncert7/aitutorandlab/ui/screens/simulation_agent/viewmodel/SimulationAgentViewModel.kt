@@ -472,13 +472,14 @@ class SimulationAgentViewModel @Inject constructor(
      * Soft exit from the time-based proceed overlay.
      * Leaves the trial item as-is — completion is only via real GE / bite progress,
      * not wall-clock time (which was awarding "Level cleared!" with no learning).
+     * @return true if the item is already DONE (caller must not soft-proceed past celebration).
      */
-    fun recordTrialProceed() {
-        val trialItemId = TrialSessionStore.activeTrialItemId ?: return
-        viewModelScope.launch {
-            planTrialProgressTracker.reconcileCompletion(trialItemId)
-            DebugLogger.debugLog(TAG, "Trial sim agent soft proceed (no forced complete) for item $trialItemId")
-        }
+    suspend fun recordTrialProceed(): Boolean {
+        val trialItemId = TrialSessionStore.activeTrialItemId ?: return false
+        planTrialProgressTracker.reconcileCompletion(trialItemId)
+        val done = planTrialProgressTracker.isDone(trialItemId)
+        DebugLogger.debugLog(TAG, "Trial sim agent soft proceed for item $trialItemId done=$done")
+        return done
     }
 
     private fun checkTrialGeProgress(response: SimSessionResponse) {

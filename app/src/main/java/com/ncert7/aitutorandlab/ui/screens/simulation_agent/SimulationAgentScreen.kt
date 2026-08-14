@@ -597,9 +597,11 @@ fun SimulationAgentScreen(
             languageCode = currentLanguage,
             inTrialMode = TrialSessionStore.activeTrialItemId != null,
             onProceed = {
-                viewModel.recordTrialProceed()
-                TrialSessionStore.markSoftProceedToNext()
-                onNavigateBack()
+                scope.launch {
+                    val endedDone = viewModel.recordTrialProceed()
+                    if (!endedDone) TrialSessionStore.markSoftProceedToNext()
+                    onNavigateBack()
+                }
             },
             modifier = Modifier.align(Alignment.BottomCenter),
         )
@@ -610,9 +612,11 @@ fun SimulationAgentScreen(
             errorMessage = errorMessage?.takeIf { it.isNotBlank() }
                 ?: (uiState as? SimAgentUiState.Error)?.message?.takeIf { it.isNotBlank() },
             onContinue = {
-                viewModel.recordTrialProceed()
-                TrialSessionStore.markSoftProceedToNext()
-                onNavigateBack()
+                scope.launch {
+                    val endedDone = viewModel.recordTrialProceed()
+                    if (!endedDone) TrialSessionStore.markSoftProceedToNext()
+                    onNavigateBack()
+                }
             },
         )
     }

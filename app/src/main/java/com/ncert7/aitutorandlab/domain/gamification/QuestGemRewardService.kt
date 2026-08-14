@@ -56,7 +56,11 @@ class QuestGemRewardService @Inject constructor(
 
         if (!rewardedAdManager.isReady()) {
             rewardedAdManager.preload()
-            return QuestClaimResult.NOT_READY
+            // Give a loading ad a brief window (matches the mandatory-claim path) instead of failing
+            // instantly — reduces spurious "not ready" when the ad is a moment from ready.
+            if (!rewardedAdManager.awaitReady(timeoutMs = 5_000)) {
+                return QuestClaimResult.NOT_READY
+            }
         }
 
         val earned = rewardedAdManager.showForReward(activity, placement)
@@ -69,16 +73,29 @@ class QuestGemRewardService @Inject constructor(
                 grantKey = grantKey,
                 gemsAmount = claimType.gemAmount(),
                 source = claimType.sourceLabel(),
-            ) ?: return QuestClaimResult.GRANT_FAILED
-
-        val marked =
-            when (claimType) {
-                QuestClaimType.SIMS -> questRepository.claimSims(studentId)
-                QuestClaimType.STUDY -> questRepository.claimStudy(studentId)
-                QuestClaimType.BONUS -> questRepository.claimBonus(studentId)
+            )
+        if (gems == null) {
+            // grantGemsIfEligible is idempotent and only returns null once the gems for this grantKey
+            // are already recorded. That state is reached when a prior attempt granted gems but its
+            // claim-flag write failed — recover here by ensuring the quest is marked claimed, so the UI
+            // doesn't stay stuck showing it as claimable forever (and no gems are re-granted).
+            if (gamificationRepository.hasGemGrant(studentId, grantKey)) {
+                val remarked = markQuestClaimed(claimType, studentId)
+                DebugLogger.debugLog(
+                    TAG,
+                    "Quest claim $claimType recovered — gems already granted, remark=$remarked ($grantKey)",
+                )
+                return if (remarked) QuestClaimResult.SUCCESS else QuestClaimResult.GRANT_FAILED
             }
+            return QuestClaimResult.GRANT_FAILED
+        }
+
+        val marked = markQuestClaimed(claimType, studentId)
         if (!marked) {
-            DebugLogger.errorLog(TAG, "Quest not marked claimed after gem grant for $grantKey")
+            DebugLogger.errorLog(
+                TAG,
+                "Quest not marked claimed after gem grant for $grantKey — recovers on next claim attempt",
+            )
         }
 
         val profile = gamificationRepository.getProfile(studentId)
@@ -96,6 +113,13 @@ class QuestGemRewardService @Inject constructor(
         questRepository.maybeClearAdTestOverride(studentId)
         return QuestClaimResult.SUCCESS
     }
+
+    private suspend fun markQuestClaimed(claimType: QuestClaimType, studentId: String): Boolean =
+        when (claimType) {
+            QuestClaimType.SIMS -> questRepository.claimSims(studentId)
+            QuestClaimType.STUDY -> questRepository.claimStudy(studentId)
+            QuestClaimType.BONUS -> questRepository.claimBonus(studentId)
+        }
 
     private suspend fun isQuestClaimEligible(
         studentId: String,

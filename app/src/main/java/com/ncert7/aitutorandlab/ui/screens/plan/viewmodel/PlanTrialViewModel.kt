@@ -753,11 +753,13 @@ class PlanTrialViewModel @Inject constructor(
 
     fun requestExit(onConfirmExit: () -> Unit) {
         _advanceOverlay.value?.let { overlay ->
+            // Back over an advance overlay dismisses it in ONE press. If a mandatory claim is still
+            // pending, skip it first (marks the claim completed synchronously) and then finish — the
+            // old code only skipped and returned, leaving the overlay up so a second back was needed.
             if (overlay.requiresMandatoryClaim && !overlay.mandatoryClaimCompleted) {
                 skipMandatoryAd()
-            } else {
-                onAdvanceFinished()
             }
+            onAdvanceFinished()
             return
         }
         if (_partialReturnPrompt.value != null) {

@@ -19,6 +19,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,6 +36,7 @@ import com.ncert7.aitutorandlab.data.local.SharedPreferenceUtils
 import com.ncert7.aitutorandlab.debug.DebugLogger
 import com.ncert7.aitutorandlab.service.analytics.ScreenName
 import com.ncert7.aitutorandlab.service.analytics.TrackScreenEvent
+import kotlinx.coroutines.launch
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.AutoListenAfterAgentTurn
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.ChatBotSettings
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.ChatHeaderIcons
@@ -70,6 +72,7 @@ fun RevisionScreen(
     TrackScreenEvent(ScreenName.REVISION)
 
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val sharedPrefs = remember { SharedPreferenceUtils(context) }
 
     // State collectors
@@ -441,9 +444,11 @@ fun RevisionScreen(
             languageCode = chatState.currentLanguage,
             inTrialMode = TrialSessionStore.activeTrialItemId != null,
             onProceed = {
-                revisionViewModel.recordTrialProceed()
-                TrialSessionStore.markSoftProceedToNext()
-                onBackClick()
+                scope.launch {
+                    val endedDone = revisionViewModel.recordTrialProceed()
+                    if (!endedDone) TrialSessionStore.markSoftProceedToNext()
+                    onBackClick()
+                }
             },
             modifier = Modifier.align(Alignment.BottomCenter),
         )
@@ -454,9 +459,11 @@ fun RevisionScreen(
             errorMessage = chatState.messages.lastOrNull { it.isError }?.content
                 ?.takeIf { chatState.isLoading || chatState.messages.none { m -> !m.isError } },
             onContinue = {
-                revisionViewModel.recordTrialProceed()
-                TrialSessionStore.markSoftProceedToNext()
-                onBackClick()
+                scope.launch {
+                    val endedDone = revisionViewModel.recordTrialProceed()
+                    if (!endedDone) TrialSessionStore.markSoftProceedToNext()
+                    onBackClick()
+                }
             },
         )
     }

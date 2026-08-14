@@ -19,6 +19,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
@@ -36,6 +37,7 @@ import com.ncert7.aitutorandlab.config.GamificationFeatureFlags
 import com.ncert7.aitutorandlab.debug.DebugLogger
 import com.ncert7.aitutorandlab.service.analytics.ScreenName
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import com.ncert7.aitutorandlab.service.analytics.TrackScreenEvent
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.AppDialog
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.AutoListenAfterAgentTurn
@@ -89,6 +91,7 @@ fun MathAgentScreen(
     val wordBoundaryIndex by ttsController.currentWordIndex.collectAsState()
     val mathState by mathViewModel.uiState.collectAsState()
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val useNativeAvatar = GamificationFeatureFlags.isNativeTutorAvatarEnabled(context)
 
     LaunchedEffect(useNativeAvatar) {
@@ -578,9 +581,11 @@ fun MathAgentScreen(
             languageCode = chatState.currentLanguage,
             inTrialMode = TrialSessionStore.activeTrialItemId != null,
             onProceed = {
-                chatViewModel.recordTrialProceed()
-                TrialSessionStore.markSoftProceedToNext()
-                backDispatcher?.onBackPressed()
+                scope.launch {
+                    val endedDone = chatViewModel.recordTrialProceed()
+                    if (!endedDone) TrialSessionStore.markSoftProceedToNext()
+                    backDispatcher?.onBackPressed()
+                }
             },
             modifier = Modifier.align(Alignment.BottomCenter),
         )
@@ -592,9 +597,11 @@ fun MathAgentScreen(
                 ?: mathState.messages.lastOrNull { it.isError }?.content
                     ?.takeIf { mathState.isLoading || mathState.messages.none { m -> !m.isError } },
             onContinue = {
-                chatViewModel.recordTrialProceed()
-                TrialSessionStore.markSoftProceedToNext()
-                backDispatcher?.onBackPressed()
+                scope.launch {
+                    val endedDone = chatViewModel.recordTrialProceed()
+                    if (!endedDone) TrialSessionStore.markSoftProceedToNext()
+                    backDispatcher?.onBackPressed()
+                }
             },
         )
     }

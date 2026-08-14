@@ -387,10 +387,16 @@ class ConceptSimulationViewModel @Inject constructor(
      * Forcing GE here caused "Level cleared!" / XP celebrations when the learner
      * had barely touched the sim (or not at all).
      */
-    suspend fun completeTrialSimProceed(clickCount: Int) {
-        val trialItemId = TrialSessionStore.activeTrialItemId ?: capturedTrialItemId ?: return
+    /**
+     * @return true if, after syncing real interaction credit and reconciling, the trial item is
+     * actually DONE. Callers use this to decide whether to soft-proceed (skip celebration) or let the
+     * normal resume run the celebration — a genuine DONE must NOT be soft-proceeded past.
+     */
+    suspend fun completeTrialSimProceed(clickCount: Int): Boolean {
+        val trialItemId = TrialSessionStore.activeTrialItemId ?: capturedTrialItemId ?: return false
         planTrialProgressTracker.syncToCount(trialItemId, clickCount)
         planTrialProgressTracker.reconcileCompletion(trialItemId)
+        return planTrialProgressTracker.isDone(trialItemId)
     }
 
     suspend fun keyConceptFallback(conceptId: String): String? {
@@ -484,7 +490,22 @@ class ConceptSimulationViewModel @Inject constructor(
             )
             return
         }
-        markSimulationCompleted(conceptId)
+        val trialItemId = TrialSessionStore.activeTrialItemId ?: capturedTrialItemId
+        if (trialItemId == null) {
+            // Non-trial session: the engagement threshold is enough to credit the concept.
+            markSimulationCompleted(conceptId)
+            return
+        }
+        // Trial session: only credit the concept (XP + gamification overlay) once the trial task
+        // itself is genuinely DONE — i.e. completed with the engagement threshold met — so a
+        // barely-touched trial sim doesn't award concept XP or stack an overlay on the trial reward.
+        viewModelScope.launch {
+            if (planTrialProgressTracker.isDone(trialItemId)) {
+                markSimulationCompleted(conceptId)
+            } else {
+                DebugLogger.debugLog(TAG, "Trial concept credit deferred — item $trialItemId not DONE yet")
+            }
+        }
     }
 
     fun markSimulationCompleted(conceptId: String) {

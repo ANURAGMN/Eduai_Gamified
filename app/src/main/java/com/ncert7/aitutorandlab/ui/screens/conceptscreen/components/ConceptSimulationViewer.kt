@@ -1269,12 +1269,15 @@ fun ConceptSimulationViewer(
                         onProceed = {
                             scope.launch {
                                 val count = sessionInteractions
-                                viewModel.completeTrialSimProceed(count)
+                                val endedDone = viewModel.completeTrialSimProceed(count)
                                 if (decodedConceptId.isNotEmpty() && decodedConceptId != "empty") {
                                     viewModel.maybeMarkCompletedAfterEngagement(decodedConceptId, count)
                                 }
                                 viewModel.clearTrialPrompt()
-                                TrialSessionStore.markSoftProceedToNext()
+                                // Only soft-proceed (skip the celebration and jump to the next item) when the
+                                // item is still incomplete. If the learner actually finished it, let the normal
+                                // resume run the DONE celebration instead of stranding it.
+                                if (!endedDone) TrialSessionStore.markSoftProceedToNext()
                                 handleBack()
                             }
                         },
@@ -1387,11 +1390,12 @@ fun ConceptSimulationViewer(
         onContinue = {
             scope.launch {
                 val count = InteractionTracker.sessionInteractionCount.value
-                viewModel.completeTrialSimProceed(count)
+                val endedDone = viewModel.completeTrialSimProceed(count)
                 if (decodedConceptId.isNotEmpty() && decodedConceptId != "empty") {
                     viewModel.maybeMarkCompletedAfterEngagement(decodedConceptId, count)
                 }
-                TrialSessionStore.markSoftProceedToNext()
+                // Skip soft-proceed on a genuine DONE so the celebration isn't stranded (see onProceed).
+                if (!endedDone) TrialSessionStore.markSoftProceedToNext()
                 handleBack()
             }
         },

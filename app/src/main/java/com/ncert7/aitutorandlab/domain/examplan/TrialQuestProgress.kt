@@ -14,13 +14,19 @@ object TrialQuestProgress {
     ): DailyQuestProgress? {
         if (items.isEmpty()) return null
 
+        // MATH items count toward BOTH quest buckets so math-heavy days can still complete the
+        // sims and study/bonus quests.
         val simItems =
             items.filter {
-                it.kind == PlanTrialItemKind.SIM_AGENT || it.kind == PlanTrialItemKind.SIM_URL
+                it.kind == PlanTrialItemKind.SIM_AGENT ||
+                    it.kind == PlanTrialItemKind.SIM_URL ||
+                    it.kind == PlanTrialItemKind.MATH
             }
         val studyItems =
             items.filter {
-                it.kind == PlanTrialItemKind.STUDY || it.kind == PlanTrialItemKind.REVISION
+                it.kind == PlanTrialItemKind.STUDY ||
+                    it.kind == PlanTrialItemKind.REVISION ||
+                    it.kind == PlanTrialItemKind.MATH
             }
 
         val studyLabelPrefix =

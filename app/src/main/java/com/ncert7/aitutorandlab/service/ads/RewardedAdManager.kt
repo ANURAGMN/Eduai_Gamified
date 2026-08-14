@@ -18,6 +18,8 @@ import com.ncert7.aitutorandlab.ui.viewModel.TextToSpeech
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -36,6 +38,10 @@ class RewardedAdManager @Inject constructor(
 
     private var rewardedAd: RewardedAd? = null
     private var isLoading = false
+
+    // Serializes reward shows: the single loaded ad must never be shown by two overlapping claim
+    // UIs at once (quest + trial), or the second show clobbers the first / misattributes the reward.
+    private val showMutex = Mutex()
 
     fun isReady(): Boolean = rewardedAd != null
 
@@ -93,11 +99,16 @@ class RewardedAdManager @Inject constructor(
         activity: Activity,
         placement: AdPlacement,
     ): Boolean =
-        withTimeoutOrNull(SHOW_TIMEOUT_MS) {
-            showForRewardNow(activity, placement)
-        } ?: false.also {
-            DebugLogger.errorLog(TAG, "Rewarded ad show timed out")
-            AdAnalyticsTracker.track(AdType.REWARDED, AdInteraction.FAILED, placement, detail = "timeout")
+        // Only one reward show at a time. A second caller waits here; by the time it runs the ad has
+        // been consumed (rewardedAd == null), so showForRewardNow cleanly returns false (NOT_READY)
+        // instead of double-showing the same ad.
+        showMutex.withLock {
+            withTimeoutOrNull(SHOW_TIMEOUT_MS) {
+                showForRewardNow(activity, placement)
+            } ?: false.also {
+                DebugLogger.errorLog(TAG, "Rewarded ad show timed out")
+                AdAnalyticsTracker.track(AdType.REWARDED, AdInteraction.FAILED, placement, detail = "timeout")
+            }
         }
 
     private suspend fun showForRewardNow(

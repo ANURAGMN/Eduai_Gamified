@@ -48,6 +48,10 @@ class GamificationRepository @Inject constructor(
         language: String,
     ): Boolean = gamificationDao.countXpEvent(studentId, itemType, itemId, language) > 0
 
+    /** Whether gems for this grant key were already recorded (grants are idempotent per grantKey). */
+    suspend fun hasGemGrant(studentId: String, grantKey: String): Boolean =
+        gamificationDao.countGemEvent(studentId, grantKey) > 0
+
     suspend fun recordXpAward(
         studentId: String,
         itemType: String,
@@ -142,9 +146,6 @@ class GamificationRepository @Inject constructor(
                 EconomySource.AD_CLAIM
             else -> EconomySource.AD_CLAIM
         }
-
-    suspend fun hasGemGrant(studentId: String, grantKey: String): Boolean =
-        gamificationDao.countGemEvent(studentId, grantKey) > 0
 
     suspend fun canGrantQuestGemToday(studentId: String, questDate: String): Boolean {
         val start = QuestDayKey.startOfDayMillis(questDate)

@@ -18,6 +18,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import com.ncert7.aitutorandlab.domain.examplan.TrialSessionStore
@@ -58,6 +59,7 @@ import com.ncert7.aitutorandlab.domain.chatbot.usecase.ChatIntent
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.dataclass.ChatBotSettingsState
 import com.ncert7.aitutorandlab.config.GamificationFeatureFlags
 import androidx.compose.runtime.LaunchedEffect
+import kotlinx.coroutines.launch
 
 @Composable
 fun ChatbotScreen(
@@ -78,6 +80,7 @@ fun ChatbotScreen(
     val sttState by sttController.state.collectAsState()
     val wordBoundaryIndex by ttsController.currentWordIndex.collectAsState()
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val useNativeAvatar = GamificationFeatureFlags.isNativeTutorAvatarEnabled(context)
     val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
 
@@ -461,9 +464,11 @@ fun ChatbotScreen(
             languageCode = chatState.currentLanguage,
             inTrialMode = TrialSessionStore.activeTrialItemId != null,
             onProceed = {
-                chatViewModel.recordTrialProceed()
-                TrialSessionStore.markSoftProceedToNext()
-                backDispatcher?.onBackPressed()
+                scope.launch {
+                    val endedDone = chatViewModel.recordTrialProceed()
+                    if (!endedDone) TrialSessionStore.markSoftProceedToNext()
+                    backDispatcher?.onBackPressed()
+                }
             },
             modifier = Modifier.align(Alignment.BottomCenter),
         )
@@ -474,9 +479,11 @@ fun ChatbotScreen(
             errorMessage = chatState.messages.lastOrNull { it.isError }?.content
                 ?.takeIf { chatState.isLoading || chatState.messages.none { m -> !m.isError } },
             onContinue = {
-                chatViewModel.recordTrialProceed()
-                TrialSessionStore.markSoftProceedToNext()
-                backDispatcher?.onBackPressed()
+                scope.launch {
+                    val endedDone = chatViewModel.recordTrialProceed()
+                    if (!endedDone) TrialSessionStore.markSoftProceedToNext()
+                    backDispatcher?.onBackPressed()
+                }
             },
         )
     }

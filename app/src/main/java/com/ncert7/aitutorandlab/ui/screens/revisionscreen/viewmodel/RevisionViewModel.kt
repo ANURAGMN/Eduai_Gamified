@@ -390,13 +390,17 @@ class RevisionViewModel @Inject constructor(
     /**
      * Soft exit from the time-based proceed overlay.
      * Does not force the trial item DONE — revision completion still requires real END/GE.
+     * @return true if the item is already DONE (caller must not soft-proceed past celebration).
      */
-    fun recordTrialProceed() {
-        val trialItemId = TrialSessionStore.activeTrialItemId ?: return
-        viewModelScope.launch {
-            planTrialProgressTracker.reconcileCompletion(trialItemId)
-            DebugLogger.debugLog("RevisionViewModel", "Trial soft proceed (no forced complete) for item $trialItemId")
-        }
+    suspend fun recordTrialProceed(): Boolean {
+        val trialItemId = TrialSessionStore.activeTrialItemId ?: return false
+        planTrialProgressTracker.reconcileCompletion(trialItemId)
+        val done = planTrialProgressTracker.isDone(trialItemId)
+        DebugLogger.debugLog(
+            "RevisionViewModel",
+            "Trial soft proceed for item $trialItemId done=$done",
+        )
+        return done
     }
 
     /**

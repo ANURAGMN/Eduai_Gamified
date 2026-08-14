@@ -10,6 +10,7 @@ import com.ncert7.aitutorandlab.data.local.entities.PlanTrialItemKind
 import com.ncert7.aitutorandlab.data.local.entities.PlanTrialItemStatus
 import com.ncert7.aitutorandlab.utils.TrialCopy
 import com.ncert7.aitutorandlab.utils.getLocalizedName
+import com.ncert7.aitutorandlab.utils.isKannadaLanguage
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -249,13 +250,24 @@ class PlanTrialMaterializer @Inject constructor(
     }
 
     private fun resolvedSimulationUrl(concept: ConceptEntity, languageCode: String): String? {
-        val localized = concept.simulationUrlFor(languageCode)
-        return localized?.takeIf { isValidSimUrl(it) }
+        // Prefer the language-specific URL, but fall back to English so a KN day still
+        // materializes when Firestore has no simulationUrlKannada (otherwise rematerialize
+        // on language switch strips sims and the exam-trial day looks empty/broken).
+        val preferred = concept.simulationUrlFor(languageCode)?.takeIf { isValidSimUrl(it) }
+        if (preferred != null) return preferred
+        if (isKannadaLanguage(languageCode)) {
+            return concept.simulationUrl?.takeIf { isValidSimUrl(it) }
+        }
+        return null
     }
 
     private fun resolvedSimulationId(concept: ConceptEntity, languageCode: String): String? {
-        val localized = concept.simulationIdFor(languageCode)
-        return localized?.takeIf { isValidSimId(it) }
+        val preferred = concept.simulationIdFor(languageCode)?.takeIf { isValidSimId(it) }
+        if (preferred != null) return preferred
+        if (isKannadaLanguage(languageCode)) {
+            return concept.simulationId?.takeIf { isValidSimId(it) }
+        }
+        return null
     }
 
     private fun buildItem(

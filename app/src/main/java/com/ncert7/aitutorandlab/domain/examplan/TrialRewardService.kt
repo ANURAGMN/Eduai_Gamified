@@ -103,7 +103,10 @@ class TrialRewardService @Inject constructor(
 
         if (!rewardedAdManager.isReady()) {
             rewardedAdManager.preload()
-            return TrialAdClaimResult.NOT_READY to null
+            // Brief wait for a loading ad (matches the mandatory-claim path) rather than failing instantly.
+            if (!rewardedAdManager.awaitReady(timeoutMs = 5_000)) {
+                return TrialAdClaimResult.NOT_READY to null
+            }
         }
 
         val earned = rewardedAdManager.showForReward(activity, AdPlacement.TRIAL_DOUBLE_XP)

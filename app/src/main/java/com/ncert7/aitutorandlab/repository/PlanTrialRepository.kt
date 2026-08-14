@@ -269,8 +269,12 @@ class PlanTrialRepository @Inject constructor(
         }
     }
 
-    private fun PlanTrialItemEntity.progressKey(): String = "$kind|$conceptId|$sourceId"
+    // Key by kind + conceptId (NOT sourceId): sourceId is the language-specific URL/ID, so a
+    // language switch would otherwise look like a brand-new set of items.
+    private fun PlanTrialItemEntity.progressKey(): String = "$kind|$conceptId"
 
+    // Same stability as progressKey — rematerialize when the concept/kind lineup changes, not when
+    // only the sim URL language flips (URLs still update via forceSync / first upsert).
     private fun trialOrderSignature(items: List<PlanTrialItemEntity>): List<Pair<String, String>> =
-        items.sortedBy { it.sequenceIndex }.map { it.kind to it.sourceId }
+        items.sortedBy { it.sequenceIndex }.map { it.kind to it.conceptId }
 }
