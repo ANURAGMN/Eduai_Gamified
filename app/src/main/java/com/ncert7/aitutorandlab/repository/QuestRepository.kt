@@ -8,6 +8,7 @@ import com.ncert7.aitutorandlab.data.local.entities.ExamPlanDayEntity
 import com.ncert7.aitutorandlab.data.local.entities.QuestDailyEntity
 import com.ncert7.aitutorandlab.domain.examplan.TrialQuestProgress
 import com.ncert7.aitutorandlab.domain.gamification.DailyQuestEngine
+import com.ncert7.aitutorandlab.domain.gamification.QuestClaimType
 import com.ncert7.aitutorandlab.domain.gamification.QuestDayKey
 import com.ncert7.aitutorandlab.service.analytics.GamificationAnalyticsTracker
 import com.ncert7.aitutorandlab.service.analytics.QuestKind
@@ -21,6 +22,7 @@ class QuestRepository @Inject constructor(
     private val progressDao: ProgressDao,
     private val examPlanDao: ExamPlanDao,
     private val planTrialRepository: PlanTrialRepository,
+    private val gamificationRepository: GamificationRepository,
     private val sharedPrefs: SharedPreferenceUtils,
 ) {
     fun observeTodayQuest(studentId: String): Flow<QuestDailyEntity?> {
@@ -93,6 +95,7 @@ class QuestRepository @Inject constructor(
             )
         trackQuestTransitions(existing, entity)
         questDailyDao.upsertQuest(entity)
+        scheduleQuestUpload()
     }
 
     private fun trackQuestTransitions(before: QuestDailyEntity?, after: QuestDailyEntity) {
@@ -120,44 +123,53 @@ class QuestRepository @Inject constructor(
 
     suspend fun claimSims(studentId: String): Boolean {
         val questDate = QuestDayKey.current()
+        healClaimFromGemGrant(studentId, QuestClaimType.SIMS, questDate)
         val quest = questDailyDao.getQuest(studentId, questDate) ?: return false
         if (quest.simsClaimed || quest.simsTotal <= 0 || quest.simsDone < quest.simsTotal) return false
         questDailyDao.markSimsClaimed(studentId, questDate, System.currentTimeMillis())
+        scheduleQuestUpload()
         return true
     }
 
     suspend fun claimStudy(studentId: String): Boolean {
         val questDate = QuestDayKey.current()
+        healClaimFromGemGrant(studentId, QuestClaimType.STUDY, questDate)
         val quest = questDailyDao.getQuest(studentId, questDate) ?: return false
         if (quest.studyClaimed || quest.studyTotal <= 0 || quest.studyDone < quest.studyTotal) return false
         questDailyDao.markStudyClaimed(studentId, questDate, System.currentTimeMillis())
+        scheduleQuestUpload()
         return true
     }
 
     suspend fun claimBonus(studentId: String): Boolean {
         val questDate = QuestDayKey.current()
+        healClaimFromGemGrant(studentId, QuestClaimType.BONUS, questDate)
         val quest = questDailyDao.getQuest(studentId, questDate) ?: return false
         if (quest.bonusClaimed) return false
         if (quest.simsTotal <= 0 || quest.studyTotal <= 0) return false
         if (quest.simsDone < quest.simsTotal || quest.studyDone < quest.studyTotal) return false
         questDailyDao.markBonusClaimed(studentId, questDate, System.currentTimeMillis())
+        scheduleQuestUpload()
         return true
     }
 
     suspend fun canClaimSims(studentId: String): Boolean {
         val questDate = QuestDayKey.current()
+        healClaimFromGemGrant(studentId, QuestClaimType.SIMS, questDate)
         val quest = questDailyDao.getQuest(studentId, questDate) ?: return false
         return !quest.simsClaimed && quest.simsTotal > 0 && quest.simsDone >= quest.simsTotal
     }
 
     suspend fun canClaimStudy(studentId: String): Boolean {
         val questDate = QuestDayKey.current()
+        healClaimFromGemGrant(studentId, QuestClaimType.STUDY, questDate)
         val quest = questDailyDao.getQuest(studentId, questDate) ?: return false
         return !quest.studyClaimed && quest.studyTotal > 0 && quest.studyDone >= quest.studyTotal
     }
 
     suspend fun canClaimBonus(studentId: String): Boolean {
         val questDate = QuestDayKey.current()
+        healClaimFromGemGrant(studentId, QuestClaimType.BONUS, questDate)
         val quest = questDailyDao.getQuest(studentId, questDate) ?: return false
         if (quest.bonusClaimed) return false
         if (quest.simsTotal <= 0 || quest.studyTotal <= 0) return false
@@ -197,5 +209,41 @@ class QuestRepository @Inject constructor(
         val days = examPlanDao.getPlanDays(studentId)
         return days.firstOrNull { it.status == "TODAY" }
             ?: days.firstOrNull { it.status == "UPCOMING" }
+    }
+
+    /** R.4: if gems were already granted for this claim, force the local claimed flag. */
+    private suspend fun healClaimFromGemGrant(
+        studentId: String,
+        claimType: QuestClaimType,
+        questDate: String,
+    ) {
+        val grantKey = claimType.grantKey(questDate)
+        if (!gamificationRepository.hasGemGrant(studentId, grantKey)) return
+        val quest = questDailyDao.getQuest(studentId, questDate) ?: return
+        val needs =
+            when (claimType) {
+                QuestClaimType.SIMS -> !quest.simsClaimed
+                QuestClaimType.STUDY -> !quest.studyClaimed
+                QuestClaimType.BONUS -> !quest.bonusClaimed
+            }
+        if (!needs) return
+        when (claimType) {
+            QuestClaimType.SIMS ->
+                questDailyDao.markSimsClaimed(studentId, questDate, System.currentTimeMillis())
+            QuestClaimType.STUDY ->
+                questDailyDao.markStudyClaimed(studentId, questDate, System.currentTimeMillis())
+            QuestClaimType.BONUS ->
+                questDailyDao.markBonusClaimed(studentId, questDate, System.currentTimeMillis())
+        }
+        scheduleQuestUpload()
+    }
+
+    private fun scheduleQuestUpload() {
+        try {
+            // RV.1: quest claim flags must reach the cloud promptly — the deferred (~5m) window
+            // risks a reinstall double-grant. Push immediately; the worker stays durable/retried.
+            com.ncert7.aitutorandlab.service.sync.DataSyncService.scheduleImmediateUpload()
+        } catch (_: Exception) {
+        }
     }
 }

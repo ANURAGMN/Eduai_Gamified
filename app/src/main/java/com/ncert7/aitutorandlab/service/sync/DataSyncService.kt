@@ -17,6 +17,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import java.util.concurrent.TimeUnit
 
 /**
@@ -29,7 +30,11 @@ object DataSyncService {
     // Stable WorkManager unique names (so KEEP dedupes) + debounce window for coalesced uploads.
     private const val BACKGROUND_SYNC_WORK = "DATA_SYNC_WORK"
     private const val DEFERRED_UPLOAD_WORK = "firestore_deferred_upload"
+    private const val IMMEDIATE_UPLOAD_WORK = "firestore_immediate_upload"
     private const val DEFERRED_UPLOAD_DELAY_MIN = 5L
+
+    // RV.2: cap the login restore sequence so a hung network call can't block the Home gate forever.
+    private const val RESTORE_TIMEOUT_MS = 20_000L
     private val supervisorJob = SupervisorJob()
     private val scope = CoroutineScope(supervisorJob + Dispatchers.IO)
 
@@ -47,16 +52,47 @@ object DataSyncService {
         GardenSyncManager(database.gardenDao(), com.ncert7.aitutorandlab.repository.FirebaseRepository())
     }
 
+    private val gamificationSyncManager: GamificationSyncManager by lazy {
+        GamificationSyncManager(
+            database.gamificationDao(),
+            com.ncert7.aitutorandlab.repository.FirebaseRepository(),
+        )
+    }
+
+    private val examPlanSyncManager: ExamPlanSyncManager by lazy {
+        ExamPlanSyncManager(
+            database.examPlanDao(),
+            com.ncert7.aitutorandlab.repository.FirebaseRepository(),
+        )
+    }
+
+    private val questSyncManager: QuestSyncManager by lazy {
+        QuestSyncManager(
+            database.questDailyDao(),
+            com.ncert7.aitutorandlab.repository.FirebaseRepository(),
+        )
+    }
+
     /** Completed when the in-flight login restore finishes (or immediately if none is running). */
     @Volatile
     private var gardenRestoreGate: CompletableDeferred<Unit> =
         CompletableDeferred<Unit>().also { it.complete(Unit) }
+
+    /**
+     * True when the latest [onUserAuthenticated] garden restore applied remote state/items.
+     * Used so onboarding does not overwrite a restored remote theme when plant count is still 0 (R.1).
+     */
+    @Volatile
+    private var gardenRestoredFromRemote: Boolean = false
 
     /** Blocks until [onUserAuthenticated]'s garden restore completes — avoids clobbering remote data. */
     suspend fun awaitGardenRestore() {
         if (!isInitialized) return
         gardenRestoreGate.await()
     }
+
+    /** Whether login restore wrote remote garden into Room (theme/items). Resets each auth. */
+    fun wasGardenRestoredFromRemote(): Boolean = gardenRestoredFromRemote
 
     /**
      * Initializes the DataSyncService
@@ -201,7 +237,12 @@ object DataSyncService {
                     syncSimulationInteractionsInternal()
                     sharedPref.getUserId()?.takeIf { it.isNotBlank() }?.let { uid ->
                         gardenSyncManager.pushGarden(uid)
+                        gamificationSyncManager.pushProfile(uid)
+                        examPlanSyncManager.pushPlan(uid)
+                        questSyncManager.pushTodayQuest(uid)
                     }
+                    gamificationSyncManager.pushProfiles()
+                    examPlanSyncManager.pushPlans()
                 } else {
                     DebugLogger.debugLog(TAG, " Device offline, scheduling background sync")
                     scheduleBackgroundSync()
@@ -319,6 +360,31 @@ object DataSyncService {
     }
 
     /**
+     * RV.1: immediate (no-delay) upload for critical events — e.g. a quest claim — where the
+     * [scheduleDeferredUpload] debounce window would risk a reinstall double-grant (claim flag not
+     * yet uploaded, local gem-grant key wiped, so heal can't fire on the new device). Runs under its
+     * own unique name with REPLACE so it fires now and is not dedup-blocked by a pending deferred
+     * upload; the worker's network constraint + retry keep it durable across process death.
+     */
+    fun scheduleImmediateUpload() {
+        if (!isInitialized) return
+        try {
+            val request = OneTimeWorkRequestBuilder<DataSyncWorker>()
+                .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 1, TimeUnit.MINUTES)
+                .build()
+
+            WorkManager.getInstance(applicationContext).enqueueUniqueWork(
+                IMMEDIATE_UPLOAD_WORK,
+                ExistingWorkPolicy.REPLACE,
+                request
+            )
+            DebugLogger.debugLog(TAG, "Immediate upload scheduled (no delay)")
+        } catch (e: Exception) {
+            DebugLogger.errorLog(TAG, "Failed to schedule immediate upload: ${e.message}")
+        }
+    }
+
+    /**
      * Updates the sync manager with new student ID
      * Call this when user logs in
      */
@@ -342,14 +408,37 @@ object DataSyncService {
     fun onUserAuthenticated(studentId: String) {
         val restoreGate = CompletableDeferred<Unit>()
         gardenRestoreGate = restoreGate
+        gardenRestoredFromRemote = false
         scope.launch {
             try {
-                database.appAnalyticsDao().backfillEmptyStudentId(studentId)
-                database.sessionDao().backfillEmptyStudentId(studentId)
-                updateStudentId(studentId)
-                gardenSyncManager.restoreGarden(studentId)
-                triggerFullSync()
-                DebugLogger.debugLog(TAG, "User authenticated — funnel + session backfill synced for $studentId")
+                // RV.2: bound the whole restore sequence. A network *hang* (not an exception) would
+                // otherwise never reach `finally`, leaving the Home gate closed forever. On timeout
+                // we fall through, log, and still release the gate below so Home always renders.
+                val completed = withTimeoutOrNull(RESTORE_TIMEOUT_MS) {
+                    database.appAnalyticsDao().backfillEmptyStudentId(studentId)
+                    database.sessionDao().backfillEmptyStudentId(studentId)
+                    updateStudentId(studentId)
+                    val outcome = gardenSyncManager.restoreGarden(studentId)
+                    gardenRestoredFromRemote = outcome == GardenRestorePolicy.Outcome.APPLIED
+                    gamificationSyncManager.restoreProfile(studentId)
+                    examPlanSyncManager.restorePlan(studentId)
+                    questSyncManager.restoreTodayQuest(studentId)
+                    triggerFullSync()
+                    outcome
+                }
+                if (completed != null) {
+                    DebugLogger.debugLog(
+                        TAG,
+                        "User authenticated — garden restore=$completed funnel synced for $studentId",
+                    )
+                } else {
+                    // Ensure identity is set even if restore timed out mid-flight.
+                    updateStudentId(studentId)
+                    DebugLogger.errorLog(
+                        TAG,
+                        "onUserAuthenticated restore timed out after ${RESTORE_TIMEOUT_MS}ms; releasing Home gate",
+                    )
+                }
             } catch (e: Exception) {
                 DebugLogger.errorLog(TAG, "onUserAuthenticated failed: ${e.message}")
                 updateStudentId(studentId)
