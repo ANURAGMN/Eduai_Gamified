@@ -2,6 +2,7 @@ package com.ncert7.aitutorandlab.ui.screens.simulation_agent.components
 
 import android.annotation.SuppressLint
 import android.graphics.Color
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.webkit.WebSettings
@@ -157,6 +158,16 @@ fun SimulationWebView(
                     useWideViewPort = true
                     // Always fetch sim HTML / edu-coach.js from network (GitHub Pages).
                     cacheMode = WebSettings.LOAD_NO_CACHE
+                    // Sims declare `<meta name="color-scheme" content="light">` and are designed
+                    // light-only. On WebViews that ignore that meta (roughly Android 10–12),
+                    // algorithmic dark-mode inverts them into unreadable white-on-white
+                    // (invisible headers, beaker labels, "No change" legend, etc.). Turn force-dark
+                    // OFF so the WebView renders each sim's own palette — matching desktop Chrome.
+                    // API 33+ honors the color-scheme meta natively, so this is a no-op there.
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        @Suppress("DEPRECATION")
+                        forceDark = WebSettings.FORCE_DARK_OFF
+                    }
                 }
                 webViewClient =
                     object : WebViewClient() {
