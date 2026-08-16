@@ -25,6 +25,9 @@ class FirebaseRepository(
     private val usersCollection = firestore.collection("users")
     private val streakCollection = firestore.collection("streak")
     private val gardenCollection = firestore.collection("garden")
+    private val gamificationCollection = firestore.collection("gamification")
+    private val examPlansCollection = firestore.collection("exam_plans")
+    private val questsCollection = firestore.collection("quests")
     private val friendCodesCollection = firestore.collection("friend_codes")
     private val friendsCollection = firestore.collection("friends")
 
@@ -252,6 +255,121 @@ class FirebaseRepository(
         }
     }
 
+    /**
+     * Persists first-run onboarding picks on `users/{userId}` so reinstall / new devices
+     * can skip the intro and hydrate SharedPreferences (P1 §2).
+     */
+    suspend fun updateOnboardingPicks(
+        userId: String,
+        subject: String,
+        chapter: String,
+        world: String,
+        picksApplied: Boolean = false,
+        subjectId: String? = null,
+        chapterId: String? = null,
+        completedAt: Long = System.currentTimeMillis(),
+    ): Boolean {
+        if (userId.isBlank()) return false
+        return try {
+            val onboarding = mutableMapOf<String, Any>(
+                "firstRunCompleted" to true,
+                "subject" to subject,
+                "chapter" to chapter,
+                "world" to world,
+                "picksApplied" to picksApplied,
+                "completedAt" to completedAt,
+            )
+            if (!subjectId.isNullOrBlank()) onboarding["subjectId"] = subjectId
+            if (!chapterId.isNullOrBlank()) onboarding["chapterId"] = chapterId
+            usersCollection.document(userId)
+                .set(
+                    mapOf(
+                        "appName" to AppConfig.APP_NAME,
+                        "onboarding" to onboarding,
+                    ),
+                    SetOptions.merge(),
+                )
+                .await()
+            DebugLogger.debugLog("FirebaseRepository", "Onboarding picks synced for $userId")
+            true
+        } catch (e: Exception) {
+            DebugLogger.errorLog("FirebaseRepository", "Onboarding picks sync failed: ${e.message}")
+            false
+        }
+    }
+
+    /** Marks cloud onboarding picks as applied after home materializes subject/plan/theme. */
+    suspend fun markOnboardingPicksApplied(
+        userId: String,
+        subjectId: String? = null,
+        chapterId: String? = null,
+    ): Boolean {
+        if (userId.isBlank()) return false
+        return try {
+            val patch = mutableMapOf<String, Any>(
+                "onboarding.picksApplied" to true,
+                "appName" to AppConfig.APP_NAME,
+            )
+            if (!subjectId.isNullOrBlank()) patch["onboarding.subjectId"] = subjectId
+            if (!chapterId.isNullOrBlank()) patch["onboarding.chapterId"] = chapterId
+            usersCollection.document(userId).update(patch).await()
+            true
+        } catch (e: Exception) {
+            // Nested field update can fail if onboarding map missing — fall back to merge.
+            DebugLogger.warnLog("FirebaseRepository", "markOnboardingPicksApplied update failed: ${e.message}")
+            try {
+                val existing = getOnboardingPicks(userId)
+                updateOnboardingPicks(
+                    userId = userId,
+                    subject = existing?.subject.orEmpty(),
+                    chapter = existing?.chapter.orEmpty(),
+                    world = existing?.world.orEmpty(),
+                    picksApplied = true,
+                    subjectId = subjectId ?: existing?.subjectId,
+                    chapterId = chapterId ?: existing?.chapterId,
+                    completedAt = existing?.completedAt ?: System.currentTimeMillis(),
+                )
+            } catch (e2: Exception) {
+                DebugLogger.errorLog("FirebaseRepository", "markOnboardingPicksApplied failed: ${e2.message}")
+                false
+            }
+        }
+    }
+
+    suspend fun getOnboardingPicks(userId: String): OnboardingPicks? {
+        if (userId.isBlank()) return null
+        return try {
+            val snapshot = usersCollection.document(userId).get().await()
+            if (!snapshot.exists()) return null
+            @Suppress("UNCHECKED_CAST")
+            val raw = snapshot.get("onboarding") as? Map<String, Any> ?: return null
+            val completed = raw["firstRunCompleted"] as? Boolean ?: false
+            if (!completed) return null
+            OnboardingPicks(
+                subject = raw["subject"] as? String ?: return null,
+                chapter = raw["chapter"] as? String ?: "",
+                world = raw["world"] as? String ?: "Garden",
+                picksApplied = raw["picksApplied"] as? Boolean ?: false,
+                subjectId = raw["subjectId"] as? String,
+                chapterId = raw["chapterId"] as? String,
+                completedAt = (raw["completedAt"] as? Number)?.toLong() ?: 0L,
+            )
+        } catch (e: Exception) {
+            DebugLogger.errorLog("FirebaseRepository", "Onboarding picks fetch failed: ${e.message}")
+            null
+        }
+    }
+
+    data class OnboardingPicks(
+        val subject: String,
+        val chapter: String,
+        val world: String,
+        val picksApplied: Boolean,
+        val subjectId: String? = null,
+        val chapterId: String? = null,
+        val completedAt: Long = 0L,
+    )
+
     suspend fun updateUserProfile(
         userId: String,
         name: String,
@@ -460,6 +578,131 @@ class FirebaseRepository(
         } catch (e: Exception) {
             DebugLogger.errorLog("FirebaseRepository", "Error getting garden items: ${e.message}")
             emptyList()
+        }
+    }
+
+    // ---- Gamification profile (balances are LWW; ledgers stay local/audit) ----
+
+    suspend fun saveGamificationProfile(userId: String, data: Map<String, Any?>): Boolean {
+        return try {
+            if (userId.isBlank()) return false
+            val docId = "${AppConfig.APP_NAME}_$userId"
+            gamificationCollection.document(docId)
+                .collection("profile")
+                .document("current")
+                .set(data, SetOptions.merge())
+                .await()
+            true
+        } catch (e: Exception) {
+            DebugLogger.errorLog("FirebaseRepository", "Error saving gamification profile: ${e.message}")
+            false
+        }
+    }
+
+    suspend fun getGamificationProfile(userId: String): Map<String, Any?>? {
+        return try {
+            if (userId.isBlank()) return null
+            val docId = "${AppConfig.APP_NAME}_$userId"
+            val snap =
+                gamificationCollection.document(docId)
+                    .collection("profile")
+                    .document("current")
+                    .get()
+                    .await()
+            if (snap.exists()) snap.data else null
+        } catch (e: Exception) {
+            DebugLogger.errorLog("FirebaseRepository", "Error getting gamification profile: ${e.message}")
+            null
+        }
+    }
+
+    suspend fun saveExamPlan(
+        userId: String,
+        plan: Map<String, Any?>,
+        days: List<Map<String, Any?>>,
+    ): Boolean {
+        return try {
+            if (userId.isBlank()) return false
+            val docId = "${AppConfig.APP_NAME}_$userId"
+            val root = examPlansCollection.document(docId)
+            root.collection("current").document("plan").set(plan, SetOptions.merge()).await()
+            val daysCol = root.collection("days")
+            val batch = firestore.batch()
+            days.forEach { day ->
+                val dayIndex = (day["dayIndex"] as? Number)?.toInt()?.toString() ?: return@forEach
+                batch.set(daysCol.document(dayIndex), day, SetOptions.merge())
+            }
+            if (days.isNotEmpty()) batch.commit().await()
+            true
+        } catch (e: Exception) {
+            DebugLogger.errorLog("FirebaseRepository", "Error saving exam plan: ${e.message}")
+            false
+        }
+    }
+
+    suspend fun getExamPlan(userId: String): Map<String, Any?>? {
+        return try {
+            if (userId.isBlank()) return null
+            val docId = "${AppConfig.APP_NAME}_$userId"
+            val snap =
+                examPlansCollection.document(docId)
+                    .collection("current")
+                    .document("plan")
+                    .get()
+                    .await()
+            if (snap.exists()) snap.data else null
+        } catch (e: Exception) {
+            DebugLogger.errorLog("FirebaseRepository", "Error getting exam plan: ${e.message}")
+            null
+        }
+    }
+
+    suspend fun getExamPlanDays(userId: String): List<Map<String, Any?>> {
+        return try {
+            if (userId.isBlank()) return emptyList()
+            val docId = "${AppConfig.APP_NAME}_$userId"
+            val snap = examPlansCollection.document(docId).collection("days").get().await()
+            snap.documents.mapNotNull { it.data }
+        } catch (e: Exception) {
+            DebugLogger.errorLog("FirebaseRepository", "Error getting exam plan days: ${e.message}")
+            emptyList()
+        }
+    }
+
+    suspend fun saveQuestDaily(
+        userId: String,
+        questDate: String,
+        data: Map<String, Any?>,
+    ): Boolean {
+        return try {
+            if (userId.isBlank() || questDate.isBlank()) return false
+            val docId = "${AppConfig.APP_NAME}_$userId"
+            questsCollection.document(docId)
+                .collection("daily")
+                .document(questDate)
+                .set(data, SetOptions.merge())
+                .await()
+            true
+        } catch (e: Exception) {
+            DebugLogger.errorLog("FirebaseRepository", "Error saving quest daily: ${e.message}")
+            false
+        }
+    }
+
+    suspend fun getQuestDaily(userId: String, questDate: String): Map<String, Any?>? {
+        return try {
+            if (userId.isBlank() || questDate.isBlank()) return null
+            val docId = "${AppConfig.APP_NAME}_$userId"
+            val snap =
+                questsCollection.document(docId)
+                    .collection("daily")
+                    .document(questDate)
+                    .get()
+                    .await()
+            if (snap.exists()) snap.data else null
+        } catch (e: Exception) {
+            DebugLogger.errorLog("FirebaseRepository", "Error getting quest daily: ${e.message}")
+            null
         }
     }
 

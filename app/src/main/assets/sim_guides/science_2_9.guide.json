@@ -4,16 +4,37 @@
   "title": "Neutralisation in Agriculture",
   "steps": [
     {
-      "text": "Soil can be too acidic or too basic for crops. Farmers fix it with neutralisation: Acid + Base → Salt + Water (neutral)."
+      "text": "Soil can be too acidic or too basic for crops. Farmers fix it by neutralisation, bringing the pH toward 7."
     },
     {
-      "text": "Look at the pH scale: 0–6 is acidic, 7 is neutral, and 8–14 is basic. Crops grow best near neutral."
+      "text": "Tap “Acidic Soil” to choose soil that has too much acid.",
+      "target": "Acidic Soil"
     },
     {
-      "text": "Explore the controls to treat the soil — add a base to acidic soil (or an acid to basic soil) to bring the pH toward 7."
+      "text": "Now tap “Apply Neutralisation Treatment” to add a base to the soil.",
+      "target": "Apply Neutralisation"
     },
     {
-      "text": "Watch the pH move to the neutral zone. Balanced soil means healthy crops — that's chemistry helping farmers!"
+      "text": "Watch the pH climb toward 7 — into the neutral zone where crops grow best."
+    },
+    {
+      "text": "Balanced soil means healthy crops. Farmers add lime (a base) to acidic soil, or compost to basic soil — chemistry helping agriculture!"
     }
-  ]
+  ],
+  "coach": {
+    "mission": "Balance the soil's pH for healthy crops.",
+    "whenStuck": [
+      "Pick a soil, then tap “Apply Neutralisation Treatment”.",
+      "Acidic soil needs a base (lime); basic soil needs acid (compost)."
+    ],
+    "whenWrong": [
+      "Push the pH toward 7 — add a base to acidic soil, or acid to basic soil.",
+      "Crops grow best near neutral, so aim for pH 7."
+    ],
+    "whenCorrect": [
+      "Balanced! Crops will thrive at pH 7.",
+      "Good — that's neutralisation in farming."
+    ],
+    "done": "You've neutralised soil for farming. Try the other soil, or move on."
+  }
 }

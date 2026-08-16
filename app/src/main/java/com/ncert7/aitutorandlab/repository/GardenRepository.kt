@@ -7,6 +7,7 @@ import com.anurag.eduai.uikit.garden.quest.Theme
 import com.anurag.eduai.uikit.garden.quest.STEPS_PER_TASK
 import com.anurag.eduai.uikit.garden.quest.PREFERRED_SLOT_SURPRISE
 import com.anurag.eduai.uikit.garden.quest.STARTER_GARDEN_ZONE
+import com.anurag.eduai.uikit.garden.quest.placeBased
 import com.anurag.eduai.uikit.garden.quest.starterSlot
 import com.anurag.eduai.uikit.garden.quest.starterZone
 import com.anurag.eduai.uikit.garden.quest.ZONE_CAPACITY
@@ -48,6 +49,7 @@ class GardenRepository @Inject constructor(
         val nextSteps = state.steps + 1
         if (nextSteps < STEPS_PER_TASK) {
             gardenDao.updateSteps(studentId, nextSteps)
+            scheduleGardenUpload()
             return null
         }
 
@@ -61,6 +63,7 @@ class GardenRepository @Inject constructor(
                     state.steps + 1
                 }
             gardenDao.updateSteps(studentId, creditedSteps)
+            scheduleGardenUpload()
             return null
         }
 
@@ -68,6 +71,7 @@ class GardenRepository @Inject constructor(
         if (zone < 0) {
             DebugLogger.debugLog(TAG, "Garden all places full — holding step at 6")
             gardenDao.updateSteps(studentId, STEPS_PER_TASK - 1)
+            scheduleGardenUpload()
             return null
         }
 
@@ -75,6 +79,7 @@ class GardenRepository @Inject constructor(
         if (plot < 0) {
             DebugLogger.debugLog(TAG, "Garden place full at zone $zone — holding step at 6")
             gardenDao.updateSteps(studentId, STEPS_PER_TASK - 1)
+            scheduleGardenUpload()
             return null
         }
 
@@ -96,6 +101,7 @@ class GardenRepository @Inject constructor(
         return try {
             gardenDao.insertItem(planted)
             gardenDao.updateSteps(studentId, 0)
+            scheduleGardenUpload()
             planted
         } catch (e: Exception) {
             DebugLogger.debugLog(TAG, "Garden plant skipped (duplicate?): ${e.message}")
@@ -148,6 +154,7 @@ class GardenRepository @Inject constructor(
                 -1
             }
         gardenDao.updatePreferredSlot(studentId, normalized)
+        scheduleGardenUpload()
     }
 
     /** Re-queue a plant celebration if a plant landed but the trial screen never showed it. */
@@ -193,8 +200,13 @@ class GardenRepository @Inject constructor(
 
     suspend fun setTheme(studentId: String, theme: String) {
         if (studentId.isBlank()) return
-        ensureState(studentId)
-        gardenDao.updateTheme(studentId, theme)
+        val state = ensureState(studentId)
+        val normalized = theme.uppercase()
+        if (state.theme.equals(normalized, ignoreCase = true)) return
+        gardenDao.updateTheme(studentId, normalized)
+        // Each journey starts on Surprise — don't carry a locked plant/module pick across themes.
+        gardenDao.updatePreferredSlot(studentId, PREFERRED_SLOT_SURPRISE)
+        scheduleGardenUpload()
     }
 
     /**
@@ -208,13 +220,20 @@ class GardenRepository @Inject constructor(
         val zone = composeTheme.starterZone()
         gardenDao.updateRoute(studentId, zone.toString())
         gardenDao.updatePreferredSlot(studentId, PREFERRED_SLOT_SURPRISE)
+        scheduleGardenUpload()
     }
 
     /** Unlocks a zone on the route when a place is completed (expressive picker). */
     suspend fun unlockZoneIfNeeded(studentId: String, zone: Int) {
         if (studentId.isBlank() || zone !in ZONES.indices) return
         val state = ensureState(studentId)
+        val alreadyCurrent = GardenRouteUtils.currentZone(state.route) >= zone
         appendZoneToRoute(studentId, state.route, zone)
+        if (!alreadyCurrent) {
+            // New place → Surprise again (same default as a fresh journey).
+            gardenDao.updatePreferredSlot(studentId, PREFERRED_SLOT_SURPRISE)
+        }
+        scheduleGardenUpload()
     }
 
     fun toComposeTheme(theme: String): Theme =
@@ -244,16 +263,27 @@ class GardenRepository @Inject constructor(
         studentId: String,
         state: GardenStateEntity,
     ): GardenStateEntity {
-        if (gardenDao.countItems(studentId) > 0) return state
         val composeTheme = toComposeTheme(state.theme)
-        if (composeTheme != Theme.GARDEN && composeTheme != Theme.OUTPOST) return state
-
-        val expectedZone = composeTheme.starterZone()
         var updated = state
 
-        if (GardenRouteUtils.currentZone(state.route) != expectedZone) {
+        // Island / colony have nothing to pick — keep growth mode on Surprise.
+        if (!composeTheme.placeBased && state.preferredSlot != PREFERRED_SLOT_SURPRISE) {
+            gardenDao.updatePreferredSlot(studentId, PREFERRED_SLOT_SURPRISE)
+            updated = updated.copy(preferredSlot = PREFERRED_SLOT_SURPRISE)
+        }
+
+        if (gardenDao.countItems(studentId) > 0) return updated
+        if (composeTheme != Theme.GARDEN && composeTheme != Theme.OUTPOST) return updated
+
+        val expectedZone = composeTheme.starterZone()
+
+        if (GardenRouteUtils.currentZone(updated.route) != expectedZone) {
             gardenDao.updateRoute(studentId, expectedZone.toString())
             updated = updated.copy(route = expectedZone.toString())
+        }
+        if (updated.preferredSlot != PREFERRED_SLOT_SURPRISE) {
+            gardenDao.updatePreferredSlot(studentId, PREFERRED_SLOT_SURPRISE)
+            updated = updated.copy(preferredSlot = PREFERRED_SLOT_SURPRISE)
         }
         return updated
     }
@@ -264,7 +294,12 @@ class GardenRepository @Inject constructor(
             val next = zone + 1
             if (next >= ZONES.size) return -1
             val route = gardenDao.getState(studentId)?.route ?: state.route
+            val alreadyCurrent = GardenRouteUtils.currentZone(route) >= next
             appendZoneToRoute(studentId, route, next)
+            if (!alreadyCurrent) {
+                // New place → Surprise again (don't carry a locked plant across places).
+                gardenDao.updatePreferredSlot(studentId, PREFERRED_SLOT_SURPRISE)
+            }
             zone = next
         }
         return zone
@@ -289,6 +324,18 @@ class GardenRepository @Inject constructor(
     private fun resolveSlot(state: GardenStateEntity, plantIndex: Int): Int {
         if (state.preferredSlot in 0 until SLOTS_PER_ZONE) return state.preferredSlot
         return (hash(plantIndex, 11) * SLOTS_PER_ZONE).toInt().coerceIn(0, SLOTS_PER_ZONE - 1)
+    }
+
+    /**
+     * Coalesced Firestore push (unique WorkManager KEEP + delay). Safe on the per-step hot path —
+     * rapid [recordStep] calls collapse into one deferred upload.
+     */
+    private fun scheduleGardenUpload() {
+        try {
+            com.ncert7.aitutorandlab.service.sync.DataSyncService.scheduleDeferredUpload()
+        } catch (e: Exception) {
+            DebugLogger.debugLog(TAG, "Garden deferred upload schedule skipped: ${e.message}")
+        }
     }
 
     companion object {

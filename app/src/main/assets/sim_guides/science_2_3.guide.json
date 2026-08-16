@@ -19,7 +19,59 @@
       "target": "Water"
     },
     {
-      "text": "Compare the results in the table: acids are sour and turn litmus red; bases feel soapy and turn litmus blue. Never taste substances to test them — always use an indicator!"
+      "text": "Compare the results: acids are sour and turn litmus red; bases feel soapy and turn litmus blue. Never taste substances to test them — always use an indicator!"
     }
-  ]
+  ],
+  "coach": {
+    "mission": "Identify each substance as acid, base, or neutral.",
+    "whenStuck": [
+      "Tap a substance to test its properties.",
+      "Acids are sour and turn litmus red; bases feel soapy and turn it blue."
+    ],
+    "whenWrong": [
+      "Sour + turns blue litmus red = acid; slippery + turns red litmus blue = base. Re-check the clue.",
+      "Water is neutral — litmus doesn't change for it."
+    ],
+    "whenCorrect": [
+      "Right — you matched the property to the substance!",
+      "Sharp observation."
+    ],
+    "done": "You've compared the properties of acids and bases. Explore more, or move on.",
+    "elements": {
+      "lemon": "Lemon is an acid — sour to taste, and it turns blue litmus red.",
+      "lemon juice": "Lemon Juice is an acid — sour to taste, and it turns blue litmus red.",
+      "vinegar": "Vinegar is an acid — sour to taste, and it turns blue litmus red.",
+      "orange": "Orange is an acid — sour to taste, and it turns blue litmus red.",
+      "orange juice": "Orange Juice is an acid — sour to taste, and it turns blue litmus red.",
+      "curd": "Curd is an acid — sour to taste, and it turns blue litmus red.",
+      "yogurt": "Yogurt is an acid — sour to taste, and it turns blue litmus red.",
+      "tamarind": "Tamarind is an acid — sour to taste, and it turns blue litmus red.",
+      "tamarind water": "Tamarind Water is an acid — sour to taste, and it turns blue litmus red.",
+      "tomato": "Tomato is an acid — sour to taste, and it turns blue litmus red.",
+      "apple": "Apple is an acid — sour to taste, and it turns blue litmus red.",
+      "grape": "Grape is an acid — sour to taste, and it turns blue litmus red.",
+      "lime juice": "Lime Juice is an acid — sour to taste, and it turns blue litmus red.",
+      "amla": "Amla is an acid — sour to taste, and it turns blue litmus red.",
+      "soda water": "Soda Water is an acid — sour to taste, and it turns blue litmus red.",
+      "cola": "Cola is an acid — sour to taste, and it turns blue litmus red.",
+      "soap": "Soap is a base — soapy to touch, and it turns red litmus blue.",
+      "baking soda": "Baking Soda is a base — soapy to touch, and it turns red litmus blue.",
+      "washing soda": "Washing Soda is a base — soapy to touch, and it turns red litmus blue.",
+      "detergent": "Detergent is a base — soapy to touch, and it turns red litmus blue.",
+      "lime water": "Lime Water is a base — soapy to touch, and it turns red litmus blue.",
+      "ammonia": "Ammonia is a base — soapy to touch, and it turns red litmus blue.",
+      "antacid": "Antacid is a base — soapy to touch, and it turns red litmus blue.",
+      "toothpaste": "Toothpaste is a base — soapy to touch, and it turns red litmus blue.",
+      "shampoo": "Shampoo is a base — soapy to touch, and it turns red litmus blue.",
+      "soap water": "Soap Water is a base — soapy to touch, and it turns red litmus blue.",
+      "water": "Water is neutral — it doesn't change litmus at all.",
+      "salt": "Salt is neutral — it doesn't change litmus at all.",
+      "salt water": "Salt Water is neutral — it doesn't change litmus at all.",
+      "common salt": "Common Salt is neutral — it doesn't change litmus at all.",
+      "sugar": "Sugar is neutral — it doesn't change litmus at all.",
+      "sugar solution": "Sugar Solution is neutral — it doesn't change litmus at all.",
+      "milk": "Milk is neutral — it doesn't change litmus at all.",
+      "distilled water": "Distilled Water is neutral — it doesn't change litmus at all."
+    }
+  }
 }

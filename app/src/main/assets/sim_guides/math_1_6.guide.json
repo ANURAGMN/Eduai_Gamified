@@ -1,0 +1,58 @@
+{
+  "simId": "math_1_6",
+  "lang": "en",
+  "title": "Nearest Neighbor Rounding Lineup",
+  "steps": [
+    {
+      "text": "Round the number to the place the game asks for, then pick its nearest neighbour."
+    },
+    {
+      "text": "Tap the option that shows the correct rounded value."
+    },
+    {
+      "text": "Tap “Check” to confirm your choice.",
+      "target": "Check"
+    },
+    {
+      "text": "To round, look at the digit just after the rounding place: 5 or more rounds up, less rounds down."
+    }
+  ],
+  "coach": {
+    "mission": "Round to the asked place and pick the neighbour.",
+    "whenStuck": [
+      "Pick the rounded value, then tap “Check”.",
+      "Look at the digit just after the rounding place."
+    ],
+    "whenWrong": [
+      "Rounding rule: the digit right after the place decides — 5 or more rounds up, less rounds down, then zero out the rest.",
+      "Check you rounded to the place the game asked for."
+    ],
+    "whenCorrect": [
+      "Rounded right!",
+      "You've got the rounding rule down."
+    ],
+    "done": "You can round to any place now. Keep going, or move on."
+  },
+  "practice": {
+    "rounds": 3,
+    "steps": [
+      {
+        "text": "Look at the digit just AFTER the rounding place: 5 or more rounds up, less rounds down. Tap the correctly rounded option."
+      },
+      {
+        "text": "Tap “Check”.",
+        "target": "Check"
+      }
+    ],
+    "onCorrect": [
+      "Rounded right — you read the deciding digit correctly.",
+      "Yes! Everything after the rounding place becomes zero.",
+      "Clean rounding."
+    ],
+    "onWrong": [
+      "Check the digit right after the rounding place: 5+ rounds up, less rounds down — then zero the rest.",
+      "Make sure you rounded to the place the game asked for."
+    ],
+    "done": "You can round to any place quickly and confidently!"
+  }
+}

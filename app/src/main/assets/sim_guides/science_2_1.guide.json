@@ -7,7 +7,7 @@
       "text": "A secret message is hidden on the paper — written with an invisible basic solution. Let's reveal it with an indicator!"
     },
     {
-      "text": "Tap “Spray” to spray the indicator across the paper.",
+      "text": "Tap “Spray!” to spray the indicator across the paper.",
       "target": "Spray"
     },
     {
@@ -16,5 +16,21 @@
     {
       "text": "That's the power of acid–base indicators: they change colour to reveal substances we can't see. Spies once used this trick with invisible ink!"
     }
-  ]
+  ],
+  "coach": {
+    "mission": "Reveal the hidden message with the indicator.",
+    "whenStuck": [
+      "Tap “Spray!” to spray the indicator across the paper.",
+      "The message appears where the indicator meets the basic ink."
+    ],
+    "whenWrong": [
+      "Indicators change colour only where they meet a base — spray and watch closely.",
+      "The invisible ink is basic; that's why the indicator reacts there."
+    ],
+    "whenCorrect": [
+      "Nice — the indicator revealed the hidden base!",
+      "That's how indicators expose substances we can't see."
+    ],
+    "done": "You've seen an indicator reveal a hidden base. Explore more, or move on when you're ready."
+  }
 }

@@ -31,6 +31,10 @@ import com.ncert7.aitutorandlab.service.analytics.FunnelAnalyticsTracker
 import com.ncert7.aitutorandlab.service.analytics.FunnelStep
 import com.ncert7.aitutorandlab.service.analytics.ScreenName
 import com.ncert7.aitutorandlab.service.analytics.TrackScreenEvent
+import com.ncert7.aitutorandlab.repository.FirebaseRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 @Composable
 fun LoginNavigator() {
@@ -125,6 +129,22 @@ fun LoginNavigator() {
                             chapter = result.chapter,
                             world = result.world,
                         )
+                        val userId = sharedPreferenceUtils.getUserId().orEmpty()
+                        if (userId.isNotBlank()) {
+                            // Best-effort cloud mirror — local prefs already gate the UI.
+                            CoroutineScope(Dispatchers.IO).launch {
+                                try {
+                                    FirebaseRepository().updateOnboardingPicks(
+                                        userId = userId,
+                                        subject = result.subject,
+                                        chapter = result.chapter,
+                                        world = result.world,
+                                        picksApplied = false,
+                                    )
+                                } catch (_: Exception) {
+                                }
+                            }
+                        }
                         onboarded = true
                     },
                     modifier = Modifier

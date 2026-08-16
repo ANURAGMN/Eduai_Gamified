@@ -45,6 +45,9 @@ class ExamPlanRepository @Inject constructor(
     fun observeActivePlan(studentId: String): Flow<ExamPlanEntity?> =
         examPlanDao.observeActivePlan(studentId)
 
+    suspend fun getActivePlan(studentId: String): ExamPlanEntity? =
+        examPlanDao.getActivePlan(studentId)
+
     suspend fun ensureActivePlan(
         studentId: String,
         subjectId: String,
@@ -104,6 +107,7 @@ class ExamPlanRepository @Inject constructor(
                 examEpochDay = generated.days.lastOrNull()?.calendarEpochDay ?: generated.startEpochDay,
                 chapterIds = generated.chapterIds.joinToString(","),
                 updatedAt = System.currentTimeMillis(),
+                isSynced = false,
             )
 
         planMutationLock.withPlanMutation {
@@ -125,6 +129,7 @@ class ExamPlanRepository @Inject constructor(
             )
             planTrialRepository.materializeAllPlanDaysLocked(studentId, languageCode)
         }
+        schedulePlanUpload()
     }
 
     private suspend fun ensureDefaultPlan(studentId: String, languageCode: String) {
@@ -190,7 +195,7 @@ class ExamPlanRepository @Inject constructor(
     }
 
     suspend fun getTodayPlanDay(studentId: String): ExamPlanDayEntity? {
-        val days = examPlanDao.getPlanDays(studentId)
+        val days = examPlanDao.getPlanDays(studentId).filter { it.isExamScheduleDay() }
         return days.firstOrNull { it.status == "TODAY" }
             ?: days.firstOrNull { it.status == "UPCOMING" }
     }
@@ -308,6 +313,7 @@ class ExamPlanRepository @Inject constructor(
                 examEpochDay = examDate.toEpochDay(),
                 chapterIds = generated.chapterIds.joinToString(","),
                 updatedAt = System.currentTimeMillis(),
+                isSynced = false,
             )
 
         planMutationLock.withPlanMutation {
@@ -329,6 +335,7 @@ class ExamPlanRepository @Inject constructor(
             )
             planTrialRepository.materializeAllPlanDaysLocked(studentId, languageCode)
         }
+        schedulePlanUpload()
         GamificationAnalyticsTracker.planCreated(
             chapterCount = selectedChapterIds.size,
             dailyMinutes = dailyMinutes,
@@ -369,5 +376,12 @@ class ExamPlanRepository @Inject constructor(
             dailyMinutes += 15
         }
         return false
+    }
+
+    private fun schedulePlanUpload() {
+        try {
+            com.ncert7.aitutorandlab.service.sync.DataSyncService.scheduleDeferredUpload()
+        } catch (_: Exception) {
+        }
     }
 }

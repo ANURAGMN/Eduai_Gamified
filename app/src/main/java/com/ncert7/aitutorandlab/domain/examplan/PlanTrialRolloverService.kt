@@ -32,19 +32,23 @@ class PlanTrialRolloverService @Inject constructor(
 
         if (handleDeadlineIfNeeded(studentId, languageCode)) return
 
-        val days = examPlanDao.getPlanDays(studentId)
+        val days = examPlanDao.getPlanDays(studentId).filter { it.isExamScheduleDay() }
         if (days.isEmpty()) return
 
         val todayEpoch = LocalDate.now(zone).toEpochDay()
         rolloverPastDays(studentId, days.sortedBy { it.dayIndex }, todayEpoch)
-        finalizeCalendarStatuses(studentId, examPlanDao.getPlanDays(studentId), todayEpoch)
+        finalizeCalendarStatuses(
+            studentId,
+            examPlanDao.getPlanDays(studentId).filter { it.isExamScheduleDay() },
+            todayEpoch,
+        )
     }
 
     private suspend fun handleDeadlineIfNeeded(
         studentId: String,
         @Suppress("UNUSED_PARAMETER") languageCode: String,
     ): Boolean {
-        val days = examPlanDao.getPlanDays(studentId)
+        val days = examPlanDao.getPlanDays(studentId).filter { it.isExamScheduleDay() }
         val examDay =
             days.lastOrNull { it.dayType == "EXAM" }
                 ?: days.maxByOrNull { it.calendarEpochDay }

@@ -1,0 +1,59 @@
+{
+  "simId": "math_1_8",
+  "lang": "en",
+  "title": "Number System Compare Pitstop",
+  "steps": [
+    {
+      "text": "Two large numbers are written in different notations. Which one is bigger?"
+    },
+    {
+      "text": "Tap the correct sign — “<”, “=”, or “>” — for the comparison.",
+      "target": ">"
+    },
+    {
+      "text": "Then tap the highlighted check button to confirm.",
+      "target": "Check Sign"
+    },
+    {
+      "text": "Line up the place values: more digits means a bigger number; if the digit count is equal, compare from the left."
+    }
+  ],
+  "coach": {
+    "mission": "Compare the two numbers with <, =, or >.",
+    "whenStuck": [
+      "Tap the correct sign, then “Check Sign”.",
+      "More digits usually means a bigger number."
+    ],
+    "whenWrong": [
+      "Line up place values: more digits = bigger; if the digit count is equal, compare from the leftmost digit.",
+      "Convert both to the same notation first, then compare."
+    ],
+    "whenCorrect": [
+      "Correct comparison!",
+      "You lined up the place values well."
+    ],
+    "done": "You can compare large numbers across notations. Keep going, or move on."
+  },
+  "practice": {
+    "rounds": 3,
+    "steps": [
+      {
+        "text": "Line up place values — more digits (or a bigger leading digit) is larger. Tap “<”, “=” or “>”."
+      },
+      {
+        "text": "Tap the highlighted check button to lock in your answer.",
+        "target": "Check Sign"
+      }
+    ],
+    "onCorrect": [
+      "Correct comparison — place values lined up.",
+      "Yes! More digits means a bigger number.",
+      "Sharp — you compared across notations."
+    ],
+    "onWrong": [
+      "Count digits first: more digits = bigger. If equal, compare from the leftmost digit.",
+      "Convert both to the same notation, then compare place by place."
+    ],
+    "done": "You can compare large numbers across different notations!"
+  }
+}

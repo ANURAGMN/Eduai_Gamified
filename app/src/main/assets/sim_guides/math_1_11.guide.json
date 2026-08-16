@@ -1,0 +1,63 @@
+{
+  "simId": "math_1_11",
+  "lang": "en",
+  "title": "Restricted Calculator Rush",
+  "steps": [
+    {
+      "text": "A calculator with only ONE working button! Reach the target using just it."
+    },
+    {
+      "text": "Tap “+1,000” again and again to climb toward the target.",
+      "target": "+1,000"
+    },
+    {
+      "text": "When you hit the target, tap “Check”.",
+      "target": "Check"
+    },
+    {
+      "text": "Count smart: target ÷ 1,000 tells you exactly how many taps you need."
+    }
+  ],
+  "coach": {
+    "mission": "Reach the target using only the +1,000 button.",
+    "whenStuck": [
+      "Tap “+1,000” again and again, then “Check”.",
+      "Target ÷ 1,000 tells you how many taps you need."
+    ],
+    "whenWrong": [
+      "Count the taps: target ÷ 1,000 is the exact number of presses. You may be one short or over.",
+      "Use place value — each press adds one to the thousands place."
+    ],
+    "whenCorrect": [
+      "Target hit — smart counting!",
+      "You worked out the taps from place value."
+    ],
+    "done": "You've mastered the restricted calculator. Keep going, or move on."
+  },
+  "practice": {
+    "rounds": 3,
+    "steps": [
+      {
+        "text": "Work it out first: target ÷ 1,000 tells you exactly how many taps you need."
+      },
+      {
+        "text": "Tap “+1,000” that many times.",
+        "target": "+1,000"
+      },
+      {
+        "text": "Tap “Check”.",
+        "target": "Check"
+      }
+    ],
+    "onCorrect": [
+      "Bang on! target ÷ 1,000 gave the exact taps.",
+      "Smart counting — place value in action.",
+      "Yes — you reached it with no wasted taps."
+    ],
+    "onWrong": [
+      "A tap or two off — recount: target ÷ 1,000 is the exact number of presses.",
+      "Each press adds 1 to the thousands place; count carefully and try again."
+    ],
+    "done": "You can reach any thousands target just by counting place value!"
+  }
+}

@@ -22,6 +22,24 @@ interface FriendDao {
 
     @Query(
         """
+        SELECT * FROM friend_connection
+        WHERE studentId = :studentId AND status = 'PENDING'
+        ORDER BY createdAt DESC
+        """,
+    )
+    fun observePendingRequests(studentId: String): Flow<List<FriendConnectionEntity>>
+
+    @Query(
+        """
+        SELECT * FROM friend_connection
+        WHERE studentId = :studentId AND status = 'PENDING'
+        ORDER BY createdAt DESC
+        """,
+    )
+    suspend fun getPendingRequests(studentId: String): List<FriendConnectionEntity>
+
+    @Query(
+        """
         SELECT COUNT(*) FROM friend_connection
         WHERE studentId = :studentId AND status = 'ACCEPTED'
         """,
@@ -83,13 +101,38 @@ interface FriendDao {
     )
     fun observeFeed(studentId: String, limit: Int = 20): Flow<List<FriendFeedItemEntity>>
 
+    /** Home rail: exclude SELF and anything authored by the owner (covers bad remote sync). */
+    @Query(
+        """
+        SELECT * FROM friend_feed_item
+        WHERE ownerStudentId = :studentId
+          AND visibility != 'SELF'
+          AND fromStudentId != :studentId
+        ORDER BY createdAt DESC
+        LIMIT :limit
+        """,
+    )
+    fun observeFriendsFeed(studentId: String, limit: Int = 20): Flow<List<FriendFeedItemEntity>>
+
     @Query(
         """
         SELECT COUNT(*) FROM friend_feed_item
-        WHERE ownerStudentId = :studentId AND seen = 0
+        WHERE ownerStudentId = :studentId
+          AND seen = 0
+          AND visibility != 'SELF'
+          AND fromStudentId != :studentId
         """,
     )
     fun observeUnseenFeedCount(studentId: String): Flow<Int>
+
+    @Query(
+        """
+        DELETE FROM friend_feed_item
+        WHERE ownerStudentId = :studentId
+          AND (visibility = 'SELF' OR fromStudentId = :studentId)
+        """,
+    )
+    suspend fun deleteSelfAuthoredFeed(studentId: String): Int
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertFeedItem(item: FriendFeedItemEntity): Long

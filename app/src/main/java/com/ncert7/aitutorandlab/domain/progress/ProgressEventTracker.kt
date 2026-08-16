@@ -101,7 +101,8 @@ class ProgressEventTracker @Inject constructor(
             triggerChapterProgressUpdate(studentId, conceptId, resolvedLang)
             streakRepository.recordActivity(studentId)
             awardGamificationXp(studentId, "CONCEPT", conceptId, resolvedLang)
-            friendFeedService.onConceptCompleted(studentId, resolvedLang)
+            val topicTitle = conceptRepository.getConcept(conceptId)?.conceptName
+            friendFeedService.onConceptCompleted(studentId, resolvedLang, topicTitle)
             inviteRewardService.tryGrantOnFirstConceptCompleted(studentId, resolvedLang)
             val chapterId = conceptRepository.getConcept(conceptId)?.chapterId.orEmpty()
             GamificationAnalyticsTracker.studyComplete(conceptId, chapterId)

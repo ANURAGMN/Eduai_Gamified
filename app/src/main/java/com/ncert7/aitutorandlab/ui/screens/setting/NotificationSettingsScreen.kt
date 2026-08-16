@@ -59,6 +59,9 @@ import com.ncert7.aitutorandlab.ui.theme.LocalDimensions
 import com.ncert7.aitutorandlab.ui.theme.TextOnPrimary
 import com.ncert7.aitutorandlab.ui.theme.TextPrimary
 import com.ncert7.aitutorandlab.ui.theme.TextSecondary
+import com.ncert7.aitutorandlab.utils.NotificationSettingsCopy
+import com.ncert7.aitutorandlab.utils.RewardMomentCopy
+import com.ncert7.aitutorandlab.utils.getCurrentLanguageCode
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -70,6 +73,7 @@ fun NotificationSettingsScreen(
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     val dimens = LocalDimensions.current
+    val language = getCurrentLanguageCode()
     var showReminderTimePicker by remember { mutableStateOf(false) }
     var showQuietStartPicker by remember { mutableStateOf(false) }
     var showQuietEndPicker by remember { mutableStateOf(false) }
@@ -102,7 +106,7 @@ fun NotificationSettingsScreen(
             TopAppBar(
                 title = {
                     Text(
-                        "Notifications",
+                        NotificationSettingsCopy.screenTitle(language),
                         fontWeight = FontWeight.SemiBold,
                         color = TextOnPrimary,
                     )
@@ -111,7 +115,8 @@ fun NotificationSettingsScreen(
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription =
+                                NotificationSettingsCopy.backContentDescription(language),
                             tint = TextOnPrimary,
                         )
                     }
@@ -130,10 +135,10 @@ fun NotificationSettingsScreen(
                     .padding(dimens.screenPadding),
             verticalArrangement = Arrangement.spacedBy(dimens.spaceMedium),
         ) {
-            SettingsSection(title = "General") {
+            SettingsSection(title = NotificationSettingsCopy.generalSection(language)) {
                 if (uiState.showSystemSettingsFallback) {
                     Text(
-                        text = "Notifications are blocked at the system level.",
+                        text = NotificationSettingsCopy.blockedAtSystem(language),
                         style = MaterialTheme.typography.bodyMedium,
                         color = TextSecondary,
                         modifier = Modifier.padding(bottom = dimens.spaceSmall),
@@ -142,12 +147,12 @@ fun NotificationSettingsScreen(
                         onClick = { NotificationPermissionHelper.openAppNotificationSettings(context) },
                         modifier = Modifier.fillMaxWidth(),
                     ) {
-                        Text("Enable in system settings")
+                        Text(NotificationSettingsCopy.enableInSystemSettings(language))
                     }
                 } else {
                     NotificationToggleRow(
-                        title = "Notifications",
-                        subtitle = "Daily reminders and streak alerts",
+                        title = NotificationSettingsCopy.notificationsToggleTitle(language),
+                        subtitle = NotificationSettingsCopy.notificationsToggleSubtitle(language),
                         checked = uiState.masterEnabled && uiState.osPermissionGranted,
                         onCheckedChange = { enabled ->
                             if (enabled && !uiState.osPermissionGranted) {
@@ -164,15 +169,15 @@ fun NotificationSettingsScreen(
                 }
             }
 
-            SettingsSection(title = "Daily reminder") {
+            SettingsSection(title = NotificationSettingsCopy.dailyReminderSection(language)) {
                 NotificationValueRow(
-                    title = "Reminder time",
+                    title = NotificationSettingsCopy.reminderTime(language),
                     value = formatClockTime(uiState.reminderHour, uiState.reminderMinute),
                     enabled = uiState.masterEnabled && uiState.reminderMode != NotificationReminderMode.OFF,
                     onClick = { showReminderTimePicker = true },
                 )
                 Text(
-                    text = "Reminder mode",
+                    text = NotificationSettingsCopy.reminderMode(language),
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextPrimary,
                     modifier = Modifier.padding(top = dimens.spaceSmall),
@@ -182,40 +187,35 @@ fun NotificationSettingsScreen(
                     horizontalArrangement = Arrangement.spacedBy(dimens.spaceSmall),
                 ) {
                     ReminderModeChip(
-                        label = "Off",
+                        label = NotificationSettingsCopy.modeOff(language),
                         selected = uiState.reminderMode == NotificationReminderMode.OFF,
                         onClick = { viewModel.onReminderModeChanged(NotificationReminderMode.OFF) },
                         modifier = Modifier.weight(1f),
                     )
                     ReminderModeChip(
-                        label = "Gentle",
+                        label = NotificationSettingsCopy.modeGentle(language),
                         selected = uiState.reminderMode == NotificationReminderMode.GENTLE,
                         onClick = { viewModel.onReminderModeChanged(NotificationReminderMode.GENTLE) },
                         modifier = Modifier.weight(1f),
                     )
                     ReminderModeChip(
-                        label = "Standard",
+                        label = NotificationSettingsCopy.modeStandard(language),
                         selected = uiState.reminderMode == NotificationReminderMode.STANDARD,
                         onClick = { viewModel.onReminderModeChanged(NotificationReminderMode.STANDARD) },
                         modifier = Modifier.weight(1f),
                     )
                 }
                 Text(
-                    text =
-                        when (uiState.reminderMode) {
-                            NotificationReminderMode.OFF -> "No scheduled reminders."
-                            NotificationReminderMode.GENTLE -> "Up to 1 notification per day."
-                            NotificationReminderMode.STANDARD -> "Up to 3 notifications per day."
-                        },
+                    text = NotificationSettingsCopy.modeHint(language, uiState.reminderMode),
                     style = MaterialTheme.typography.bodySmall,
                     color = TextSecondary,
                 )
             }
 
-            SettingsSection(title = "Categories") {
+            SettingsSection(title = NotificationSettingsCopy.categoriesSection(language)) {
                 uiState.categoryEnabled.forEach { (category, enabled) ->
                     NotificationToggleRow(
-                        title = category.channelLabel,
+                        title = RewardMomentCopy.categoryLabel(category, language),
                         subtitle = null,
                         checked = enabled,
                         onCheckedChange = { viewModel.onCategoryToggle(category, it) },
@@ -230,7 +230,8 @@ fun NotificationSettingsScreen(
                             ) {
                                 Icon(
                                     Icons.Default.ChevronRight,
-                                    contentDescription = "Open Android channel settings",
+                                    contentDescription =
+                                        NotificationSettingsCopy.openChannelSettingsCd(language),
                                     tint = IconSecondary,
                                 )
                             }
@@ -239,21 +240,21 @@ fun NotificationSettingsScreen(
                 }
             }
 
-            SettingsSection(title = "Quiet hours") {
+            SettingsSection(title = NotificationSettingsCopy.quietHoursSection(language)) {
                 NotificationValueRow(
-                    title = "Start",
+                    title = NotificationSettingsCopy.startLabel(language),
                     value = formatHourLabel(uiState.quietHoursStart),
                     enabled = true,
                     onClick = { showQuietStartPicker = true },
                 )
                 NotificationValueRow(
-                    title = "End",
+                    title = NotificationSettingsCopy.endLabel(language),
                     value = formatHourLabel(uiState.quietHoursEnd),
                     enabled = true,
                     onClick = { showQuietEndPicker = true },
                 )
                 Text(
-                    text = "No notifications are sent during quiet hours.",
+                    text = NotificationSettingsCopy.quietHoursHint(language),
                     style = MaterialTheme.typography.bodySmall,
                     color = TextSecondary,
                 )
@@ -263,7 +264,7 @@ fun NotificationSettingsScreen(
 
     if (showReminderTimePicker) {
         HourMinutePickerDialog(
-            title = "Daily reminder time",
+            title = NotificationSettingsCopy.reminderTimePickerTitle(language),
             initialHour = uiState.reminderHour,
             initialMinute = uiState.reminderMinute,
             onDismiss = { showReminderTimePicker = false },
@@ -271,30 +272,36 @@ fun NotificationSettingsScreen(
                 viewModel.onReminderTimeChanged(hour, minute)
                 showReminderTimePicker = false
             },
+            okLabel = NotificationSettingsCopy.okLabel(language),
+            cancelLabel = NotificationSettingsCopy.cancelLabel(language),
         )
     }
 
     if (showQuietStartPicker) {
         HourPickerDialog(
-            title = "Quiet hours start",
+            title = NotificationSettingsCopy.quietStartPickerTitle(language),
             initialHour = uiState.quietHoursStart,
             onDismiss = { showQuietStartPicker = false },
             onConfirm = { hour ->
                 viewModel.onQuietHoursChanged(hour, uiState.quietHoursEnd)
                 showQuietStartPicker = false
             },
+            okLabel = NotificationSettingsCopy.okLabel(language),
+            cancelLabel = NotificationSettingsCopy.cancelLabel(language),
         )
     }
 
     if (showQuietEndPicker) {
         HourPickerDialog(
-            title = "Quiet hours end",
+            title = NotificationSettingsCopy.quietEndPickerTitle(language),
             initialHour = uiState.quietHoursEnd,
             onDismiss = { showQuietEndPicker = false },
             onConfirm = { hour ->
                 viewModel.onQuietHoursChanged(uiState.quietHoursStart, hour)
                 showQuietEndPicker = false
             },
+            okLabel = NotificationSettingsCopy.okLabel(language),
+            cancelLabel = NotificationSettingsCopy.cancelLabel(language),
         )
     }
 }
@@ -379,6 +386,8 @@ private fun HourMinutePickerDialog(
     initialMinute: Int,
     onDismiss: () -> Unit,
     onConfirm: (hour: Int, minute: Int) -> Unit,
+    okLabel: String = "OK",
+    cancelLabel: String = "Cancel",
 ) {
     val state =
         rememberTimePickerState(
@@ -392,12 +401,12 @@ private fun HourMinutePickerDialog(
         text = { TimePicker(state = state) },
         confirmButton = {
             TextButton(onClick = { onConfirm(state.hour, state.minute) }) {
-                Text("OK")
+                Text(okLabel)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(cancelLabel)
             }
         },
     )
@@ -410,6 +419,8 @@ private fun HourPickerDialog(
     initialHour: Int,
     onDismiss: () -> Unit,
     onConfirm: (hour: Int) -> Unit,
+    okLabel: String = "OK",
+    cancelLabel: String = "Cancel",
 ) {
     val state =
         rememberTimePickerState(
@@ -423,12 +434,12 @@ private fun HourPickerDialog(
         text = { TimePicker(state = state) },
         confirmButton = {
             TextButton(onClick = { onConfirm(state.hour) }) {
-                Text("OK")
+                Text(okLabel)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(cancelLabel)
             }
         },
     )

@@ -1,0 +1,36 @@
+{
+  "simId": "math_1_13",
+  "lang": "en",
+  "title": "Scale Journey Builder",
+  "steps": [
+    {
+      "text": "Plan a long journey using large-number estimation — start by choosing a travel speed."
+    },
+    {
+      "text": "Tap “80 km/day” or “100 km/day” to set your daily distance.",
+      "target": "80 km/day"
+    },
+    {
+      "text": "Watch how many days the journey takes at that speed — real distances add up fast!"
+    },
+    {
+      "text": "Distance divided by speed gives the number of days. Estimating with large numbers helps plan real trips."
+    }
+  ],
+  "coach": {
+    "mission": "Plan the journey by choosing a daily distance.",
+    "whenStuck": [
+      "Tap a speed like “80 km/day” to set your daily distance.",
+      "Days = total distance ÷ daily distance."
+    ],
+    "whenWrong": [
+      "Days needed = distance ÷ speed. Estimate that to choose a sensible speed.",
+      "A bigger daily distance means fewer days — pick accordingly."
+    ],
+    "whenCorrect": [
+      "Journey planned — good estimation!",
+      "You used large-number division well."
+    ],
+    "done": "You can plan journeys with big-number estimation. Keep exploring, or move on."
+  }
+}

@@ -62,6 +62,18 @@ class DataSyncWorker(
                     database.gardenDao(),
                     com.ncert7.aitutorandlab.repository.FirebaseRepository(),
                 ).pushGarden(studentId)
+                GamificationSyncManager(
+                    database.gamificationDao(),
+                    com.ncert7.aitutorandlab.repository.FirebaseRepository(),
+                ).pushProfile(studentId)
+                ExamPlanSyncManager(
+                    database.examPlanDao(),
+                    com.ncert7.aitutorandlab.repository.FirebaseRepository(),
+                ).pushPlan(studentId)
+                QuestSyncManager(
+                    database.questDailyDao(),
+                    com.ncert7.aitutorandlab.repository.FirebaseRepository(),
+                ).pushTodayQuest(studentId)
                 return Result.success()
             } else {
                 DebugLogger.errorLog(TAG, "Sync failed: ${result.message}")

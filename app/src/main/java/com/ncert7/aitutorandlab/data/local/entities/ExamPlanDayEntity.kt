@@ -24,7 +24,7 @@ data class ExamPlanDayEntity(
     val studentId: String,
     val dayIndex: Int,
     val calendarEpochDay: Long,
-    /** LESSON, REVISE, MOCK, EXAM */
+    /** LESSON, REVISE, MOCK, EXAM — or CHAPTER_TRIAL for standalone chapter picker runs. */
     val dayType: String,
     /** DONE, TODAY, UPCOMING */
     val status: String,
@@ -32,4 +32,12 @@ data class ExamPlanDayEntity(
     /** Comma-separated concept IDs for lesson/revise days. */
     val conceptIds: String = "",
     val estimatedMinutes: Int = 18,
-)
+) {
+    /**
+     * Real exam-prep schedule day (shown on plan trail / overview).
+     * Chapter-picker trials use a negative [dayIndex] + CHAPTER_TRIAL and stay status TODAY —
+     * they must not appear as extra "Today" nodes on the exam plan.
+     */
+    fun isExamScheduleDay(): Boolean =
+        dayIndex >= 0 && !dayType.equals("CHAPTER_TRIAL", ignoreCase = true)
+}

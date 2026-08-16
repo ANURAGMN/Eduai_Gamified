@@ -84,6 +84,8 @@ import com.ncert7.aitutorandlab.ui.screens.quests.QuestsRoute
 import androidx.navigation.NavHostController
 import com.ncert7.aitutorandlab.notification.NotificationDeepLink
 import com.ncert7.aitutorandlab.notification.NotificationDeepLinkStore
+import com.ncert7.aitutorandlab.utils.NavTourCopy
+import com.ncert7.aitutorandlab.utils.getCurrentLanguageCode
 import com.ncert7.aitutorandlab.ui.theme.TextSecondary
 
 private fun NavHostController.navigateToTab(route: String) {
@@ -813,6 +815,8 @@ private fun BottomNavBarContent(
     // through). Rendered over the Scaffold so it survives the tab switches. Skip or the final card
     // returns home and enables the streak celebrations.
     val navTourActive = isGamified && homeRailTourDone && !navTourDone
+    val navLanguage = getCurrentLanguageCode()
+    val navWalkthroughSteps = remember(navLanguage) { NavTourCopy.steps(navLanguage) }
     val finishNavTour: (skipped: Boolean) -> Unit = { skipped ->
         if (skipped) {
             EngagementAnalyticsTracker.navWalkthroughSkip(navTourStep)
@@ -823,7 +827,7 @@ private fun BottomNavBarContent(
         sharedPrefs.setNavTourCompleted()
         navTourDone = true
     }
-    LaunchedEffect(navTourActive, navTourStep) {
+    LaunchedEffect(navTourActive, navTourStep, navWalkthroughSteps) {
         if (!navTourActive) return@LaunchedEffect
         val route = navWalkthroughSteps.getOrNull(navTourStep)?.route ?: EduBottomNavItem.Home.route
         EngagementAnalyticsTracker.navWalkthroughStep(route, navTourStep)
@@ -854,6 +858,11 @@ private fun BottomNavBarContent(
                         }
                     },
                     onSkip = { finishNavTour(true) },
+                    skipLabel = NavTourCopy.skipLabel(navLanguage),
+                    backLabel = NavTourCopy.backLabel(navLanguage),
+                    nextLabel = NavTourCopy.nextLabel(navLanguage),
+                    doneLabel = NavTourCopy.doneLabel(navLanguage),
+                    stepOfTotal = NavTourCopy.stepOfTotal(navLanguage),
                 )
             }
         }
@@ -861,29 +870,3 @@ private fun BottomNavBarContent(
     }
     }
 }
-
-private data class NavWalkStep(val route: String, val title: String, val body: String)
-
-private val navWalkthroughSteps =
-    listOf(
-        NavWalkStep(
-            EduBottomNavItem.Plan.route,
-            "Your exam planner",
-            "Your whole plan, day by day. Follow it to study a little every day and stay on track for your exam.",
-        ),
-        NavWalkStep(
-            EduBottomNavItem.Avatar.route,
-            "Your world & tutor",
-            "Grow your garden or space as you learn, customise your tutor, and share your progress with friends.",
-        ),
-        NavWalkStep(
-            EduBottomNavItem.Leagues.route,
-            "Leaderboard & leagues",
-            "Earn XP and climb weekly leagues with friends — ranked on effort, never on grades.",
-        ),
-        NavWalkStep(
-            EduBottomNavItem.Home.route,
-            "You're all set!",
-            "This is home — your daily focus starts here. Jump into your first task whenever you're ready.",
-        ),
-    )

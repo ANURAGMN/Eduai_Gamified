@@ -1,0 +1,68 @@
+{
+  "simId": "math_1_7",
+  "lang": "en",
+  "title": "Number Cards Target Dash",
+  "steps": [
+    {
+      "text": "Reach the target number by combining the number cards with operations (+, −, ×, ÷)."
+    },
+    {
+      "text": "Tap a number card, then an operation such as “+”, to build toward the target.",
+      "target": "+"
+    },
+    {
+      "text": "Made a wrong move? Tap “Undo”.",
+      "target": "Undo"
+    },
+    {
+      "text": "When your result is at (or closest to) the target, tap “Submit”.",
+      "target": "Submit"
+    },
+    {
+      "text": "Estimate first: which cards and operations get you into the target's range fastest?"
+    }
+  ],
+  "coach": {
+    "mission": "Combine cards and operations to hit the target.",
+    "whenStuck": [
+      "Tap a number card, then an operation like “+”. Use “Undo” to fix moves.",
+      "Estimate which cards get you near the target fastest."
+    ],
+    "whenWrong": [
+      "You're off the target — estimate first, then adjust with a smaller card or a different operation.",
+      "Try Undo and aim for the target's range before fine-tuning."
+    ],
+    "whenCorrect": [
+      "On target — well combined!",
+      "Good estimation and operation choice."
+    ],
+    "done": "You've reached the target with number cards. Keep playing, or move on."
+  },
+  "practice": {
+    "rounds": 3,
+    "steps": [
+      {
+        "text": "Estimate which cards get you near the target, then tap a number card and an operation like “+”.",
+        "target": "+"
+      },
+      {
+        "text": "Adjust with more cards and operations; tap “Undo” to fix a move.",
+        "target": "Undo"
+      },
+      {
+        "text": "When you're at (or closest to) the target, tap “Submit”.",
+        "target": "Submit"
+      }
+    ],
+    "onCorrect": [
+      "On target — well combined!",
+      "Good estimation and operation choices.",
+      "Yes — you planned the route to the target."
+    ],
+    "onWrong": [
+      "Off the target — estimate first, then adjust with a smaller card or a different operation. Use Undo.",
+      "Aim for the target's range with big cards, then fine-tune."
+    ],
+    "done": "You can hit a target by estimating and combining numbers with operations!"
+  }
+}

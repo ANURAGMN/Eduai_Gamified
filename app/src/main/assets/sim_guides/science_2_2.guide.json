@@ -4,28 +4,81 @@
   "title": "Litmus Paper Test",
   "steps": [
     {
-      "text": "Litmus is the classic acid–base indicator. Let's test different solutions and watch the paper change colour."
+      "text": "Litmus is the classic acid–base indicator. Pick a solution, dip the paper, and watch the colour change."
     },
     {
-      "text": "First test an acidic solution — tap “Lemon” (lemon juice is an acid).",
-      "target": "Lemon"
+      "text": "First pick an acid — tap the lemon (lemon juice is an acid).",
+      "target": "lemon"
     },
     {
-      "text": "Notice: blue litmus turns RED. A change to red means the solution is an ACID."
+      "text": "Now tap “Dip Papers” to dip the litmus paper into it.",
+      "target": "Dip Papers"
     },
     {
-      "text": "Now test a base — tap “Soap” (soap solution is basic).",
-      "target": "Soap"
+      "text": "Look: blue litmus turns RED. A change to red means the solution is an ACID."
     },
     {
-      "text": "This time red litmus turns BLUE — that tells us the solution is a BASE."
+      "text": "Now pick a base — tap the soap.",
+      "target": "soap"
     },
     {
-      "text": "Finally test “Water”. Neither colour changes, so water is NEUTRAL.",
-      "target": "Water"
+      "text": "Tap “Dip Papers” again to test the soap.",
+      "target": "Dip Papers"
     },
     {
-      "text": "Because litmus responds to both acids and bases, it's a complete indicator."
+      "text": "This time red litmus turns BLUE — that means the solution is a BASE. (Try water too — neither colour changes, so it's neutral.)"
     }
-  ]
+  ],
+  "coach": {
+    "mission": "Use litmus to sort acids from bases.",
+    "whenStuck": [
+      "Pick a solution first, then tap “Dip Papers”.",
+      "Nothing changes until you dip — pick a solution, then dip the paper."
+    ],
+    "whenWrong": [
+      "Blue litmus turns red in an ACID; red litmus turns blue in a BASE — check which colour changed.",
+      "No change? The solution may be neutral, like water."
+    ],
+    "whenCorrect": [
+      "Correct — you read the litmus right!",
+      "Acid turns litmus red, base turns it blue. Nicely done."
+    ],
+    "done": "You can tell acids, bases and neutrals with litmus now. Try the other solutions, or move on.",
+    "elements": {
+      "lemon": "Lemon is an acid — it turns blue litmus red.",
+      "lemon juice": "Lemon Juice is an acid — it turns blue litmus red.",
+      "vinegar": "Vinegar is an acid — it turns blue litmus red.",
+      "orange": "Orange is an acid — it turns blue litmus red.",
+      "orange juice": "Orange Juice is an acid — it turns blue litmus red.",
+      "curd": "Curd is an acid — it turns blue litmus red.",
+      "yogurt": "Yogurt is an acid — it turns blue litmus red.",
+      "tamarind": "Tamarind is an acid — it turns blue litmus red.",
+      "tamarind water": "Tamarind Water is an acid — it turns blue litmus red.",
+      "tomato": "Tomato is an acid — it turns blue litmus red.",
+      "apple": "Apple is an acid — it turns blue litmus red.",
+      "grape": "Grape is an acid — it turns blue litmus red.",
+      "lime juice": "Lime Juice is an acid — it turns blue litmus red.",
+      "amla": "Amla is an acid — it turns blue litmus red.",
+      "soda water": "Soda Water is an acid — it turns blue litmus red.",
+      "cola": "Cola is an acid — it turns blue litmus red.",
+      "soap": "Soap is a base — it turns red litmus blue.",
+      "baking soda": "Baking Soda is a base — it turns red litmus blue.",
+      "washing soda": "Washing Soda is a base — it turns red litmus blue.",
+      "detergent": "Detergent is a base — it turns red litmus blue.",
+      "lime water": "Lime Water is a base — it turns red litmus blue.",
+      "ammonia": "Ammonia is a base — it turns red litmus blue.",
+      "antacid": "Antacid is a base — it turns red litmus blue.",
+      "toothpaste": "Toothpaste is a base — it turns red litmus blue.",
+      "shampoo": "Shampoo is a base — it turns red litmus blue.",
+      "soap water": "Soap Water is a base — it turns red litmus blue.",
+      "water": "Water is neutral — litmus paper stays the same colour.",
+      "salt": "Salt is neutral — litmus paper stays the same colour.",
+      "salt water": "Salt Water is neutral — litmus paper stays the same colour.",
+      "common salt": "Common Salt is neutral — litmus paper stays the same colour.",
+      "sugar": "Sugar is neutral — litmus paper stays the same colour.",
+      "sugar solution": "Sugar Solution is neutral — litmus paper stays the same colour.",
+      "milk": "Milk is neutral — litmus paper stays the same colour.",
+      "distilled water": "Distilled Water is neutral — litmus paper stays the same colour."
+    }
+  }
 }

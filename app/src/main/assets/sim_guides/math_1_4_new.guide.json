@@ -1,0 +1,68 @@
+{
+  "simId": "math_1_4_new",
+  "lang": "en",
+  "title": "Digit Sum Click Race",
+  "steps": [
+    {
+      "text": "Build the target number using place-value buttons — in as few taps as you can!"
+    },
+    {
+      "text": "Each place-value button adds its own value. Tap the biggest button that still fits under the target — the app highlights the right one for you."
+    },
+    {
+      "text": "Keep adding smaller buttons (+10,000, +1,000 and so on) until you reach the target. Tap “Reset” to start over.",
+      "target": "Reset"
+    },
+    {
+      "text": "When your number matches the target exactly, the app highlights “Lock Build” — that's your cue to submit. (No need to lock an empty build.)"
+    },
+    {
+      "text": "Fewer clicks means smarter place-value thinking — pick the biggest button that still fits."
+    }
+  ],
+  "coach": {
+    "mission": "Build the target in as few taps as possible.",
+    "whenStuck": [
+      "Tap the biggest highlighted place-value button that still fits, then smaller ones.",
+      "Pick the biggest button that still fits under the target, then work down."
+    ],
+    "whenWrong": [
+      "Overshot or undershot — use “Reset” and match each place value of the target with its button.",
+      "Pick the largest button that still fits, then work down."
+    ],
+    "whenCorrect": [
+      "Locked! Efficient place-value building.",
+      "Fewer taps means smarter thinking — nice."
+    ],
+    "done": "You've built numbers by place value efficiently. Keep racing, or move on."
+  },
+  "practice": {
+    "rounds": 3,
+    "steps": [
+      {
+        "text": "Tap “Reset” to start a fresh build.",
+        "target": "Reset"
+      },
+      {
+        "text": "Look at the target. Tap the biggest place-value button that still fits — the app highlights it. Then keep working down."
+      },
+      {
+        "text": "Keep adding the highlighted smaller buttons until your number matches the target exactly."
+      },
+      {
+        "text": "Tap “Lock Build” to submit.",
+        "target": "Lock Build"
+      }
+    ],
+    "onCorrect": [
+      "Locked! Fewer taps means smarter place-value thinking.",
+      "Perfect build — biggest buttons first, then down.",
+      "Yes — every place value matched."
+    ],
+    "onWrong": [
+      "Over or under the target — tap Reset, then pick the biggest button that still fits and work down.",
+      "Match each place value of the target with its own button."
+    ],
+    "done": "You can build any large number efficiently, place value by place value!"
+  }
+}

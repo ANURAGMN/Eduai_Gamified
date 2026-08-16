@@ -1,0 +1,62 @@
+{
+  "simId": "math_1_5_new",
+  "lang": "en",
+  "title": "Multiplication Pattern Pulse",
+  "steps": [
+    {
+      "text": "Spot the pattern! Find the next term in the multiplication sequence, and how many digits it has."
+    },
+    {
+      "text": "Tap the option you think is the next term in the sequence."
+    },
+    {
+      "text": "Type how many digits that term has into the digit box.",
+      "target": "digit"
+    },
+    {
+      "text": "Tap the highlighted check button to test your answer.",
+      "target": "Check Pulse"
+    },
+    {
+      "text": "Each step multiplies by the same amount — that's what makes the pattern grow."
+    }
+  ],
+  "coach": {
+    "mission": "Find the next term and its digit count.",
+    "whenStuck": [
+      "Pick the next term, type its digit count, then “Check Pulse”.",
+      "Each step multiplies by the same amount — find that factor."
+    ],
+    "whenWrong": [
+      "Find the constant multiplier between terms, apply it once more, then recount that term's digits.",
+      "Check your multiplication — the pattern grows by the same factor each time."
+    ],
+    "whenCorrect": [
+      "Pattern cracked!",
+      "You spotted the multiplier — great."
+    ],
+    "done": "You can extend multiplication patterns now. Keep going, or move on."
+  },
+  "practice": {
+    "rounds": 3,
+    "steps": [
+      {
+        "text": "Find the constant multiplier between terms, tap the option for the next term, and type how many digits it has."
+      },
+      {
+        "text": "Tap “Check Pulse” to test your answer.",
+        "target": "Check Pulse"
+      }
+    ],
+    "onCorrect": [
+      "Pattern cracked — you found the multiplier!",
+      "Yes, and the digit count was right too.",
+      "Sharp — each step multiplies by the same amount."
+    ],
+    "onWrong": [
+      "Find the constant multiplier, apply it once more, then recount that term's digits.",
+      "Check your multiplication — the pattern grows by the same factor each step."
+    ],
+    "done": "You can extend multiplication patterns and predict their size!"
+  }
+}

@@ -36,8 +36,10 @@ class GamificationRepository @Inject constructor(
                 studentId = studentId,
                 currentWeekKey = GamificationWeekKey.current(),
                 friendCode = generateFriendCode(),
+                isSynced = false,
             )
         gamificationDao.upsertProfile(profile)
+        scheduleEconomyUpload()
         return profile
     }
 
@@ -91,6 +93,7 @@ class GamificationRepository @Inject constructor(
             source = xpSourceFor(itemType),
             kind = itemType,
         )
+        scheduleEconomyUpload()
         return updated
     }
 
@@ -134,6 +137,7 @@ class GamificationRepository @Inject constructor(
             amount = gemsAmount,
             source = gemSourceFor(source),
         )
+        scheduleEconomyUpload()
         return gemsAmount
     }
 
@@ -158,8 +162,9 @@ class GamificationRepository @Inject constructor(
         val weekKey = GamificationWeekKey.current()
         if (profile.currentWeekKey == weekKey) return profile
         val rolled = leagueRepository.applyWeekRollover(profile, weekKey)
-        gamificationDao.upsertProfile(rolled)
-        return rolled
+        gamificationDao.upsertProfile(rolled.copy(isSynced = false))
+        scheduleEconomyUpload()
+        return rolled.copy(isSynced = false)
     }
 
     private fun generateFriendCode(): String {
@@ -170,5 +175,12 @@ class GamificationRepository @Inject constructor(
                 append(alphabet[Random.nextInt(alphabet.length)])
             }
         }.uppercase(Locale.US)
+    }
+
+    private fun scheduleEconomyUpload() {
+        try {
+            com.ncert7.aitutorandlab.service.sync.DataSyncService.scheduleDeferredUpload()
+        } catch (_: Exception) {
+        }
     }
 }

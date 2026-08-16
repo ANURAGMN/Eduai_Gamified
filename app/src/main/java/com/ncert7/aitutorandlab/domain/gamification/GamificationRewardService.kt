@@ -12,6 +12,7 @@ class GamificationRewardService @Inject constructor(
     private val gamificationRepository: GamificationRepository,
     private val conceptRepository: ConceptRepository,
     private val rewardEventBus: RewardEventBus,
+    private val friendFeedService: FriendFeedService,
 ) {
     companion object {
         private const val TAG = "GamificationRewardService"
@@ -28,6 +29,7 @@ class GamificationRewardService @Inject constructor(
 
         val before = gamificationRepository.getOrCreateProfile(studentId)
         val weeklyBefore = before.weeklyXp
+        val lifetimeBefore = before.lifetimeXp
         val updated =
             gamificationRepository.recordXpAward(
                 studentId = studentId,
@@ -54,6 +56,10 @@ class GamificationRewardService @Inject constructor(
             weeklyXpBefore = weeklyBefore,
             weeklyXpAfter = weeklyAfter,
         )
+
+        runCatching {
+            friendFeedService.onXpAwarded(studentId, lifetimeBefore, lifetimeXp)
+        }
 
         DebugLogger.debugLog(TAG, "Awarded $totalXp XP for $itemType/$itemId ($language)")
 
@@ -84,6 +90,7 @@ class GamificationRewardService @Inject constructor(
         val target = EconomyConfig.WEEKLY_XP_BAR_TARGET.toFloat()
         val profile = gamificationRepository.getOrCreateProfile(studentId)
         val weeklyBefore = profile.weeklyXp
+        val lifetimeBefore = profile.lifetimeXp
 
         if (gamificationRepository.hasXpEvent(studentId, itemType, itemId, language)) {
             return RewardUiEvent(
@@ -104,6 +111,10 @@ class GamificationRewardService @Inject constructor(
                 xpAmount = xpAmount,
                 countsForLeague = true,
             ) ?: return null
+
+        runCatching {
+            friendFeedService.onXpAwarded(studentId, lifetimeBefore, updated.lifetimeXp)
+        }
 
         DebugLogger.debugLog(TAG, "Trial item $trialItemId ($kind) +$xpAmount XP")
 

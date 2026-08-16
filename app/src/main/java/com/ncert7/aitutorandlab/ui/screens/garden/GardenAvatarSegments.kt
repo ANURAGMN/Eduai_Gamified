@@ -606,6 +606,9 @@ fun GardenJourneySegment(
                                     .clip(RoundedCornerShape(9.dp)),
                             band = th.placeBased,
                             showPreview = false,
+                            // Thumbnail: defer taps to the card. IslandScene otherwise attaches
+                            // pointerInput and swallows clicks before onChooseTheme runs.
+                            cover = true,
                         )
                         Spacer(Modifier.height(6.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {

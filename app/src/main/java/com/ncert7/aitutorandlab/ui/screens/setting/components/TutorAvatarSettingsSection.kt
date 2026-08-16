@@ -27,6 +27,8 @@ import com.ncert7.aitutorandlab.ui.screens.setting.viewmodel.TutorConfigViewMode
 import com.ncert7.aitutorandlab.ui.theme.LocalDimensions
 import com.ncert7.aitutorandlab.ui.theme.TextPrimary
 import com.ncert7.aitutorandlab.ui.theme.TextSecondary
+import com.ncert7.aitutorandlab.utils.TutorAvatarSettingsCopy
+import com.ncert7.aitutorandlab.utils.getCurrentLanguageCode
 
 private val settingsPresets =
     AllAvatarPresets.filter { it.id in setOf("scholar", "sage", "spark", "nova", "ace") }
@@ -39,6 +41,7 @@ fun TutorAvatarSettingsSection(
 ) {
     val dimens = LocalDimensions.current
     val saved = rememberSavedTutorConfig()
+    val language = getCurrentLanguageCode()
 
     Column(modifier = modifier.fillMaxWidth()) {
         Row(
@@ -49,12 +52,12 @@ fun TutorAvatarSettingsSection(
             SavedTutorAvatar(modifier = Modifier.size(72.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Your tutor",
+                    text = TutorAvatarSettingsCopy.title(language),
                     style = MaterialTheme.typography.titleSmall,
                     color = TextPrimary,
                 )
                 Text(
-                    text = "Pick a look for Study, Math, Revision, and Simulation agents.",
+                    text = TutorAvatarSettingsCopy.body(language),
                     style = MaterialTheme.typography.bodySmall,
                     color = TextSecondary,
                 )
@@ -86,7 +89,7 @@ fun TutorAvatarSettingsSection(
             onClick = onOpenStudio,
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text("Customize in Avatar Studio")
+            Text(TutorAvatarSettingsCopy.customizeInStudio(language))
         }
     }
 }

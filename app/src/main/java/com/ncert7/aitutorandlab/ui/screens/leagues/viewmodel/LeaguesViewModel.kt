@@ -8,6 +8,7 @@ import com.ncert7.aitutorandlab.data.local.dao.StudentDao
 import com.ncert7.aitutorandlab.repository.LeagueRepository
 import com.ncert7.aitutorandlab.repository.StreakRepository
 import com.ncert7.aitutorandlab.ui.screens.leagues.LeagueUiMapper
+import com.ncert7.aitutorandlab.utils.getCurrentLanguageCode
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -45,7 +46,7 @@ class LeaguesViewModel @Inject constructor(
             val streak = streakRepository.getStreakFlow(userId).first()?.streakCount ?: 1
             leagueRepository.observeBoardState(userId, displayName, streak).collectLatest { board ->
                 if (board != null) {
-                    _uiState.value = LeagueUiMapper.toUiState(board)
+                    _uiState.value = LeagueUiMapper.toUiState(board, getCurrentLanguageCode())
                 }
                 _isLoading.value = false
             }

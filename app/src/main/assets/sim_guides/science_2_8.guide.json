@@ -4,21 +4,37 @@
   "title": "Treating Ant Bites",
   "steps": [
     {
-      "text": "An ant bite injects formic acid into your skin, which causes the sting. Let's see how to relieve it."
+      "text": "An ant bite injects formic acid into your skin — that's what causes the sting. Let's see how to relieve it."
     },
     {
-      "text": "Tap “Ant Bite” to see the acid cause pain.",
-      "target": "Ant"
+      "text": "Tap “Simulate Bite” to feel the acid sting.",
+      "target": "Simulate Bite"
     },
     {
-      "text": "Now tap “Apply Base” to rub on baking soda (a base).",
-      "target": "Base"
+      "text": "Notice the pain — it comes from the acid the ant injected."
     },
     {
-      "text": "Watch the pain fade — the base neutralises the formic acid: Acid + Base → Salt + Water + relief!"
+      "text": "Now tap “Apply Treatment” to rub on baking soda (a base).",
+      "target": "Apply Treatment"
     },
     {
-      "text": "That's neutralisation in daily life — a base cancels the acid that caused the sting."
+      "text": "The pain fades — the base neutralises the formic acid: Acid + Base → Salt + Water + relief! That's neutralisation in daily life."
     }
-  ]
+  ],
+  "coach": {
+    "mission": "Soothe the ant bite by neutralising the acid.",
+    "whenStuck": [
+      "Tap “Simulate Bite”, then “Apply Treatment”.",
+      "The sting is acid — a base will neutralise it."
+    ],
+    "whenWrong": [
+      "The sting is formic acid; apply a BASE (baking soda) to neutralise it.",
+      "Acid + Base → Salt + Water + relief."
+    ],
+    "whenCorrect": [
+      "Relief! The base neutralised the acid.",
+      "That's neutralisation working on your skin."
+    ],
+    "done": "You've treated an acid sting with a base. Explore more, or move on."
+  }
 }

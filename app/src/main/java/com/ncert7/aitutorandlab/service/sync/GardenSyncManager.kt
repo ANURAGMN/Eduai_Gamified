@@ -7,11 +7,15 @@ import com.ncert7.aitutorandlab.data.local.entities.GardenTheme
 import com.ncert7.aitutorandlab.data.local.entities.GrownItemEntity
 import com.ncert7.aitutorandlab.debug.DebugLogger
 import com.ncert7.aitutorandlab.repository.FirebaseRepository
+import com.ncert7.aitutorandlab.service.analytics.EngagementAnalyticsTracker
+import com.ncert7.aitutorandlab.service.sync.GardenRestorePolicy.Outcome
 
 /**
  * Mirrors the garden/space reward state (theme, route, steps, preferred slot, and every planted item)
  * to Firestore so it survives reinstall / a new device. Push runs with the normal full sync; restore
- * runs once on login and only when the local garden is empty (never clobbers a device with progress).
+ * runs once on login and only when local has no plants and no in-progress steps (never clobbers
+ * real local progress). Starter placeholder rows (route `"1"`, onboarding theme) are overwrite-safe
+ * so remote gardens are not silently skipped (Bug A).
  */
 class GardenSyncManager(
     private val gardenDao: GardenDao,
@@ -39,15 +43,28 @@ class GardenSyncManager(
         }
     }
 
-    /** Pull remote garden into Room when local is empty or still at the default placeholder row. */
-    suspend fun restoreGarden(studentId: String) {
-        if (studentId.isBlank()) return
-        try {
+    /**
+     * Pull remote garden into Room when local is empty of plants and steps.
+     * Returns [Outcome] for login gates + telemetry.
+     */
+    suspend fun restoreGarden(studentId: String): Outcome {
+        if (studentId.isBlank()) return Outcome.REMOTE_EMPTY
+        return try {
             val remoteState = firebaseRepository.getGardenState(studentId)
             val remoteItems = firebaseRepository.getGardenItems(studentId)
-            if (remoteState == null && remoteItems.isEmpty()) return
-            if (!canRestoreFromRemote(studentId)) return
+            if (remoteState == null && remoteItems.isEmpty()) {
+                logSkipped(Outcome.REMOTE_EMPTY)
+                return Outcome.REMOTE_EMPTY
+            }
 
+            val localItems = gardenDao.countItems(studentId)
+            val localSteps = gardenDao.getState(studentId)?.steps ?: 0
+            if (!GardenRestorePolicy.canRestoreFromRemote(localItems, localSteps)) {
+                logSkipped(Outcome.SKIPPED_LOCAL_PROGRESS, localItems)
+                return Outcome.SKIPPED_LOCAL_PROGRESS
+            }
+
+            // Remote theme / route / slot win over any local starter or onboarding placeholder (R.1).
             remoteState?.let { remote ->
                 gardenDao.upsertState(
                     GardenStateEntity(
@@ -68,25 +85,24 @@ class GardenSyncManager(
                     }
                 }
             }
-            DebugLogger.debugLog(TAG, "Garden restored for $studentId")
+            val appliedCount = gardenDao.countItems(studentId)
+            EngagementAnalyticsTracker.restoreApplied(
+                domain = DOMAIN,
+                itemCount = appliedCount,
+            )
+            DebugLogger.debugLog(TAG, "Garden restored for $studentId items=$appliedCount")
+            Outcome.APPLIED
         } catch (e: Exception) {
             DebugLogger.errorLog(TAG, "restoreGarden failed: ${e.message}")
+            EngagementAnalyticsTracker.restoreSkipped(DOMAIN, Outcome.ERROR.reason)
+            Outcome.ERROR
         }
     }
 
-    /** True when local has no real garden progress (safe to hydrate from Firestore). */
-    private suspend fun canRestoreFromRemote(studentId: String): Boolean {
-        if (gardenDao.countItems(studentId) > 0) return false
-        val state = gardenDao.getState(studentId) ?: return true
-        return isPristinePlaceholder(state)
+    private fun logSkipped(outcome: Outcome, itemCount: Int = 0) {
+        EngagementAnalyticsTracker.restoreSkipped(DOMAIN, outcome.reason)
+        DebugLogger.debugLog(TAG, "Garden restore skipped reason=${outcome.reason} items=$itemCount")
     }
-
-    /** Default row created by [com.ncert7.aitutorandlab.repository.GardenRepository.ensureState]. */
-    private fun isPristinePlaceholder(state: GardenStateEntity): Boolean =
-        state.steps == 0 &&
-            state.theme == GardenTheme.GARDEN &&
-            state.route == "0" &&
-            state.preferredSlot == -1
 
     private fun GrownItemEntity.toPayload(): Map<String, Any?> =
         mapOf(
@@ -120,5 +136,6 @@ class GardenSyncManager(
 
     companion object {
         private const val TAG = "GardenSyncManager"
+        private const val DOMAIN = "garden"
     }
 }

@@ -24,6 +24,18 @@ interface GamificationDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertProfile(profile: GamificationProfileEntity)
 
+    @Query("SELECT * FROM gamification_profile WHERE isSynced = 0")
+    suspend fun getUnsyncedProfiles(): List<GamificationProfileEntity>
+
+    @Query(
+        """
+        UPDATE gamification_profile
+        SET isSynced = 1
+        WHERE studentId = :studentId
+        """,
+    )
+    suspend fun markProfileSynced(studentId: String)
+
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertXpEvent(event: XpEventEntity): Long
 

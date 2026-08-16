@@ -140,22 +140,25 @@ fun QuestsRoute(
 
     EduAiTheme {
         pendingQuestClaim?.let { claimType ->
-            val (title, message) = questClaimDialogCopy(claimType)
+            val (title, message) = questClaimDialogCopy(claimType, currentLanguage)
             QuestClaimDialog(
                 title = title,
                 message = message,
                 gemsReward = claimType.gemAmount(),
                 adReady = rewardedAdReady,
+                languageCode = currentLanguage,
                 onWatchAd = {
                     val hostActivity = activity
                     if (hostActivity == null) {
                         pendingQuestClaim = null
-                        scope.launch { snackbarHostState.showSnackbar("Unable to show ad.") }
+                        scope.launch {
+                            snackbarHostState.showSnackbar(questClaimUnableToShowAd(currentLanguage))
+                        }
                         return@QuestClaimDialog
                     }
                     pendingQuestClaim = null
                     viewModel.claimQuestWithAd(hostActivity, claimType) { result ->
-                        questClaimResultMessage(result)?.let { text ->
+                        questClaimResultMessage(result, currentLanguage)?.let { text ->
                             scope.launch { snackbarHostState.showSnackbar(text) }
                         }
                     }

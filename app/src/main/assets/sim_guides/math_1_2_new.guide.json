@@ -1,0 +1,53 @@
+{
+  "simId": "math_1_2_new",
+  "lang": "en",
+  "title": "Comma System Relay Arena",
+  "steps": [
+    {
+      "text": "The same number is written two ways: the Indian system groups it like 2,75,82,914 and the International system like 27,582,914. Let's match them."
+    },
+    {
+      "text": "Read the number, then tap the option where BOTH the Indian and the International commas are placed correctly."
+    },
+    {
+      "text": "Watch the feedback — the correct grouping locks in the round."
+    },
+    {
+      "text": "Remember: Indian commas come after the first 3 digits, then every 2 digits; International commas come every 3 digits."
+    }
+  ],
+  "coach": {
+    "mission": "Pick the correct comma grouping.",
+    "whenStuck": [
+      "Read the number, then tap the option with both groupings right.",
+      "Indian: first 3 digits, then every 2. International: every 3."
+    ],
+    "whenWrong": [
+      "Indian commas: first 3 digits from the right, then every 2 (12,34,567). International: every 3 (1,234,567). Compare carefully.",
+      "Group digits from the right — that's where commas start."
+    ],
+    "whenCorrect": [
+      "Correct grouping — locked in!",
+      "You know both comma systems now."
+    ],
+    "done": "You can group numbers in both systems. Keep going, or move on."
+  },
+  "practice": {
+    "rounds": 3,
+    "steps": [
+      {
+        "text": "Read the number, then tap the option where BOTH the Indian and the International commas are placed correctly."
+      }
+    ],
+    "onCorrect": [
+      "Correct grouping — locked in!",
+      "You've got both comma systems down.",
+      "Yes — commas in exactly the right places."
+    ],
+    "onWrong": [
+      "Indian: first 3 digits from the right, then every 2 (12,34,567). International: every 3 (1,234,567). Compare again.",
+      "Group the digits from the right and recount before choosing."
+    ],
+    "done": "You can group large numbers in both the Indian and International systems!"
+  }
+}

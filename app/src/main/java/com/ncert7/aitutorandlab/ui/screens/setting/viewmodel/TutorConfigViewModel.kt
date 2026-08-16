@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anurag.eduai.uikit.avatar.AvatarPreset
 import com.anurag.eduai.uikit.avatar.TutorConfig
+import com.ncert7.aitutorandlab.data.local.SharedPreferenceUtils
 import com.ncert7.aitutorandlab.repository.TutorConfigRepository
 import com.ncert7.aitutorandlab.service.ads.RewardedAdManager
 import com.ncert7.aitutorandlab.service.analytics.AdPlacement
@@ -18,20 +19,26 @@ import javax.inject.Inject
 class TutorConfigViewModel @Inject constructor(
     private val tutorConfigRepository: TutorConfigRepository,
     private val rewardedAdManager: RewardedAdManager,
+    private val sharedPrefs: SharedPreferenceUtils,
     @ApplicationContext private val context: Context,
-    val userId: String,
 ) : ViewModel() {
+
+    /** Prefer live prefs — Hilt's singleton `userId` can be blank if captured before login. */
+    private fun currentUserId(): String =
+        sharedPrefs.getUserId()?.takeIf { it.isNotBlank() }.orEmpty()
 
     init {
         rewardedAdManager.preload()
-        if (userId.isNotBlank()) {
-            viewModelScope.launch {
+        viewModelScope.launch {
+            val userId = currentUserId()
+            if (userId.isNotBlank()) {
                 tutorConfigRepository.ensureLoaded(context, userId)
             }
         }
     }
 
     fun applyPreset(preset: AvatarPreset) {
+        val userId = currentUserId()
         if (userId.isBlank()) return
         viewModelScope.launch {
             tutorConfigRepository.save(context, userId, preset.config, presetId = preset.id)
@@ -40,7 +47,7 @@ class TutorConfigViewModel @Inject constructor(
 
     fun saveConfig(config: TutorConfig, presetId: String? = null) {
         viewModelScope.launch {
-            tutorConfigRepository.save(context, userId, config, presetId = presetId)
+            tutorConfigRepository.save(context, currentUserId(), config, presetId = presetId)
         }
     }
 

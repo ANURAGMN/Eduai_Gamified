@@ -206,7 +206,7 @@ class QuestRepository @Inject constructor(
     }
 
     private suspend fun resolveTodayPlanDay(studentId: String): ExamPlanDayEntity? {
-        val days = examPlanDao.getPlanDays(studentId)
+        val days = examPlanDao.getPlanDays(studentId).filter { it.isExamScheduleDay() }
         return days.firstOrNull { it.status == "TODAY" }
             ?: days.firstOrNull { it.status == "UPCOMING" }
     }

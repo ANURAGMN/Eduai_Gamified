@@ -21,6 +21,7 @@ import com.ncert7.aitutorandlab.domain.examplan.PlanTrialRolloverService
 import com.ncert7.aitutorandlab.repository.ExamPlanRepository
 import com.ncert7.aitutorandlab.repository.PlanTrialRepository
 import com.ncert7.aitutorandlab.repository.QuestRepository
+import com.ncert7.aitutorandlab.repository.GamificationRepository
 import com.ncert7.aitutorandlab.repository.FirebaseRepository
 import com.ncert7.aitutorandlab.repository.ProgressRepository
 import com.ncert7.aitutorandlab.repository.SimulationInteractionRepository
@@ -130,6 +131,7 @@ object RepositoryModule {
         progressDao: ProgressDao,
         examPlanDao: ExamPlanDao,
         planTrialRepository: PlanTrialRepository,
+        gamificationRepository: GamificationRepository,
         sharedPreferenceUtils: SharedPreferenceUtils,
     ): QuestRepository {
         return QuestRepository(
@@ -137,6 +139,7 @@ object RepositoryModule {
             progressDao,
             examPlanDao,
             planTrialRepository,
+            gamificationRepository,
             sharedPreferenceUtils,
         )
     }

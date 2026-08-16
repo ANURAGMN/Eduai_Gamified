@@ -4,20 +4,38 @@
   "title": "Neutralisation Reaction",
   "steps": [
     {
-      "text": "When an acid meets a base, they cancel each other out. Let's watch it happen: Acid + Base → Salt + Water + Heat."
+      "text": "When an acid meets a base they cancel out: Acid + Base → Salt + Water + Heat. Let's watch it happen."
     },
     {
-      "text": "Tap “Mix” to combine the acid and the base.",
+      "text": "Drag the base slider to choose how much base to add.",
+      "target": "base"
+    },
+    {
+      "text": "Now tap “Mix” to react the acid and the base.",
       "target": "Mix"
     },
     {
-      "text": "Watch the results: salt and water form, a little heat is released, and the pH moves toward 7."
+      "text": "Watch the results: salt and water form, a little heat is released, and the pH moves toward 7 (neutral)."
     },
     {
-      "text": "At the right proportions the solution becomes NEUTRAL (pH 7) — that's complete neutralisation."
-    },
-    {
-      "text": "This is how antacids work: a base neutralises excess stomach acid to relieve acidity."
+      "text": "At the right amount of base the solution becomes NEUTRAL. This is exactly how antacids relieve acidity — a base neutralises stomach acid."
     }
-  ]
+  ],
+  "coach": {
+    "mission": "Neutralise the acid with the right amount of base.",
+    "introSteps": 3,
+    "whenStuck": [
+      "Drag the base slider, then tap “Mix”.",
+      "Too little base stays acidic; too much turns basic — aim for pH 7."
+    ],
+    "whenWrong": [
+      "Not neutral yet — adjust the base so the pH lands on 7.",
+      "Acid + Base → Salt + Water. Balance them to reach neutral."
+    ],
+    "whenCorrect": [
+      "Perfect — you hit neutral, pH 7!",
+      "That's exactly how antacids neutralise stomach acid."
+    ],
+    "done": "You've balanced an acid and a base to neutral. Try different amounts, or move on."
+  }
 }

@@ -233,12 +233,14 @@ class PlanOverviewViewModel @Inject constructor(
             ) { entities, language -> entities to language }
                 .collectLatest { (entities, language) ->
                     _planDays.value =
-                        entities.map { day ->
-                            ExamPlanUiMapper.toPlanDayNode(
-                                day,
-                                TrialTitleResolver.localizedPlanDayLabel(day, language, conceptDao, chapterDao),
-                            )
-                        }
+                        entities
+                            .filter { it.isExamScheduleDay() }
+                            .map { day ->
+                                ExamPlanUiMapper.toPlanDayNode(
+                                    day,
+                                    TrialTitleResolver.localizedPlanDayLabel(day, language, conceptDao, chapterDao),
+                                )
+                            }
                 }
 
         }

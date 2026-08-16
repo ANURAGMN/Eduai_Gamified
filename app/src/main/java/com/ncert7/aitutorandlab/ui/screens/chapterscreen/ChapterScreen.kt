@@ -122,13 +122,18 @@ fun ChapterScreen(
                             "No chapters available for this subject yet."
                         },
                     isLoading = state.isLoading,
-                    onSelect = { selectedChapterId = it },
+                    onSelect = { id ->
+                        selectedChapterId = id
+                        // Tap opens immediately; Continue still works for the highlighted row.
+                        DebugLogger.debugLog("ChapterScreen", "Chapter tap → trial: $id")
+                        onOpenChapterTrial(id)
+                    },
                     onBack = onBackClick,
                     onContinue = {
                         if (selectedChapterId.isNotEmpty()) {
                             // All subjects (incl. Math) open the chapter trial; the materializer
                             // builds Math problems + study + revision for Math chapters.
-                            DebugLogger.debugLog("ChapterScreen", "Chapter → trial: $selectedChapterId")
+                            DebugLogger.debugLog("ChapterScreen", "Chapter continue → trial: $selectedChapterId")
                             onOpenChapterTrial(selectedChapterId)
                         }
                     },

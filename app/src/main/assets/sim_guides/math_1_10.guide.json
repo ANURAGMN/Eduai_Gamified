@@ -1,0 +1,58 @@
+{
+  "simId": "math_1_10",
+  "lang": "en",
+  "title": "Population Growth Factor Radar",
+  "steps": [
+    {
+      "text": "How many times does one city's population fit into another's? Estimate the growth factor."
+    },
+    {
+      "text": "Tap the factor you think is closest — no need to be exact, just nearest."
+    },
+    {
+      "text": "Then tap the highlighted check button to confirm your estimate.",
+      "target": "Check Factor"
+    },
+    {
+      "text": "Divide the bigger number by the smaller one to find how many times it fits — that's the factor."
+    }
+  ],
+  "coach": {
+    "mission": "Estimate how many times bigger one number is.",
+    "whenStuck": [
+      "Pick the factor, then “Check Factor”.",
+      "Divide the bigger number by the smaller one."
+    ],
+    "whenWrong": [
+      "Growth factor = bigger ÷ smaller. Round both, estimate that quotient, and pick the closest.",
+      "Recheck your division — the factor is how many times it fits."
+    ],
+    "whenCorrect": [
+      "Right factor — nice estimate!",
+      "You divided to estimate — great."
+    ],
+    "done": "You can estimate growth factors now. Keep going, or move on."
+  },
+  "practice": {
+    "rounds": 3,
+    "steps": [
+      {
+        "text": "Divide the bigger number by the smaller to estimate the growth factor, then tap the closest option."
+      },
+      {
+        "text": "Tap the highlighted check button to lock in your factor.",
+        "target": "Check Factor"
+      }
+    ],
+    "onCorrect": [
+      "Right factor — nice estimate!",
+      "Yes — bigger ÷ smaller gives how many times it fits.",
+      "Sharp division estimate."
+    ],
+    "onWrong": [
+      "Growth factor = bigger ÷ smaller. Round both, estimate the quotient, and pick the closest.",
+      "Recheck your division — the factor is how many times it fits."
+    ],
+    "done": "You can estimate how many times one large number fits into another!"
+  }
+}

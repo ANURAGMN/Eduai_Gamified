@@ -263,9 +263,20 @@ object GamifiedHomeMapper {
             }
         val copy = GardenCopyFactory.themeCopy(languageCode, theme)
         val homeCopy = GardenCopyFactory.homeCopy(languageCode)
-        val zoneIndex = progress.currentZone.coerceIn(0, ZONES.lastIndex)
+        // While celebrating a new plant, show what just grew — not the next Surprise preview
+        // (hash(totalPlanted) ≠ the slot that was just planted with hash(totalPlanted-1)).
+        val latestPlanted =
+            if (highlightNewPlant) {
+                plantedItems.maxByOrNull { it.completedAt }
+            } else {
+                null
+            }
+        val zoneIndex =
+            (latestPlanted?.zone ?: progress.currentZone).coerceIn(0, ZONES.lastIndex)
         val zone = ZONES[zoneIndex]
-        val slot = GardenSlotResolver.displaySlot(progress)
+        val slot =
+            latestPlanted?.slot?.coerceIn(0, SLOTS_PER_ZONE - 1)
+                ?: GardenSlotResolver.displaySlot(progress)
         val slotLabels =
             (0 until SLOTS_PER_ZONE).map { index ->
                 GardenWorldLabels.slotName(zone, theme, index, languageCode)

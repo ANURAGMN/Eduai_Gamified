@@ -176,7 +176,7 @@ class NotificationStateLoader @Inject constructor(
     private suspend fun resolveTodayPlanDay(studentId: String): ExamPlanDayEntity? {
         val todayEpoch = LocalDate.now(zone).toEpochDay()
         return examPlanDao.getPlanDays(studentId).firstOrNull { day ->
-            day.calendarEpochDay == todayEpoch
+            day.isExamScheduleDay() && day.calendarEpochDay == todayEpoch
         }
     }
 

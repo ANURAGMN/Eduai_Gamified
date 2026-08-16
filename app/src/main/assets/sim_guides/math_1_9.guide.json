@@ -1,0 +1,53 @@
+{
+  "simId": "math_1_9",
+  "lang": "en",
+  "title": "Population Estimate Radar",
+  "steps": [
+    {
+      "text": "Estimate quickly! Lock the option that is closest to the real population value."
+    },
+    {
+      "text": "Tap the estimate you think is nearest to the true number."
+    },
+    {
+      "text": "Watch the radar — the closer your lock, the higher you score."
+    },
+    {
+      "text": "Round each number to the same place, then compare — that's how you estimate fast."
+    }
+  ],
+  "coach": {
+    "mission": "Lock the estimate closest to the real value.",
+    "whenStuck": [
+      "Tap the option nearest the true number.",
+      "Round each number to the same place, then compare."
+    ],
+    "whenWrong": [
+      "Round to the same place first, then pick the closest — check which is nearer, above or below.",
+      "Estimate by the leading digits rather than the exact number."
+    ],
+    "whenCorrect": [
+      "Closest lock — great estimate!",
+      "Sharp estimation."
+    ],
+    "done": "You can estimate large values fast now. Keep going, or move on."
+  },
+  "practice": {
+    "rounds": 3,
+    "steps": [
+      {
+        "text": "Round each number to the same place, then tap the estimate closest to the real value."
+      }
+    ],
+    "onCorrect": [
+      "Closest lock — great estimate!",
+      "Yes — rounding first makes comparing easy.",
+      "Sharp estimation."
+    ],
+    "onWrong": [
+      "Round to the same place first, then pick the nearest — check above and below.",
+      "Estimate with the leading digits rather than the exact number."
+    ],
+    "done": "You can estimate and compare large values fast!"
+  }
+}

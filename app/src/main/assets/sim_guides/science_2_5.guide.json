@@ -4,24 +4,77 @@
   "title": "Turmeric Indicator",
   "steps": [
     {
-      "text": "Turmeric paper is yellow. Let's find out which substances it can detect."
+      "text": "Turmeric paper is yellow. Let's find out which substances it can actually detect."
     },
     {
-      "text": "Test a base — tap “Soap” (or baking soda).",
+      "text": "Pick a base first — tap “Soap” (or baking soda).",
       "target": "Soap"
     },
     {
-      "text": "The yellow turmeric turns RED/BROWN. Turmeric changes colour only for BASES."
+      "text": "Now tap “Drop” to drop it onto the turmeric.",
+      "target": "Drop"
     },
     {
-      "text": "Now test an acid — tap “Lemon”.",
+      "text": "The yellow turmeric turns RED/BROWN — turmeric changes colour for BASES."
+    },
+    {
+      "text": "Now pick an acid — tap “Lemon” — and tap “Drop” again.",
       "target": "Lemon"
     },
     {
-      "text": "It stays YELLOW. Turmeric can't tell acids from neutral substances — both stay yellow."
-    },
-    {
-      "text": "So turmeric is a partial indicator: it only detects bases. (That's why a curry stain turns red when soap touches it!)"
+      "text": "It stays YELLOW. Turmeric can't tell acids from neutral substances, so it's a partial indicator — it only detects bases."
     }
-  ]
+  ],
+  "coach": {
+    "mission": "Find out what turmeric can detect.",
+    "whenStuck": [
+      "Pick a solution, then tap “Drop” to drop it on the turmeric.",
+      "Turmeric reacts to only one kind of solution — try a base."
+    ],
+    "whenWrong": [
+      "Turmeric turns red/brown for BASES but stays yellow for acids — it can't detect acids.",
+      "Stayed yellow? That solution isn't a base."
+    ],
+    "whenCorrect": [
+      "Right — turmeric caught the base!",
+      "Turmeric is a partial indicator: bases only. Good."
+    ],
+    "done": "You've learned turmeric only detects bases. Explore the others, or move on.",
+    "elements": {
+      "lemon": "Lemon is an acid — turmeric stays yellow (turmeric can't detect acids).",
+      "lemon juice": "Lemon Juice is an acid — turmeric stays yellow (turmeric can't detect acids).",
+      "vinegar": "Vinegar is an acid — turmeric stays yellow (turmeric can't detect acids).",
+      "orange": "Orange is an acid — turmeric stays yellow (turmeric can't detect acids).",
+      "orange juice": "Orange Juice is an acid — turmeric stays yellow (turmeric can't detect acids).",
+      "curd": "Curd is an acid — turmeric stays yellow (turmeric can't detect acids).",
+      "yogurt": "Yogurt is an acid — turmeric stays yellow (turmeric can't detect acids).",
+      "tamarind": "Tamarind is an acid — turmeric stays yellow (turmeric can't detect acids).",
+      "tamarind water": "Tamarind Water is an acid — turmeric stays yellow (turmeric can't detect acids).",
+      "tomato": "Tomato is an acid — turmeric stays yellow (turmeric can't detect acids).",
+      "apple": "Apple is an acid — turmeric stays yellow (turmeric can't detect acids).",
+      "grape": "Grape is an acid — turmeric stays yellow (turmeric can't detect acids).",
+      "lime juice": "Lime Juice is an acid — turmeric stays yellow (turmeric can't detect acids).",
+      "amla": "Amla is an acid — turmeric stays yellow (turmeric can't detect acids).",
+      "soda water": "Soda Water is an acid — turmeric stays yellow (turmeric can't detect acids).",
+      "cola": "Cola is an acid — turmeric stays yellow (turmeric can't detect acids).",
+      "soap": "Soap is a base — turmeric turns red-brown.",
+      "baking soda": "Baking Soda is a base — turmeric turns red-brown.",
+      "washing soda": "Washing Soda is a base — turmeric turns red-brown.",
+      "detergent": "Detergent is a base — turmeric turns red-brown.",
+      "lime water": "Lime Water is a base — turmeric turns red-brown.",
+      "ammonia": "Ammonia is a base — turmeric turns red-brown.",
+      "antacid": "Antacid is a base — turmeric turns red-brown.",
+      "toothpaste": "Toothpaste is a base — turmeric turns red-brown.",
+      "shampoo": "Shampoo is a base — turmeric turns red-brown.",
+      "soap water": "Soap Water is a base — turmeric turns red-brown.",
+      "water": "Water is neutral — turmeric stays yellow.",
+      "salt": "Salt is neutral — turmeric stays yellow.",
+      "salt water": "Salt Water is neutral — turmeric stays yellow.",
+      "common salt": "Common Salt is neutral — turmeric stays yellow.",
+      "sugar": "Sugar is neutral — turmeric stays yellow.",
+      "sugar solution": "Sugar Solution is neutral — turmeric stays yellow.",
+      "milk": "Milk is neutral — turmeric stays yellow.",
+      "distilled water": "Distilled Water is neutral — turmeric stays yellow."
+    }
+  }
 }

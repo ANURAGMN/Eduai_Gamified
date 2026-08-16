@@ -10,8 +10,10 @@ import com.ncert7.aitutorandlab.data.local.dao.StudentDao
 import com.ncert7.aitutorandlab.data.local.entities.StudentEntity
 import com.ncert7.aitutorandlab.debug.DebugLogger
 import com.ncert7.aitutorandlab.repository.FirebaseRepository
+import com.ncert7.aitutorandlab.repository.FriendRepository
 import com.ncert7.aitutorandlab.repository.NetworkException
 import com.ncert7.aitutorandlab.repository.QuestRepository
+import com.ncert7.aitutorandlab.notification.NotificationChannels
 import com.ncert7.aitutorandlab.notification.NotificationOrchestrator
 import com.ncert7.aitutorandlab.notification.NotificationType
 import com.ncert7.aitutorandlab.utils.LanguageHelper
@@ -46,6 +48,8 @@ class SettingViewModel @Inject constructor(
     private val repository: FirebaseRepository,
     private val studentDao: StudentDao,
     private val questRepository: QuestRepository,
+    private val friendRepository: FriendRepository,
+    private val friendFeedService: com.ncert7.aitutorandlab.domain.gamification.FriendFeedService,
     private val notificationOrchestrator: NotificationOrchestrator,
     @ApplicationContext private val context: Context,
     val userId: String
@@ -85,6 +89,8 @@ class SettingViewModel @Inject constructor(
             _selectedLanguage.value = normalized
             sharedPref.setLanguagePreference(normalized)
             LanguageHelper.setLanguage(normalized)
+            // Refresh OS channel display names to match the new locale (ids stay stable).
+            NotificationChannels.ensureCreated(context)
 
             studentDao.getStudentSync(userId)?.let { existing ->
                 val updated = existing.copy(language = normalized, isSynced = false)
@@ -99,6 +105,40 @@ class SettingViewModel @Inject constructor(
             val language = normalizeLanguageCode(sharedPref.getLanguagePreference() ?: "en")
             questRepository.debugPrepareAdClaimTest(userId, language)
             onDone()
+        }
+    }
+
+    fun debugSimulateFriendRequests(onResult: (String) -> Unit = {}) {
+        viewModelScope.launch {
+            if (userId.isBlank()) {
+                onResult("Log in first.")
+                return@launch
+            }
+            val n = friendRepository.debugSimulateFriendRequests(userId, count = 2)
+            onResult("Added $n bot friend request(s). Open Home or Friends.")
+        }
+    }
+
+    fun debugSimulateBotFriendUpdates(onResult: (String) -> Unit = {}) {
+        viewModelScope.launch {
+            if (userId.isBlank()) {
+                onResult("Log in first.")
+                return@launch
+            }
+            sharedPref.clearBotFriendFeedSimulatedDay()
+            val n = friendFeedService.simulateBotFriendFeedIfNeeded(userId, force = true)
+            onResult("Published $n bot friend update(s). Re-open Home.")
+        }
+    }
+
+    fun debugPurgeSelfFriendFeed(onResult: (String) -> Unit = {}) {
+        viewModelScope.launch {
+            if (userId.isBlank()) {
+                onResult("Log in first.")
+                return@launch
+            }
+            val n = friendRepository.debugPurgeSelfFeed(userId)
+            onResult("Removed $n self feed item(s). Re-open Home.")
         }
     }
 

@@ -4,21 +4,37 @@
   "title": "Industrial Waste Treatment",
   "steps": [
     {
-      "text": "Factory waste is often acidic and can harm fish and rivers. Let's make it safe before release."
+      "text": "Factory waste is often acidic and can harm fish and rivers. Let's compare releasing it raw versus treating it first."
     },
     {
-      "text": "Tap to release the acidic waste and see its low pH.",
-      "target": "Waste"
+      "text": "Tap “Release Untreated” to dump the acidic waste straight into the water.",
+      "target": "Release Untreated"
     },
     {
-      "text": "Now tap “Add Base” to neutralise the acid.",
-      "target": "Base"
+      "text": "See the pH drop — untreated acidic waste is dangerous for aquatic life."
     },
     {
-      "text": "Watch the pH climb toward 7 — the water becomes SAFE for aquatic life."
+      "text": "Now tap “Neutralise First” to add a base and neutralise the acid before release.",
+      "target": "Neutralise First"
     },
     {
-      "text": "Neutralising acidic waste before it reaches rivers protects the whole ecosystem."
+      "text": "This time the pH rises to about 7 — the water is SAFE. Neutralising waste before it reaches rivers protects the whole ecosystem."
     }
-  ]
+  ],
+  "coach": {
+    "mission": "Make factory waste safe before it reaches the river.",
+    "whenStuck": [
+      "Try “Release Untreated”, then compare with “Neutralise First”.",
+      "Neutralising the acid first brings the pH near 7 — safe for fish."
+    ],
+    "whenWrong": [
+      "Untreated acidic waste harms the river — neutralise it first to reach pH 7.",
+      "Add a base to cancel the acid before releasing."
+    ],
+    "whenCorrect": [
+      "Safe! Neutralised waste protects aquatic life.",
+      "That's why factories must treat waste."
+    ],
+    "done": "You've seen why waste must be neutralised before release. Explore more, or move on."
+  }
 }

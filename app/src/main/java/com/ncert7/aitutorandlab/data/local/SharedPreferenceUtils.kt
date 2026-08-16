@@ -61,6 +61,9 @@ class SharedPreferenceUtils(context: Context) : AppMigrationVersionStore {
         private const val KEY_RATING_PROMPT_SHOW_COUNT = "rating_prompt_show_count"
         private const val KEY_RATING_PROMPT_LAST_SHOWN_DAY = "rating_prompt_last_shown_day"
         private const val KEY_HAS_COMPLETED_ANY_TASK = "has_completed_any_task"
+        private const val KEY_PENDING_REVIEW_ON_HOME = "pending_review_on_home"
+        private const val KEY_DEMO_FRIEND_REQUESTS_SEEDED = "demo_friend_requests_seeded_v1"
+        private const val KEY_BOT_FRIEND_FEED_SIM_DAY = "bot_friend_feed_sim_day"
         private const val KEY_NOTIFICATION_PERMISSION_ASKED = "notification_permission_asked"
         private const val KEY_NOTIFICATIONS_ENABLED = "notifications_enabled"
         private const val KEY_REMINDER_HOUR = "notification_reminder_hour"
@@ -323,6 +326,12 @@ class SharedPreferenceUtils(context: Context) : AppMigrationVersionStore {
             remove(KEY_SIM_OPEN_COUNT)
             remove(KEY_SIM_OPEN_DATE)
             remove(KEY_EXAM_PLAN_USER_CONFIGURED)
+            // Clear onboarding so the next account hydrates from Firestore (P1 §2).
+            putBoolean(KEY_FIRST_RUN_COMPLETED, false)
+            putBoolean(KEY_ONBOARDING_PICKS_APPLIED, false)
+            remove(KEY_ONBOARDING_SUBJECT)
+            remove(KEY_ONBOARDING_CHAPTER)
+            remove(KEY_ONBOARDING_WORLD)
         }
     }
 
@@ -678,6 +687,32 @@ class SharedPreferenceUtils(context: Context) : AppMigrationVersionStore {
 
     fun setHasCompletedAnyTask() {
         prefs.edit { putBoolean(KEY_HAS_COMPLETED_ANY_TASK, true) }
+    }
+
+    /** Set when a task reward is claimed; cleared after we attempt an in-app review on home. */
+    fun isPendingReviewOnHome(): Boolean =
+        prefs.getBoolean(KEY_PENDING_REVIEW_ON_HOME, false)
+
+    fun setPendingReviewOnHome(pending: Boolean) {
+        prefs.edit { putBoolean(KEY_PENDING_REVIEW_ON_HOME, pending) }
+    }
+
+    fun hasSeededDemoFriendRequests(): Boolean =
+        prefs.getBoolean(KEY_DEMO_FRIEND_REQUESTS_SEEDED, false)
+
+    fun setSeededDemoFriendRequests(seeded: Boolean = true) {
+        prefs.edit { putBoolean(KEY_DEMO_FRIEND_REQUESTS_SEEDED, seeded) }
+    }
+
+    fun hasBotFriendFeedSimulatedForDay(dayKey: String): Boolean =
+        prefs.getString(KEY_BOT_FRIEND_FEED_SIM_DAY, null) == dayKey
+
+    fun setBotFriendFeedSimulatedForDay(dayKey: String) {
+        prefs.edit { putString(KEY_BOT_FRIEND_FEED_SIM_DAY, dayKey) }
+    }
+
+    fun clearBotFriendFeedSimulatedDay() {
+        prefs.edit { remove(KEY_BOT_FRIEND_FEED_SIM_DAY) }
     }
 
     fun hasAskedNotificationPermission(): Boolean =

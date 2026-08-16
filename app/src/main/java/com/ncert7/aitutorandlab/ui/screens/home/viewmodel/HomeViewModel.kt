@@ -243,12 +243,14 @@ class HomeViewModel @Inject constructor(
         language: String,
     ) {
         _planDays.value =
-            entities.map { day ->
-                ExamPlanUiMapper.toPlanDayNode(
-                    day,
-                    TrialTitleResolver.localizedPlanDayLabel(day, language, conceptDao, chapterDao),
-                )
-            }
+            entities
+                .filter { it.isExamScheduleDay() }
+                .map { day ->
+                    ExamPlanUiMapper.toPlanDayNode(
+                        day,
+                        TrialTitleResolver.localizedPlanDayLabel(day, language, conceptDao, chapterDao),
+                    )
+                }
     }
 
     fun refreshSelectedSubjectName() {
@@ -351,32 +353,38 @@ class HomeViewModel @Inject constructor(
             }
 
             if (subjectId != null && chapterLabel.isNotBlank()) {
-                val chapters = chapterDao.getChaptersForSubjectSync(subjectId)
-                val chapterEntity =
-                    OnboardingChapterCatalog.resolveChapter(chapters, chapterLabel, language)
-                        ?: chapters.sortedBy { it.orderIndex }.firstOrNull()
-                if (chapterEntity != null) {
-                    try {
-                        examPlanRepository.createOnboardingPlan(
-                            studentId = id,
-                            subjectId = subjectId,
-                            chapterId = chapterEntity.chapterId,
-                            languageCode = language,
-                        )
-                        refreshExamPlanStatuses()
-                    } catch (e: Exception) {
-                        DebugLogger.errorLog(
-                            "HomeViewModel",
-                            "Onboarding plan creation failed: ${e.message}",
-                        )
+                val existingPlan = examPlanRepository.getActivePlan(id)
+                if (existingPlan == null) {
+                    val chapters = chapterDao.getChaptersForSubjectSync(subjectId)
+                    val chapterEntity =
+                        OnboardingChapterCatalog.resolveChapter(chapters, chapterLabel, language)
+                            ?: chapters.sortedBy { it.orderIndex }.firstOrNull()
+                    if (chapterEntity != null) {
+                        try {
+                            examPlanRepository.createOnboardingPlan(
+                                studentId = id,
+                                subjectId = subjectId,
+                                chapterId = chapterEntity.chapterId,
+                                languageCode = language,
+                            )
+                            refreshExamPlanStatuses()
+                        } catch (e: Exception) {
+                            DebugLogger.errorLog(
+                                "HomeViewModel",
+                                "Onboarding plan creation failed: ${e.message}",
+                            )
+                        }
                     }
                 }
             }
 
             val gardenTheme =
                 if (world.equals("Space", ignoreCase = true)) GardenTheme.OUTPOST else GardenTheme.GARDEN
-            val hasRestoredGarden = (gardenRepository.getProgress(id)?.totalPlanted ?: 0) > 0
-            if (!hasRestoredGarden) {
+            // R.1: remote garden (theme/items) wins over onboarding world when restore applied,
+            // even if plant count is still zero.
+            val remoteGardenApplied = DataSyncService.wasGardenRestoredFromRemote()
+            val hasRestoredPlants = (gardenRepository.getProgress(id)?.totalPlanted ?: 0) > 0
+            if (!remoteGardenApplied && !hasRestoredPlants) {
                 gardenRepository.setTheme(id, gardenTheme)
                 gardenRepository.applyOnboardingStartingScene(id, gardenTheme)
             }
@@ -384,6 +392,19 @@ class HomeViewModel @Inject constructor(
             refreshGardenPlantedItems(id)
 
             sharedPrefs.setOnboardingPicksApplied()
+            try {
+                com.ncert7.aitutorandlab.repository.FirebaseRepository()
+                    .markOnboardingPicksApplied(
+                        userId = id,
+                        subjectId = subjectId,
+                        chapterId = null,
+                    )
+            } catch (e: Exception) {
+                DebugLogger.errorLog(
+                    "HomeViewModel",
+                    "Onboarding picks cloud mark failed: ${e.message}",
+                )
+            }
         }
     }
 
@@ -460,6 +481,9 @@ class HomeViewModel @Inject constructor(
 
     private fun observeGardenProgress() {
         viewModelScope.launch {
+            // Bug B: wait for login restore before ensureState via getProgress can plant a
+            // starter row that previously blocked pristine detection.
+            DataSyncService.awaitGardenRestore()
             combine(_student, _todayTrialItems) { student, items ->
                 val studentId = student?.studentId?.takeIf { it.isNotBlank() } ?: userId
                 studentId to trialProgressSignature(items)
@@ -472,6 +496,7 @@ class HomeViewModel @Inject constructor(
                 }
         }
         viewModelScope.launch {
+            DataSyncService.awaitGardenRestore()
             _student
                 .flatMapLatest { student ->
                     val studentId = student?.studentId?.takeIf { it.isNotBlank() } ?: userId
@@ -617,9 +642,10 @@ class HomeViewModel @Inject constructor(
                 .collectLatest { (entities, language) ->
                     cachedPlanDayEntities = entities
                     remapLocalizedPlanDays(entities, language)
+                    val scheduleDays = entities.filter { it.isExamScheduleDay() }
                     _todayPlanDay.value =
-                        entities.firstOrNull { it.status == "TODAY" }
-                            ?: entities.firstOrNull { it.status == "UPCOMING" }
+                        scheduleDays.firstOrNull { it.status == "TODAY" }
+                            ?: scheduleDays.firstOrNull { it.status == "UPCOMING" }
                 }
         }
     }

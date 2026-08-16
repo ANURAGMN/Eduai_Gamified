@@ -5,6 +5,7 @@ import com.ncert7.aitutorandlab.data.local.dao.LeagueDao
 import com.ncert7.aitutorandlab.data.local.entities.GamificationProfileEntity
 import com.ncert7.aitutorandlab.data.local.entities.LeagueCacheEntity
 import com.ncert7.aitutorandlab.data.local.entities.LeagueMemberEntity
+import com.ncert7.aitutorandlab.domain.gamification.FriendFeedService
 import com.ncert7.aitutorandlab.domain.gamification.GamificationWeekKey
 import com.ncert7.aitutorandlab.domain.gamification.LeagueCohortEngine
 import com.ncert7.aitutorandlab.domain.gamification.LeagueConfig
@@ -56,6 +57,7 @@ class LeagueRepository @Inject constructor(
     private val leagueDao: LeagueDao,
     private val gamificationDao: GamificationDao,
     private val friendRepository: FriendRepository,
+    private val friendFeedService: FriendFeedService,
 ) {
     fun observeBoardState(
         studentId: String,
@@ -271,6 +273,7 @@ class LeagueRepository @Inject constructor(
         ranked: RankedCohort? = null,
     ): Int {
         val weekKey = GamificationWeekKey.current()
+        val previousRank = leagueDao.getCache(studentId)?.rank ?: 0
         val members = leagueDao.getMembers(weekKey, cohortId)
         val resolvedRank =
             ranked?.userRank
@@ -285,6 +288,9 @@ class LeagueRepository @Inject constructor(
                 fetchedAt = System.currentTimeMillis(),
             ),
         )
+        runCatching {
+            friendFeedService.onLeagueRankImproved(studentId, previousRank, resolvedRank)
+        }
         return resolvedRank
     }
 

@@ -46,6 +46,8 @@ import com.anurag.eduai.uikit.theme.EduAiTheme
 import com.ncert7.aitutorandlab.service.analytics.ScreenName
 import com.ncert7.aitutorandlab.service.analytics.TrackScreenEvent
 import com.ncert7.aitutorandlab.ui.screens.friends.viewmodel.FriendsViewModel
+import com.ncert7.aitutorandlab.utils.FriendsCopy
+import com.ncert7.aitutorandlab.utils.getCurrentLanguageCode
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -55,10 +57,12 @@ fun FriendsScreen(onNavigateBack: () -> Unit) {
     val viewModel: FriendsViewModel = hiltViewModel()
     val myCode by viewModel.myFriendCode.collectAsState()
     val friendCount by viewModel.friendCount.collectAsState()
+    val pendingRequests by viewModel.pendingRequests.collectAsState()
     val statusMessage by viewModel.statusMessage.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
     var friendCodeInput by remember { mutableStateOf("") }
+    val language = getCurrentLanguageCode()
 
     LaunchedEffect(statusMessage) {
         statusMessage?.let { message ->
@@ -72,10 +76,18 @@ fun FriendsScreen(onNavigateBack: () -> Unit) {
             snackbarHost = { SnackbarHost(snackbarHostState) },
             topBar = {
                 TopAppBar(
-                    title = { Text("Friends · $friendCount", fontWeight = FontWeight.SemiBold) },
+                    title = {
+                        Text(
+                            FriendsCopy.screenTitle(language, friendCount),
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    },
                     navigationIcon = {
                         IconButton(onClick = onNavigateBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = FriendsCopy.backContentDescription(language),
+                            )
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(),
@@ -92,41 +104,73 @@ fun FriendsScreen(onNavigateBack: () -> Unit) {
                         .padding(horizontal = 16.dp, vertical = 14.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
+                if (pendingRequests.isNotEmpty()) {
+                    Text(
+                        text = FriendsCopy.friendRequestsTitle(language),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = EduAiTheme.colors.text,
+                    )
+                    pendingRequests.forEach { request ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = request.displayName,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = EduAiTheme.colors.text,
+                                )
+                                Text(
+                                    text = FriendsCopy.wantsToBeFriends(language),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = EduAiTheme.colors.textSecondary,
+                                )
+                            }
+                            Button(onClick = { viewModel.acceptRequest(request.friendStudentId) }) {
+                                Text(FriendsCopy.acceptLabel(language))
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+
                 Text(
-                    text = "Your friend code",
+                    text = FriendsCopy.yourFriendCodeTitle(language),
                     style = MaterialTheme.typography.titleMedium,
                     color = EduAiTheme.colors.text,
                 )
                 Text(
-                    text = myCode.ifBlank { "Loading…" },
+                    text = myCode.ifBlank { FriendsCopy.loadingCode(language) },
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                     color = EduAiTheme.colors.accent,
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedButton(
-                        onClick = { copyFriendCode(context, myCode) },
+                        onClick = { copyFriendCode(context, myCode, language) },
                         enabled = myCode.isNotBlank(),
                     ) {
-                        Text("Copy code")
+                        Text(FriendsCopy.copyCodeLabel(language))
                     }
                     OutlinedButton(
-                        onClick = { shareFriendCode(context, myCode) },
+                        onClick = { shareFriendCode(context, myCode, language) },
                         enabled = myCode.isNotBlank(),
                     ) {
-                        Text("Share")
+                        Text(FriendsCopy.shareLabel(language))
                     }
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "Add a friend",
+                    text = FriendsCopy.addFriendTitle(language),
                     style = MaterialTheme.typography.titleMedium,
                     color = EduAiTheme.colors.text,
                 )
                 Text(
-                    text = "Enter their 8-character code. Link instantly — earn 50 gems each when they finish their first lesson.",
+                    text = FriendsCopy.addFriendBody(language),
                     style = MaterialTheme.typography.bodySmall,
                     color = EduAiTheme.colors.textSecondary,
                 )
@@ -134,7 +178,7 @@ fun FriendsScreen(onNavigateBack: () -> Unit) {
                     value = friendCodeInput,
                     onValueChange = { friendCodeInput = it.uppercase().take(8) },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Friend code") },
+                    label = { Text(FriendsCopy.friendCodeFieldLabel(language)) },
                     singleLine = true,
                 )
                 Button(
@@ -145,28 +189,29 @@ fun FriendsScreen(onNavigateBack: () -> Unit) {
                     enabled = friendCodeInput.length >= 6,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text("Add friend")
+                    Text(FriendsCopy.addFriendButton(language))
                 }
             }
         }
     }
 }
 
-private fun copyFriendCode(context: Context, code: String) {
+private fun copyFriendCode(context: Context, code: String, languageCode: String) {
     if (code.isBlank()) return
     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-    clipboard.setPrimaryClip(ClipData.newPlainText("Friend code", code))
+    clipboard.setPrimaryClip(
+        ClipData.newPlainText(FriendsCopy.clipboardLabel(languageCode), code),
+    )
 }
 
-private fun shareFriendCode(context: Context, code: String) {
+private fun shareFriendCode(context: Context, code: String, languageCode: String) {
     if (code.isBlank()) return
     val intent =
         Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
-            putExtra(
-                Intent.EXTRA_TEXT,
-                "Add me on EduAI! My friend code is $code",
-            )
+            putExtra(Intent.EXTRA_TEXT, FriendsCopy.shareMessage(languageCode, code))
         }
-    context.startActivity(Intent.createChooser(intent, "Share friend code"))
+    context.startActivity(
+        Intent.createChooser(intent, FriendsCopy.shareChooserTitle(languageCode)),
+    )
 }

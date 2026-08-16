@@ -1,0 +1,54 @@
+{
+  "simId": "math_1_12",
+  "lang": "en",
+  "title": "Rounding Sniper Range",
+  "steps": [
+    {
+      "text": "Round fast and hit the correct nearest value — under time pressure!"
+    },
+    {
+      "text": "Tap the option that is the correctly rounded number."
+    },
+    {
+      "text": "Want a fresh set of numbers? Tap “Reshuffle”.",
+      "target": "Reshuffle"
+    },
+    {
+      "text": "Check the digit right after the rounding place: 5 or more rounds up, less rounds down."
+    }
+  ],
+  "coach": {
+    "mission": "Round fast and hit the right value.",
+    "whenStuck": [
+      "Tap the correctly rounded option. “Reshuffle” gives a new set.",
+      "Check the digit after the rounding place."
+    ],
+    "whenWrong": [
+      "5 or more rounds up, less rounds down, then zero out the rest — don't rush past the deciding digit.",
+      "Re-check which place you're rounding to."
+    ],
+    "whenCorrect": [
+      "Bullseye — rounded right!",
+      "Fast and accurate."
+    ],
+    "done": "You can round quickly now. Keep going, or move on."
+  },
+  "practice": {
+    "rounds": 3,
+    "steps": [
+      {
+        "text": "Check the digit after the rounding place: 5+ rounds up, less rounds down. Tap the correct option — fast!"
+      }
+    ],
+    "onCorrect": [
+      "Bullseye — rounded right under pressure!",
+      "Fast and accurate.",
+      "Yes — the deciding digit again."
+    ],
+    "onWrong": [
+      "Don't rush past the deciding digit: 5+ up, less down, then zero the rest.",
+      "Double-check which place you're rounding to."
+    ],
+    "done": "You can round quickly and accurately, even against the clock!"
+  }
+}

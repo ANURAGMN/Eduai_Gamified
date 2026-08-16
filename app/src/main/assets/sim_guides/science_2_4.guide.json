@@ -4,24 +4,77 @@
   "title": "Red Rose Indicator",
   "steps": [
     {
-      "text": "Rose petal extract is a natural indicator. It's PINK to start with — let's see how acids and bases change it."
+      "text": "Rose petal extract is a natural indicator — pink to start with. Pick a solution and add it to see the colour change."
     },
     {
-      "text": "Test an acid — tap “Lemon” (or vinegar).",
+      "text": "Pick an acid — tap “Lemon” (or vinegar/orange).",
       "target": "Lemon"
     },
     {
-      "text": "The pink extract turns RED. Rose extract turns red in acids."
+      "text": "Now tap “Add Solution” to mix it into the rose extract.",
+      "target": "Add Solution"
     },
     {
-      "text": "Now test a base — tap “Soap”.",
+      "text": "The pink extract turns RED — rose extract turns red in acids."
+    },
+    {
+      "text": "Now pick a base — tap “Soap” (or baking soda).",
       "target": "Soap"
     },
     {
-      "text": "This time it turns GREEN. Rose extract turns green in bases, and stays pink in neutral solutions."
-    },
-    {
-      "text": "So rose extract is a complete natural indicator — red for acids, green for bases, pink for neutral."
+      "text": "Tap “Add Solution” again, and watch it turn GREEN. Rose extract is red in acids, green in bases, and stays pink in neutral solutions."
     }
-  ]
+  ],
+  "coach": {
+    "mission": "Test solutions with rose-petal indicator.",
+    "whenStuck": [
+      "Pick a solution, then tap “Add Solution” to mix it in.",
+      "The pink extract only changes after you add a solution."
+    ],
+    "whenWrong": [
+      "Rose extract turns RED in acids and GREEN in bases — check which you added.",
+      "No change? That solution is likely neutral."
+    ],
+    "whenCorrect": [
+      "Correct — the extract reacted the right way!",
+      "Red for acid, green for base. Great."
+    ],
+    "done": "You've used a natural indicator to spot acids and bases. Try the rest, or move on.",
+    "elements": {
+      "lemon": "Lemon is an acid — rose-petal extract turns red.",
+      "lemon juice": "Lemon Juice is an acid — rose-petal extract turns red.",
+      "vinegar": "Vinegar is an acid — rose-petal extract turns red.",
+      "orange": "Orange is an acid — rose-petal extract turns red.",
+      "orange juice": "Orange Juice is an acid — rose-petal extract turns red.",
+      "curd": "Curd is an acid — rose-petal extract turns red.",
+      "yogurt": "Yogurt is an acid — rose-petal extract turns red.",
+      "tamarind": "Tamarind is an acid — rose-petal extract turns red.",
+      "tamarind water": "Tamarind Water is an acid — rose-petal extract turns red.",
+      "tomato": "Tomato is an acid — rose-petal extract turns red.",
+      "apple": "Apple is an acid — rose-petal extract turns red.",
+      "grape": "Grape is an acid — rose-petal extract turns red.",
+      "lime juice": "Lime Juice is an acid — rose-petal extract turns red.",
+      "amla": "Amla is an acid — rose-petal extract turns red.",
+      "soda water": "Soda Water is an acid — rose-petal extract turns red.",
+      "cola": "Cola is an acid — rose-petal extract turns red.",
+      "soap": "Soap is a base — rose-petal extract turns green.",
+      "baking soda": "Baking Soda is a base — rose-petal extract turns green.",
+      "washing soda": "Washing Soda is a base — rose-petal extract turns green.",
+      "detergent": "Detergent is a base — rose-petal extract turns green.",
+      "lime water": "Lime Water is a base — rose-petal extract turns green.",
+      "ammonia": "Ammonia is a base — rose-petal extract turns green.",
+      "antacid": "Antacid is a base — rose-petal extract turns green.",
+      "toothpaste": "Toothpaste is a base — rose-petal extract turns green.",
+      "shampoo": "Shampoo is a base — rose-petal extract turns green.",
+      "soap water": "Soap Water is a base — rose-petal extract turns green.",
+      "water": "Water is neutral — the rose extract stays pink.",
+      "salt": "Salt is neutral — the rose extract stays pink.",
+      "salt water": "Salt Water is neutral — the rose extract stays pink.",
+      "common salt": "Common Salt is neutral — the rose extract stays pink.",
+      "sugar": "Sugar is neutral — the rose extract stays pink.",
+      "sugar solution": "Sugar Solution is neutral — the rose extract stays pink.",
+      "milk": "Milk is neutral — the rose extract stays pink.",
+      "distilled water": "Distilled Water is neutral — the rose extract stays pink."
+    }
+  }
 }

@@ -26,6 +26,18 @@ interface ExamPlanDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertPlan(plan: ExamPlanEntity)
 
+    @Query("SELECT * FROM exam_plan WHERE isSynced = 0 AND isActive = 1")
+    suspend fun getUnsyncedActivePlans(): List<ExamPlanEntity>
+
+    @Query(
+        """
+        UPDATE exam_plan
+        SET isSynced = 1
+        WHERE studentId = :studentId
+        """,
+    )
+    suspend fun markPlanSynced(studentId: String)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertDays(days: List<ExamPlanDayEntity>)
 

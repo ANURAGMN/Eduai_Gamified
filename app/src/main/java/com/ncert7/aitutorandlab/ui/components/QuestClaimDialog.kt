@@ -16,7 +16,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.window.Dialog
+import com.ncert7.aitutorandlab.ui.screens.quests.questClaimAdLoadingLabel
+import com.ncert7.aitutorandlab.ui.screens.quests.questClaimNotNowLabel
+import com.ncert7.aitutorandlab.ui.screens.quests.questClaimWatchLabel
 import com.ncert7.aitutorandlab.ui.theme.LocalDimensions
+import com.ncert7.aitutorandlab.utils.getCurrentLanguageCode
 
 @Composable
 fun QuestClaimDialog(
@@ -26,6 +30,7 @@ fun QuestClaimDialog(
     adReady: Boolean,
     onWatchAd: () -> Unit,
     onDismiss: () -> Unit,
+    languageCode: String = getCurrentLanguageCode(),
 ) {
     val dimens = LocalDimensions.current
 
@@ -56,12 +61,12 @@ fun QuestClaimDialog(
                 enabled = adReady,
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text("Watch short video · +$gemsReward gems")
+                Text(questClaimWatchLabel(languageCode, gemsReward))
             }
             if (!adReady) {
                 Spacer(modifier = Modifier.height(dimens.spaceSmall))
                 Text(
-                    text = "Loading ad… try again in a moment.",
+                    text = questClaimAdLoadingLabel(languageCode),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
@@ -72,7 +77,7 @@ fun QuestClaimDialog(
                 onClick = onDismiss,
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text("Not now")
+                Text(questClaimNotNowLabel(languageCode))
             }
         }
     }

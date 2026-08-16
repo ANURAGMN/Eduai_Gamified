@@ -1,0 +1,70 @@
+{
+  "simId": "math_1_1_new",
+  "lang": "en",
+  "title": "Card Sum Difference Duel",
+  "steps": [
+    {
+      "text": "Your mission: place digits into the boxes to make the sum or difference as big (or as small) as the mission asks."
+    },
+    {
+      "text": "Tap any digit to drop it into the next box (you choose which)."
+    },
+    {
+      "text": "Keep tapping digits to fill every box. Made a mistake? Tap “Backspace” to undo.",
+      "target": "Backspace"
+    },
+    {
+      "text": "When all boxes are full, tap “Check” to see if you beat the mission.",
+      "target": "Check"
+    },
+    {
+      "text": "Tap “Reset” to clear and try a smarter arrangement.",
+      "target": "Reset"
+    },
+    {
+      "text": "The trick: put big digits in the highest place values to make bigger numbers — that's how you win the duel."
+    }
+  ],
+  "coach": {
+    "mission": "Arrange digits to beat the mission's target.",
+    "whenStuck": [
+      "Tap digits to fill the boxes, then tap “Check”.",
+      "Bigger digits in the leftmost boxes make a bigger number."
+    ],
+    "whenWrong": [
+      "Place value is the key — the leftmost box counts most. Put big digits there for a bigger number (small digits for a smaller one).",
+      "Re-read the mission: does it want the biggest or the smallest result?"
+    ],
+    "whenCorrect": [
+      "You beat the duel! Nicely arranged.",
+      "Great place-value thinking — try to win in fewer moves."
+    ],
+    "done": "You've mastered arranging digits by place value. Keep dueling, or move on."
+  },
+  "practice": {
+    "rounds": 3,
+    "steps": [
+      {
+        "text": "Tap “Reset” to clear the boxes for a fresh round.",
+        "target": "Reset"
+      },
+      {
+        "text": "Read the mission at the top — biggest or smallest? Then place digits by place value: big digits in the leftmost boxes for a big number, small digits left for a small one."
+      },
+      {
+        "text": "When every box is filled, tap “Check”.",
+        "target": "Check"
+      }
+    ],
+    "onCorrect": [
+      "Yes! Bigger digits in the higher place values make a bigger number.",
+      "Place value decides a number's size — you matched the mission exactly.",
+      "Sharp arranging! You beat the duel again."
+    ],
+    "onWrong": [
+      "Not the best yet — the leftmost box is worth the most, so put your biggest digit there (smallest for a small number). Tap Reset and rearrange.",
+      "Re-read the mission: does it want the biggest or the smallest result? Then order the digits to match."
+    ],
+    "done": "You've mastered arranging digits by place value — you can build the biggest or smallest number on demand!"
+  }
+}

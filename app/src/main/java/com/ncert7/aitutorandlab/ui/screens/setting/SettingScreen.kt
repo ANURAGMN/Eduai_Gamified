@@ -435,6 +435,36 @@ fun SettingScreen(
                         ) {
                             Text("Prepare quest ad test")
                         }
+                        OutlinedButton(
+                            onClick = {
+                                viewModel.debugSimulateFriendRequests { msg ->
+                                    scope.launch { snackbarHostState.showSnackbar(msg) }
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text("Simulate 2 friend requests")
+                        }
+                        OutlinedButton(
+                            onClick = {
+                                viewModel.debugSimulateBotFriendUpdates { msg ->
+                                    scope.launch { snackbarHostState.showSnackbar(msg) }
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text("Simulate bot friend updates")
+                        }
+                        OutlinedButton(
+                            onClick = {
+                                viewModel.debugPurgeSelfFriendFeed { msg ->
+                                    scope.launch { snackbarHostState.showSnackbar(msg) }
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text("Purge self from Friends' updates")
+                        }
                         if (gamifiedHomeEnabled) {
                             OutlinedButton(
                                 onClick = {

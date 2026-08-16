@@ -34,6 +34,8 @@ import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import androidx.compose.runtime.SideEffect
 import com.ncert7.aitutorandlab.utils.getCurrentLanguageCode
+import com.ncert7.aitutorandlab.utils.HomeCopy
+import com.ncert7.aitutorandlab.utils.StreakCopyFactory
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
@@ -66,7 +68,6 @@ import com.ncert7.aitutorandlab.ui.screens.home.viewmodel.HomeViewModel
 import com.ncert7.aitutorandlab.ui.screens.youtube.YoutubePlayerDialog
 import com.ncert7.aitutorandlab.ui.screens.garden.AvatarTabNavigation
 import com.ncert7.aitutorandlab.ui.screens.plan.PlanDayActions
-import com.ncert7.aitutorandlab.utils.HomeCopy
 import com.ncert7.aitutorandlab.ui.screens.plan.TrialQuestClickActions
 import com.anurag.eduai.uikit.components.BookmarkItem
 import com.anurag.eduai.uikit.components.PlanDayNode
@@ -81,6 +82,7 @@ import kotlinx.coroutines.launch
 
 import com.ncert7.aitutorandlab.ui.screens.quests.questClaimDialogCopy
 import com.ncert7.aitutorandlab.ui.screens.quests.questClaimResultMessage
+import com.ncert7.aitutorandlab.ui.screens.quests.questClaimUnableToShowAd
 
 private fun formatLeagueName(tier: String?, languageCode: String): String =
     HomeCopy.leagueCaption(tier, languageCode)
@@ -371,22 +373,25 @@ fun GamifiedHomeRoute(
 
     EduAiTheme {
         pendingQuestClaim?.let { claimType ->
-            val (title, message) = questClaimDialogCopy(claimType)
+            val (title, message) = questClaimDialogCopy(claimType, currentLanguage)
             QuestClaimDialog(
                 title = title,
                 message = message,
                 gemsReward = claimType.gemAmount(),
                 adReady = rewardedAdReady,
+                languageCode = currentLanguage,
                 onWatchAd = {
                     val hostActivity = activity
                     if (hostActivity == null) {
                         pendingQuestClaim = null
-                        scope.launch { snackbarHostState.showSnackbar("Unable to show ad.") }
+                        scope.launch {
+                            snackbarHostState.showSnackbar(questClaimUnableToShowAd(currentLanguage))
+                        }
                         return@QuestClaimDialog
                     }
                     pendingQuestClaim = null
                     viewModel.claimQuestWithAd(hostActivity, claimType) { result ->
-                        questClaimResultMessage(result)?.let { text ->
+                        questClaimResultMessage(result, currentLanguage)?.let { text ->
                             scope.launch { snackbarHostState.showSnackbar(text) }
                         }
                     }
@@ -634,7 +639,8 @@ fun GamifiedHomeRoute(
             // Full-screen streak celebrations, on top of home. The triumphant "extended" beat wins if
             // both are queued (e.g. the day's first task just extended the streak).
             val todayIdx = (java.time.LocalDate.now().dayOfWeek.value - 1).coerceIn(0, 6)
-            val celebrationName = homeState.userName.takeIf { it.isNotBlank() } ?: "there"
+            val streakCopy = remember(currentLanguage) { StreakCopyFactory.forLanguage(currentLanguage) }
+            val celebrationName = homeState.userName.takeIf { it.isNotBlank() } ?: streakCopy.fallbackName
             val extendedShownValue = streakExtended
             LaunchedEffect(streaksEnabled, extendedShownValue) {
                 if (streaksEnabled && extendedShownValue != null) {
@@ -653,6 +659,7 @@ fun GamifiedHomeRoute(
                 name = celebrationName,
                 doneDays = minOf(todayIdx + 1, streakExtended ?: streakCount, 7),
                 todayIndex = todayIdx,
+                copy = streakCopy,
                 onDone = {
                     EngagementAnalyticsTracker.streakExtendedDone(streakExtended ?: streakCount)
                     viewModel.acknowledgeStreakExtended()
@@ -664,6 +671,7 @@ fun GamifiedHomeRoute(
                 name = celebrationName,
                 doneDays = minOf(todayIdx, dailyStreakGreeting ?: streakCount),
                 todayIndex = todayIdx,
+                copy = streakCopy,
                 onContinue = {
                     EngagementAnalyticsTracker.streakGreetingContinue(dailyStreakGreeting ?: streakCount)
                     viewModel.acknowledgeDailyStreakGreeting()

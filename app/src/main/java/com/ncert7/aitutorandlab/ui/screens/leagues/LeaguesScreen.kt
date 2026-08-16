@@ -16,6 +16,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -25,6 +26,8 @@ import com.anurag.eduai.uikit.theme.EduAiTheme
 import com.ncert7.aitutorandlab.service.analytics.ScreenName
 import com.ncert7.aitutorandlab.service.analytics.TrackScreenEvent
 import com.ncert7.aitutorandlab.ui.screens.leagues.viewmodel.LeaguesViewModel
+import com.ncert7.aitutorandlab.utils.LeaguesCopyFactory
+import com.ncert7.aitutorandlab.utils.getCurrentLanguageCode
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,16 +40,27 @@ fun LeaguesScreen(
     val viewModel: LeaguesViewModel = hiltViewModel()
     val uiState by viewModel.uiState.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val language = getCurrentLanguageCode()
+    val leaguesCopy = remember(language) { LeaguesCopyFactory.forLanguage(language) }
 
     EduAiTheme {
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text("Leagues", fontWeight = FontWeight.SemiBold) },
+                    title = {
+                        Text(
+                            LeaguesCopyFactory.screenTitle(language),
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    },
                     navigationIcon = {
                         if (showBackNavigation) {
                             IconButton(onClick = onNavigateBack) {
-                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                                Icon(
+                                    Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription =
+                                        LeaguesCopyFactory.backContentDescription(language),
+                                )
                             }
                         }
                     },
@@ -64,6 +78,7 @@ fun LeaguesScreen(
             } else {
                 EduLeaguesScreen(
                     state = uiState,
+                    copy = leaguesCopy,
                     modifier = Modifier.padding(padding),
                 )
             }

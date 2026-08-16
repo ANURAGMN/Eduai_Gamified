@@ -3,11 +3,13 @@ package com.ncert7.aitutorandlab.repository
 import com.ncert7.aitutorandlab.data.local.dao.FriendDao
 import com.ncert7.aitutorandlab.data.local.dao.GamificationDao
 import com.ncert7.aitutorandlab.data.local.dao.StudentDao
+import com.ncert7.aitutorandlab.data.local.SharedPreferenceUtils
 import com.ncert7.aitutorandlab.data.local.entities.FriendConnectionEntity
 import com.ncert7.aitutorandlab.data.local.entities.FriendFeedItemEntity
 import com.ncert7.aitutorandlab.data.local.entities.FeedVisibility
 import com.ncert7.aitutorandlab.domain.gamification.FriendAddResult
 import com.ncert7.aitutorandlab.domain.gamification.FriendEventType
+import com.ncert7.aitutorandlab.domain.gamification.LeagueConfig
 import com.ncert7.aitutorandlab.domain.gamification.LeagueTier
 import com.ncert7.aitutorandlab.service.analytics.GamificationAnalyticsTracker
 import kotlinx.coroutines.flow.Flow
@@ -26,15 +28,19 @@ class FriendRepository @Inject constructor(
     private val gamificationDao: GamificationDao,
     private val studentDao: StudentDao,
     private val firebaseRepository: FirebaseRepository,
+    private val sharedPrefs: SharedPreferenceUtils,
 ) {
     fun observeConnections(studentId: String): Flow<List<FriendConnectionEntity>> =
         friendDao.observeConnections(studentId)
+
+    fun observePendingRequests(studentId: String): Flow<List<FriendConnectionEntity>> =
+        friendDao.observePendingRequests(studentId)
 
     fun observeFriendCount(studentId: String): Flow<Int> =
         friendDao.observeFriendCount(studentId)
 
     fun observeHomeFeed(studentId: String, limit: Int = 8): Flow<List<FriendFeedItemEntity>> =
-        friendDao.observeFeed(studentId, limit)
+        friendDao.observeFriendsFeed(studentId, limit)
 
     fun observeUnseenFeedCount(studentId: String): Flow<Int> =
         friendDao.observeUnseenFeedCount(studentId)
@@ -69,6 +75,9 @@ class FriendRepository @Inject constructor(
             )
         }
         firebaseRepository.fetchFriendFeed(studentId).forEach { remote ->
+            val isSelf =
+                remote.fromStudentId == studentId ||
+                    remote.fromStudentId == remote.ownerStudentId
             friendDao.insertFeedItem(
                 FriendFeedItemEntity(
                     ownerStudentId = remote.ownerStudentId,
@@ -79,10 +88,12 @@ class FriendRepository @Inject constructor(
                     eventKey = remote.eventKey,
                     cheers = remote.cheers,
                     createdAt = remote.createdAt,
+                    visibility = if (isSelf) FeedVisibility.SELF else FeedVisibility.FRIENDS,
                     isSynced = true,
                 ),
             )
         }
+        friendDao.deleteSelfAuthoredFeed(studentId)
         backfillLinkedFeedIfMissing(studentId)
         refreshFriendDisplayNames(studentId)
     }
@@ -204,8 +215,190 @@ class FriendRepository @Inject constructor(
         friendDao.markAllFeedSeen(studentId)
     }
 
+    /**
+     * One-shot for the updated gamified app: seed two local PENDING bot requests
+     * (same name pool as league bots). Never synced to Firestore.
+     */
+    suspend fun seedDemoFriendRequestsIfNeeded(studentId: String) {
+        if (studentId.isBlank() || sharedPrefs.hasSeededDemoFriendRequests()) return
+        sharedPrefs.setSeededDemoFriendRequests()
+        insertDemoPendingRequests(studentId, count = 2)
+        ensureActiveDemoFriends(studentId)
+    }
+
+    /** Debug-only: always insert [count] fresh PENDING bot requests (local only). */
+    suspend fun debugSimulateFriendRequests(studentId: String, count: Int = 2): Int {
+        if (studentId.isBlank()) return 0
+        sharedPrefs.setSeededDemoFriendRequests()
+        val n = insertDemoPendingRequests(studentId, count = count.coerceIn(1, 5), forceUnique = true)
+        ensureActiveDemoFriends(studentId)
+        return n
+    }
+
+    /** Debug-only: wipe self-authored feed noise that was flooding "Friends' updates". */
+    suspend fun debugPurgeSelfFeed(studentId: String): Int {
+        if (studentId.isBlank()) return 0
+        return friendDao.deleteSelfAuthoredFeed(studentId)
+    }
+
+    /**
+     * Ensure at least 2 accepted demo bots exist so Friends' updates can show
+     * streak / topic / XP / rank activity without real friends.
+     */
+    suspend fun ensureActiveDemoFriends(studentId: String) {
+        if (studentId.isBlank()) return
+        val existing = getAcceptedDemoBots(studentId)
+        if (existing.size >= 2) return
+        val needed = 2 - existing.size
+        val usedNames = existing.map { it.displayName.lowercase(Locale.US) }.toSet()
+        val names =
+            LeagueConfig.BOT_NAMES
+                .filter { it.lowercase(Locale.US) !in usedNames }
+                .shuffled()
+                .take(needed)
+        val now = System.currentTimeMillis()
+        names.forEachIndexed { index, name ->
+            val botId = "demo_bot_active_${name.lowercase(Locale.US)}"
+            if (friendDao.getConnection(studentId, botId) != null) return@forEachIndexed
+            friendDao.upsertConnection(
+                FriendConnectionEntity(
+                    studentId = studentId,
+                    friendStudentId = botId,
+                    status = STATUS_ACCEPTED,
+                    displayName = name,
+                    createdAt = now - index,
+                    isSynced = false,
+                ),
+            )
+        }
+    }
+
+    suspend fun getAcceptedDemoBots(studentId: String): List<FriendConnectionEntity> =
+        friendDao.getConnections(studentId).filter { isDemoBot(it.friendStudentId) }
+
+    /**
+     * Insert a friends-visible feed item for [ownerStudentId] authored by someone else.
+     * Local only (bots / simulations never sync to Firestore).
+     * @return true if a new row was inserted
+     */
+    suspend fun deliverIncomingLocalFeed(
+        ownerStudentId: String,
+        fromStudentId: String,
+        fromDisplayName: String,
+        eventType: FriendEventType,
+        message: String,
+        eventKey: String,
+    ): Boolean {
+        if (ownerStudentId.isBlank() || eventKey.isBlank()) return false
+        if (friendDao.hasFeedItem(ownerStudentId, eventKey) > 0) return false
+        deliverFeedItem(
+            ownerStudentId = ownerStudentId,
+            fromStudentId = fromStudentId,
+            fromDisplayName = fromDisplayName,
+            eventType = eventType,
+            message = message,
+            eventKey = eventKey,
+            visibility = FeedVisibility.FRIENDS,
+            syncRemote = false,
+        )
+        return true
+    }
+
+    private suspend fun insertDemoPendingRequests(
+        studentId: String,
+        count: Int,
+        forceUnique: Boolean = false,
+    ): Int {
+        val names = LeagueConfig.BOT_NAMES.shuffled().take(count)
+        val now = System.currentTimeMillis()
+        var inserted = 0
+        names.forEachIndexed { index, name ->
+            val botId =
+                if (forceUnique) {
+                    "demo_bot_${name.lowercase(Locale.US)}_${now}_$index"
+                } else {
+                    "demo_bot_${name.lowercase(Locale.US)}_$index"
+                }
+            if (!forceUnique && friendDao.getConnection(studentId, botId) != null) return@forEachIndexed
+            friendDao.upsertConnection(
+                FriendConnectionEntity(
+                    studentId = studentId,
+                    friendStudentId = botId,
+                    status = STATUS_PENDING,
+                    displayName = name,
+                    createdAt = now - index,
+                    isSynced = false,
+                ),
+            )
+            inserted++
+        }
+        return inserted
+    }
+
+    suspend fun acceptFriendRequest(studentId: String, friendStudentId: String): Boolean {
+        if (studentId.isBlank() || friendStudentId.isBlank()) return false
+        val pending = friendDao.getConnection(studentId, friendStudentId) ?: return false
+        if (pending.status != STATUS_PENDING) return false
+
+        val now = System.currentTimeMillis()
+        val myName = resolveDisplayName(studentId)
+        val friendName = pending.displayName.ifBlank { resolveDisplayName(friendStudentId) }
+        val isBot = isDemoBot(friendStudentId)
+
+        friendDao.upsertConnection(
+            pending.copy(
+                status = STATUS_ACCEPTED,
+                displayName = friendName,
+                createdAt = now,
+                isSynced = false,
+            ),
+        )
+
+        if (!isBot) {
+            friendDao.upsertConnection(
+                FriendConnectionEntity(
+                    studentId = friendStudentId,
+                    friendStudentId = studentId,
+                    status = STATUS_ACCEPTED,
+                    displayName = myName,
+                    createdAt = now,
+                    isSynced = false,
+                ),
+            )
+            firebaseRepository.upsertFriendConnection(
+                ownerStudentId = studentId,
+                friendStudentId = friendStudentId,
+                displayName = friendName,
+            )
+            firebaseRepository.upsertFriendConnection(
+                ownerStudentId = friendStudentId,
+                friendStudentId = studentId,
+                displayName = myName,
+            )
+            publishFriendLinkedFeed(
+                adderStudentId = studentId,
+                friendStudentId = friendStudentId,
+                friendDisplayName = friendName,
+                adderDisplayName = myName,
+            )
+        } else {
+            deliverFeedItem(
+                ownerStudentId = studentId,
+                fromStudentId = friendStudentId,
+                fromDisplayName = friendName,
+                eventType = FriendEventType.FRIEND_LINKED,
+                message = "You're now friends with $friendName",
+                eventKey = "${studentId}_FRIEND_LINKED_$friendStudentId",
+                syncRemote = false,
+            )
+        }
+        GamificationAnalyticsTracker.friendAdded(method = if (isBot) "demo_request" else "request")
+        return true
+    }
+
     private suspend fun backfillLinkedFeedIfMissing(studentId: String) {
         friendDao.getConnections(studentId).forEach { connection ->
+            if (isDemoBot(connection.friendStudentId)) return@forEach
             val friendName = resolveDisplayName(connection.friendStudentId)
             val eventKey = "${studentId}_FRIEND_LINKED_${connection.friendStudentId}"
             if (friendDao.hasFeedItem(studentId, eventKey) > 0) return@forEach
@@ -222,6 +415,7 @@ class FriendRepository @Inject constructor(
 
     private suspend fun refreshFriendDisplayNames(studentId: String) {
         friendDao.getConnections(studentId).forEach { connection ->
+            if (isDemoBot(connection.friendStudentId)) return@forEach
             val resolved = resolveDisplayName(connection.friendStudentId)
             if (resolved == connection.displayName) return@forEach
 
@@ -361,5 +555,10 @@ class FriendRepository @Inject constructor(
 
     companion object {
         private const val GENERIC_NAME = "Student"
+        private const val STATUS_PENDING = "PENDING"
+        private const val STATUS_ACCEPTED = "ACCEPTED"
+
+        fun isDemoBot(friendStudentId: String): Boolean =
+            friendStudentId.startsWith("demo_bot_")
     }
 }

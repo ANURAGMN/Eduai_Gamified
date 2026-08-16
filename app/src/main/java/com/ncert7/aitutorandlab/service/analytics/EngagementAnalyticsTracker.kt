@@ -104,6 +104,22 @@ object EngagementAnalyticsTracker {
     fun nextPlaceSurprise(zone: Int) =
         log("next_place_surprise", ScreenName.PLAN_TRIAL, mapOf("zone" to zone))
 
+    // ---- Sync restore observability (silent no-ops → dashboard signal) ----
+
+    fun restoreApplied(domain: String, itemCount: Int) =
+        log(
+            "restore_applied",
+            null,
+            mapOf("domain" to domain, "item_count" to itemCount),
+        )
+
+    fun restoreSkipped(domain: String, reason: String) =
+        log(
+            "restore_skipped",
+            null,
+            mapOf("domain" to domain, "reason" to reason),
+        )
+
     private fun log(
         name: String,
         screen: ScreenName?,

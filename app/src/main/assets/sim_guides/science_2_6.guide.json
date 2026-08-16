@@ -3,13 +3,85 @@
   "lang": "en",
   "title": "Olfactory Indicators",
   "steps": [
-    { "text": "Onions smell strong! We'll use that smell to tell acids from bases." },
-    { "text": "Let's start with an acid — tap \"Tamarind Water\".", "target": "Tamarind Water" },
-    { "text": "Now tap \"Mix Together\" to mix it with the chopped onion.", "target": "Mix Together" },
-    { "text": "Take a sniff 👃 — the strong onion smell stays. Acids keep the smell!" },
-    { "text": "Now let's try a base — tap \"Baking Soda\".", "target": "Baking Soda" },
-    { "text": "Tap \"Mix Together\" again.", "target": "Mix Together" },
-    { "text": "This time the smell fades away — bases neutralise it." },
-    { "text": "That's the trick: acids keep the onion smell, bases remove it. You did it! 🎉" }
-  ]
+    {
+      "text": "Onions smell strong! We'll use that smell to tell acids from bases."
+    },
+    {
+      "text": "Let's start with an acid — tap \"Tamarind Water\".",
+      "target": "Tamarind Water"
+    },
+    {
+      "text": "Now tap \"Mix Together\" to mix it with the chopped onion.",
+      "target": "Mix Together"
+    },
+    {
+      "text": "Take a sniff 👃 — the strong onion smell stays. Acids keep the smell!"
+    },
+    {
+      "text": "Now let's try a base — tap \"Baking Soda\".",
+      "target": "Baking Soda"
+    },
+    {
+      "text": "Tap \"Mix Together\" again.",
+      "target": "Mix Together"
+    },
+    {
+      "text": "This time the smell fades away — bases neutralise it."
+    },
+    {
+      "text": "That's the trick: acids keep the onion smell, bases remove it. You did it! 🎉"
+    }
+  ],
+  "coach": {
+    "mission": "Use smell to tell acids from bases.",
+    "whenStuck": [
+      "Pick a solution, then tap “Mix Together”.",
+      "Acids keep the onion smell; bases remove it — try both."
+    ],
+    "whenWrong": [
+      "Acids keep the strong onion smell; bases make it fade — check what you mixed.",
+      "If the smell stayed, you added an acid; if it faded, a base."
+    ],
+    "whenCorrect": [
+      "Right — you used your nose like a scientist!",
+      "Acids keep the smell, bases remove it. Nice."
+    ],
+    "done": "You've seen how olfactory indicators work. Try the other option, or move on.",
+    "elements": {
+      "lemon": "Lemon is an acid — the strong onion smell stays.",
+      "lemon juice": "Lemon Juice is an acid — the strong onion smell stays.",
+      "vinegar": "Vinegar is an acid — the strong onion smell stays.",
+      "orange": "Orange is an acid — the strong onion smell stays.",
+      "orange juice": "Orange Juice is an acid — the strong onion smell stays.",
+      "curd": "Curd is an acid — the strong onion smell stays.",
+      "yogurt": "Yogurt is an acid — the strong onion smell stays.",
+      "tamarind": "Tamarind is an acid — the strong onion smell stays.",
+      "tamarind water": "Tamarind Water is an acid — the strong onion smell stays.",
+      "tomato": "Tomato is an acid — the strong onion smell stays.",
+      "apple": "Apple is an acid — the strong onion smell stays.",
+      "grape": "Grape is an acid — the strong onion smell stays.",
+      "lime juice": "Lime Juice is an acid — the strong onion smell stays.",
+      "amla": "Amla is an acid — the strong onion smell stays.",
+      "soda water": "Soda Water is an acid — the strong onion smell stays.",
+      "cola": "Cola is an acid — the strong onion smell stays.",
+      "soap": "Soap is a base — the onion smell fades away.",
+      "baking soda": "Baking Soda is a base — the onion smell fades away.",
+      "washing soda": "Washing Soda is a base — the onion smell fades away.",
+      "detergent": "Detergent is a base — the onion smell fades away.",
+      "lime water": "Lime Water is a base — the onion smell fades away.",
+      "ammonia": "Ammonia is a base — the onion smell fades away.",
+      "antacid": "Antacid is a base — the onion smell fades away.",
+      "toothpaste": "Toothpaste is a base — the onion smell fades away.",
+      "shampoo": "Shampoo is a base — the onion smell fades away.",
+      "soap water": "Soap Water is a base — the onion smell fades away.",
+      "water": "Water is neutral — the smell barely changes.",
+      "salt": "Salt is neutral — the smell barely changes.",
+      "salt water": "Salt Water is neutral — the smell barely changes.",
+      "common salt": "Common Salt is neutral — the smell barely changes.",
+      "sugar": "Sugar is neutral — the smell barely changes.",
+      "sugar solution": "Sugar Solution is neutral — the smell barely changes.",
+      "milk": "Milk is neutral — the smell barely changes.",
+      "distilled water": "Distilled Water is neutral — the smell barely changes."
+    }
+  }
 }

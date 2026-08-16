@@ -1,0 +1,66 @@
+{
+  "simId": "math_1_3_new",
+  "lang": "en",
+  "title": "Digit Permutation Vault",
+  "steps": [
+    {
+      "text": "Crack the vault: arrange the digits so the number obeys every rule shown (like the largest possible, or divisible by a number)."
+    },
+    {
+      "text": "Tap a digit to place it — each digit is used once. You decide the order."
+    },
+    {
+      "text": "Fill all the slots. Tap “Clear” to start the arrangement over.",
+      "target": "Clear"
+    },
+    {
+      "text": "When your number is ready, tap “Check” to test it against the vault rules.",
+      "target": "Check"
+    },
+    {
+      "text": "Think about place value: the leftmost digit matters most for making a number bigger or smaller."
+    }
+  ],
+  "coach": {
+    "mission": "Arrange the digits to satisfy every rule.",
+    "whenStuck": [
+      "Tap digits to place them; “Clear” restarts, “Check” tests.",
+      "Start with the rule about the largest place value."
+    ],
+    "whenWrong": [
+      "Check each rule one at a time — the leftmost digit sets how big the number is.",
+      "Re-read the constraints; one digit is likely in the wrong place value."
+    ],
+    "whenCorrect": [
+      "Vault cracked! Every rule satisfied.",
+      "Sharp reasoning about place value."
+    ],
+    "done": "You've solved the digit vault. Try another arrangement, or move on."
+  },
+  "practice": {
+    "rounds": 3,
+    "steps": [
+      {
+        "text": "Tap “Clear” to reset the slots.",
+        "target": "Clear"
+      },
+      {
+        "text": "Read every rule shown, then place each digit once — decide the largest place value first, then work down."
+      },
+      {
+        "text": "Tap “Check” to test your number against the vault rules.",
+        "target": "Check"
+      }
+    ],
+    "onCorrect": [
+      "Vault cracked! Every rule satisfied.",
+      "You balanced all the constraints — sharp place-value reasoning.",
+      "Yes! Rules plus place value — solved."
+    ],
+    "onWrong": [
+      "One rule isn't met — fix the largest place value first, then work down. Tap Clear and try again.",
+      "Re-read each rule; one digit is likely in the wrong slot."
+    ],
+    "done": "You can crack digit-arrangement puzzles by reasoning about place value and the rules!"
+  }
+}
