@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name"> NCERT Class 7 AI Tutor &amp; Labs</string>
+    <string name="app_name">NCERT Class 7 AI Tutor &amp; Labs</string>
 
     <!--   Login Screen -->
     <string name="choose_your_language">Choose Your Language</string>
@@ -195,7 +195,7 @@
     </plurals>
 
     <!--    Contact Details-->
-    <string name="contact_email">mail2anuragmn@gmail.com</string>
+    <string name="contact_email">contact@padaams.in</string>
     <string name="contact_number">+91 94495 31117</string>
     <string name="contact_website">https://padaams.in/</string>
     <string name="error_open_link">Unable to open link. Please install a browser and try again.</string>

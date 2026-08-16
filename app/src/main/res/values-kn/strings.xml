@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">EduAI</string>
+    <string name="app_name">NCERT ತರಗತಿ 7 AI ಟ್ಯೂಟರ್ &amp; ಲ್ಯಾಬ್‌ಗಳು</string>
 
     <!--   Login Screen -->
     <string name="choose_your_language">ನಿಮ್ಮ ಭಾಷೆಯನ್ನು ಆಯ್ಕೆಮಾಡಿ</string>
@@ -181,7 +181,7 @@
     </plurals>
 
     <!--    Contact Details-->
-    <string name="contact_email">mail2anuragmn@gmail.com</string>
+    <string name="contact_email">contact@padaams.in</string>
     <string name="contact_number">+91 94495 31117</string>
     <string name="contact_website">https://padaams.in/</string>
     <string name="error_open_link">ಲಿಂಕ್ ತೆರೆಯಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಬ್ರೌಸರ್ ಅನ್ನು ಪ್ರಯತ್ನಿಸಿ.</string>
@@ -367,4 +367,23 @@
     <string name="error_network_error_with_code">ನೆಟ್‌ವರ್ಕ್ ದೋಷ (%1$d). ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.</string>
     <string name="error_connection_error">ಸಂಪರ್ಕ ದೋಷ. ದಯವಿಟ್ಟು ನಿಮ್ಮ ಇಂಟರ್ನೆಟ್ ಪರಿಶೀಲಿಸಿ ಮತ್ತು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.</string>
     <string name="error_unknown">ದೋಷ ಸಂಭವಿಸಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.</string>
+
+    <!-- Legal / auth (parity with values/strings.xml) -->
+    <string name="legal_section_title">ಕಾನೂನು</string>
+    <string name="terms_of_service_label">ಸೇವಾ ನಿಯಮಗಳು</string>
+    <string name="terms_of_service_url">https://anuragmn.github.io/terms-of-service.html</string>
+    <string name="privacy_policy_label">ಗೌಪ್ಯತಾ ನೀತಿ</string>
+    <string name="privacy_policy_url">https://anuragmn.github.io/privacy-policy.html</string>
+    <string name="policy_msg_prefix">ಸೈನ್ ಅಪ್ ಮಾಡುವ ಮೂಲಕ, ನೀವು ನಮ್ಮ </string>
+    <string name="policy_msg_suffix"> ಮತ್ತು </string>
+    <string name="sign_in_with_email">ಇಮೇಲ್‌ನೊಂದಿಗೆ ಸೈನ್ ಇನ್</string>
+    <string name="password_label">ಪಾಸ್‌ವರ್ಡ್</string>
+    <string name="notification_action_cancel">ರದ್ದುಮಾಡಿ</string>
+
+    <!-- Padaams institutional sign-in -->
+    <string name="padaams_sign_in">ಸಂಸ್ಥೆಯ ಸೈನ್ ಇನ್</string>
+    <string name="padaams_sign_in_subtitle">@padaams.in ಖಾತೆಗಳಿಗೆ ಮಾತ್ರ. ವೈಯಕ್ತಿಕ Google ಖಾತೆಗಳಿಗೆ ಮೇಲಿನ Gmail ಬಟನ್ ಬಳಸಿ.</string>
+    <string name="padaams_email_label">Padaams ಇಮೇಲ್</string>
+    <string name="padaams_email_hint">you@padaams.in</string>
+    <string name="padaams_email_helper">Gmail ಗಾಗಿ ಅಲ್ಲ — Google ಸೈನ್-ಇನ್‌ಗೆ ಮೇಲಿನ ಬಟನ್ ಬಳಸಿ</string>
 </resources>
