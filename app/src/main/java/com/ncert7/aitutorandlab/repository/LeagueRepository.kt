@@ -219,21 +219,29 @@ class LeagueRepository @Inject constructor(
     ): String {
         val weekKey = GamificationWeekKey.current()
         val tier = LeagueTier.fromStorage(profile.leagueTier)
+        // Keep remote cohortId when still this week — but only if local members exist.
+        // After reinstall/restore, profile has cohortId while league_member (bots) is empty;
+        // updateMemberXp alone cannot create rows → board stays "0 of 0".
         val existingCohortId = profile.cohortId?.takeIf { profile.currentWeekKey == weekKey }
         if (!existingCohortId.isNullOrBlank()) {
-            leagueDao.updateMemberXp(
-                weekKey = weekKey,
-                cohortId = existingCohortId,
-                memberId = studentId,
-                weeklyXp = profile.weeklyXp,
-                streak = streak,
-                displayName = displayName.ifBlank { "Student" },
-                updatedAt = System.currentTimeMillis(),
-            )
-            return existingCohortId
+            val existingMembers = leagueDao.getMembers(weekKey, existingCohortId)
+            if (existingMembers.isNotEmpty()) {
+                leagueDao.updateMemberXp(
+                    weekKey = weekKey,
+                    cohortId = existingCohortId,
+                    memberId = studentId,
+                    weeklyXp = profile.weeklyXp,
+                    streak = streak,
+                    displayName = displayName.ifBlank { "Student" },
+                    updatedAt = System.currentTimeMillis(),
+                )
+                return existingCohortId
+            }
         }
 
-        val cohortId = LeagueCohortEngine.buildCohortId(weekKey, tier, studentId)
+        val cohortId =
+            existingCohortId
+                ?: LeagueCohortEngine.buildCohortId(weekKey, tier, studentId)
         val botCount = (LeagueConfig.COHORT_SIZE - 1).coerceAtLeast(1)
         val bots =
             LeagueCohortEngine.generateBots(
