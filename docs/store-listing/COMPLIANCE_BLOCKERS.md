@@ -1,9 +1,25 @@
 # Compliance blockers — re-weighted (not “MVP OK”)
 
-**App:** EduAI · `com.ncert7.aitutorandlab` · v1.0.10 (versionCode **12**)  
+**App:** EduAI · `com.ncert7.aitutorandlab` · v1.0.11 (versionCode **13**)  
 **Checklist source:** `Gamification/PLAY_RELEASE_CHECKLIST.md`
 
 This document supersedes the lenient audit. Items here are **fix-before-production** unless marked “defer with accepted risk.”
+
+---
+
+## 🟡 ACCEPTED RISK — this cut (v1.0.11)
+
+### AI “Report” on assistant messages (Play GenAI P0)
+
+**Status:** **Deferred with accepted risk** for the v1.0.11 / vc13 upload (decision **2026-08-16**).
+
+**Gap:** No Report / flag control on AI assistant messages in shared `ConversationView` (chatbot + math agent). Contact Support alone does not satisfy the GenAI policy checklist item.
+
+**Accepted risk:** Possible Play rejection, delayed review, or post-launch policy action until Report ships.
+
+**Mitigations until next release:** monitored `contact@padaams.in` support path; AI-backend content controls; staged rollout with halt if needed.
+
+**Follow-up (required next cut):** long-press or ⋮ **Report** on assistant messages + log event (optional Firestore `reports/`). See `RELEASE_READINESS_v1.0.11.md` §6.1.
 
 ---
 
