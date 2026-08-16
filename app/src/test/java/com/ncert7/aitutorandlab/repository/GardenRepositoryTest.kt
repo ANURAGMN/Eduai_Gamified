@@ -79,6 +79,42 @@ class GardenRepositoryTest {
     }
 
     @Test
+    fun recordCompletion_plantsImmediatelyOncePerConceptKind() = runBlocking {
+        val first =
+            repository.recordCompletion(
+                studentId = STUDENT,
+                conceptId = "c-sim",
+                chapterId = "ch-1",
+                kind = "SIMULATION",
+            )
+        assertNotNull(first)
+        assertEquals("task:c-sim:SIMULATION", first!!.id)
+        assertEquals(1, dao.items.size)
+        assertEquals(0, dao.state.steps)
+
+        val replay =
+            repository.recordCompletion(
+                studentId = STUDENT,
+                conceptId = "c-sim",
+                chapterId = "ch-1",
+                kind = "simulation", // case-insensitive key
+            )
+        assertNull(replay)
+        assertEquals(1, dao.items.size)
+
+        val otherKind =
+            repository.recordCompletion(
+                studentId = STUDENT,
+                conceptId = "c-sim",
+                chapterId = "ch-1",
+                kind = "REVISION",
+            )
+        assertNotNull(otherKind)
+        assertEquals(2, dao.items.size)
+        assertEquals("task:c-sim:REVISION", otherKind!!.id)
+    }
+
+    @Test
     fun nextFreePlot_skipsGaps() = runBlocking {
         dao.items.add(
             GrownItemEntity(
@@ -122,7 +158,7 @@ class GardenRepositoryTest {
         assertNotNull(progress)
         assertEquals(3, progress!!.steps)
         assertEquals(0, progress.totalPlanted)
-        assertEquals(0, progress.currentZone)
+        assertEquals(com.anurag.eduai.uikit.garden.quest.STARTER_GARDEN_ZONE, progress.currentZone)
     }
 
     @Test

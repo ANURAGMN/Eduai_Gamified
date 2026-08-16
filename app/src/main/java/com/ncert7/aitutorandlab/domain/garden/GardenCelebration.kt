@@ -2,7 +2,7 @@ package com.ncert7.aitutorandlab.domain.garden
 
 import com.anurag.eduai.uikit.garden.quest.Theme
 
-/** Pending garden celebration after [GardenRepository.recordStep] plants a row. */
+/** Pending garden celebration after [GardenRepository.recordCompletion] plants a row. */
 data class GardenCelebration(
     val theme: Theme,
     val zone: Int,

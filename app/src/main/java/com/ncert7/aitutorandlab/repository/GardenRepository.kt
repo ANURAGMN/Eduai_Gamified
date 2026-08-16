@@ -109,6 +109,63 @@ class GardenRepository @Inject constructor(
         }
     }
 
+    /**
+     * Grows the garden for any completed learning task (study / sim / revision / math / science),
+     * not just plan-trial items. Plants exactly one row per (conceptId + kind), immediately —
+     * "one task = one plant". Idempotent: a task already planted (same concept + kind) is a no-op,
+     * so replays and the plan-trial path can't double-plant. Uses the same zone/plot/surprise-slot
+     * resolution as [recordStep]; does not touch XP, gems, or streak.
+     */
+    suspend fun recordCompletion(
+        studentId: String,
+        conceptId: String,
+        chapterId: String,
+        kind: String,
+    ): GrownItemEntity? {
+        if (studentId.isBlank() || conceptId.isBlank()) return null
+
+        val itemKey = "task:$conceptId:${kind.uppercase()}"
+        if (gardenDao.getItem(itemKey) != null) return null // already planted for this task
+
+        val state = ensureState(studentId)
+        val zone = resolvePlantZone(studentId, state)
+        if (zone < 0) {
+            DebugLogger.debugLog(TAG, "Garden all places full — completion plant skipped")
+            return null
+        }
+        val plot = nextFreePlot(studentId, zone)
+        if (plot < 0) {
+            DebugLogger.debugLog(TAG, "Garden place full at zone $zone — completion plant skipped")
+            return null
+        }
+
+        val freshState = gardenDao.getState(studentId) ?: state
+        val plantIndex = gardenDao.countItems(studentId)
+        val slot = resolveSlot(freshState, plantIndex)
+        val planted =
+            GrownItemEntity(
+                id = itemKey,
+                studentId = studentId,
+                zone = zone,
+                plot = plot,
+                slot = slot,
+                conceptId = conceptId,
+                chapterId = chapterId,
+                kind = kind,
+                completedAt = System.currentTimeMillis(),
+            )
+        return try {
+            gardenDao.insertItem(planted)
+            // Each task now yields a whole plant, so the partial sprout counter resets.
+            gardenDao.updateSteps(studentId, 0)
+            scheduleGardenUpload()
+            planted
+        } catch (e: Exception) {
+            DebugLogger.debugLog(TAG, "Garden completion plant skipped (duplicate?): ${e.message}")
+            null
+        }
+    }
+
     suspend fun getProgress(studentId: String): GardenProgress? {
         if (studentId.isBlank()) return null
         val state = normalizeStarterSlot(studentId, ensureState(studentId))

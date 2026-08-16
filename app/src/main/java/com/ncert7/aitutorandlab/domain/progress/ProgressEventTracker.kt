@@ -6,7 +6,9 @@ import com.ncert7.aitutorandlab.domain.gamification.GamificationRewardService
 import com.ncert7.aitutorandlab.domain.gamification.InviteRewardService
 import com.ncert7.aitutorandlab.domain.progress.model.ProgressStatus
 import com.ncert7.aitutorandlab.debug.DebugLogger
+import com.ncert7.aitutorandlab.domain.garden.GardenMomentCoordinator
 import com.ncert7.aitutorandlab.repository.ConceptRepository
+import com.ncert7.aitutorandlab.repository.GardenRepository
 import com.ncert7.aitutorandlab.repository.ProgressRepository
 import com.ncert7.aitutorandlab.repository.QuestRepository
 import com.ncert7.aitutorandlab.repository.StreakRepository
@@ -42,10 +44,41 @@ class ProgressEventTracker @Inject constructor(
     private val questRepository: QuestRepository,
     private val friendFeedService: FriendFeedService,
     private val inviteRewardService: InviteRewardService,
+    private val gardenRepository: GardenRepository,
+    private val gardenMomentCoordinator: GardenMomentCoordinator,
     @ApplicationContext private val context: Context
 ) {
     companion object {
         private const val TAG = "ProgressEventTracker"
+    }
+
+    /**
+     * Grow the garden for a completed task (one plant per concept + kind, immediately).
+     * Centralised here so every completion path — plan-trial or free browsing — grows the garden
+     * exactly once. Idempotent in [GardenRepository.recordCompletion], so it is safe to call on
+     * replays. On a fresh plant, queues the celebration moment for whichever screen can show it.
+     */
+    private suspend fun growGarden(studentId: String, conceptId: String, kind: String) {
+        try {
+            if (studentId.isBlank() || conceptId.isBlank()) return
+            val chapterId = conceptRepository.getConcept(conceptId)?.chapterId.orEmpty()
+            val planted =
+                gardenRepository.recordCompletion(
+                    studentId = studentId,
+                    conceptId = conceptId,
+                    chapterId = chapterId,
+                    kind = kind,
+                ) ?: return
+            val progress = gardenRepository.getProgress(studentId) ?: return
+            val placeCompleted = progress.filledInZone >= progress.zoneCapacity
+            gardenMomentCoordinator.notifyPlanted(
+                planted = planted,
+                progress = progress,
+                placeCompleted = placeCompleted,
+            )
+        } catch (e: Exception) {
+            DebugLogger.errorLog(TAG, "Garden growth failed: ${e.message}")
+        }
     }
 
     /**
@@ -107,6 +140,7 @@ class ProgressEventTracker @Inject constructor(
             val chapterId = conceptRepository.getConcept(conceptId)?.chapterId.orEmpty()
             GamificationAnalyticsTracker.studyComplete(conceptId, chapterId)
             refreshDailyQuests(studentId, language)
+            growGarden(studentId, conceptId, "STUDY")
             DebugLogger.debugLog(TAG, "Study COMPLETED: $conceptId ($resolvedLang)")
         } catch (e: Exception) {
             DebugLogger.errorLog(TAG, "Study mark error: ${e.message}")
@@ -137,6 +171,7 @@ class ProgressEventTracker @Inject constructor(
             streakRepository.recordActivity(studentId)
             awardGamificationXp(studentId, "SIMULATION_AGENT", conceptId, resolvedLang)
             refreshDailyQuests(studentId, language)
+            growGarden(studentId, conceptId, "SIMULATION")
             DebugLogger.debugLog(TAG, "Simulation Agent COMPLETED: $conceptId ($resolvedLang)")
         } catch (e: Exception) {
             DebugLogger.errorLog(TAG, "Simulation Agent error: ${e.message}")
@@ -152,6 +187,7 @@ class ProgressEventTracker @Inject constructor(
             streakRepository.recordActivity(studentId)
             awardGamificationXp(studentId, "SIMULATION", conceptId, resolvedLang)
             refreshDailyQuests(studentId, language)
+            growGarden(studentId, conceptId, "SIMULATION")
             DebugLogger.debugLog(TAG, "Simulation URL COMPLETED: $conceptId ($resolvedLang)")
         } catch (e: Exception) {
             DebugLogger.errorLog(TAG, "Simulation URL error: ${e.message}")
@@ -190,6 +226,7 @@ class ProgressEventTracker @Inject constructor(
             val chapterId = conceptRepository.getConcept(conceptId)?.chapterId.orEmpty()
             GamificationAnalyticsTracker.revisionComplete(chapterId)
             refreshDailyQuests(studentId, language)
+            growGarden(studentId, conceptId, "REVISION")
             DebugLogger.debugLog(TAG, "Revision COMPLETED: $conceptId ($resolvedLang)")
         } catch (e: Exception) {
             DebugLogger.errorLog(TAG, "Revision error: ${e.message}")
@@ -214,6 +251,7 @@ class ProgressEventTracker @Inject constructor(
             streakRepository.recordActivity(studentId)
             awardGamificationXp(studentId, "MATH_AGENT", conceptId, resolvedLang)
             refreshDailyQuests(studentId, language)
+            growGarden(studentId, conceptId, "STUDY")
             DebugLogger.debugLog(TAG, "Math Agent COMPLETED (MATH_AGENT + CONCEPT written): $conceptId ($resolvedLang)")
         } catch (e: Exception) {
             DebugLogger.errorLog(TAG, "Math Agent error: ${e.message}")
@@ -236,6 +274,7 @@ class ProgressEventTracker @Inject constructor(
             streakRepository.recordActivity(studentId)
             awardGamificationXp(studentId, "SCIENCE_AGENT", conceptId, resolvedLang)
             refreshDailyQuests(studentId, language)
+            growGarden(studentId, conceptId, "SIMULATION")
             DebugLogger.debugLog(TAG, "Science Agent COMPLETED: $conceptId ($resolvedLang)")
         } catch (e: Exception) {
             DebugLogger.errorLog(TAG, "Science Agent error: ${e.message}")
