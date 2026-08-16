@@ -44,7 +44,7 @@ The recent coaching work is **content, not app code** — it lives in the **`Edu
 | 12 | **Uncommitted WebView/coach/theme fixes** (ColorOS contrast rescue + `isLightTheme`/`forceDarkAllowed` + unlock-on-url) | 🟢 committed `a9f480a` | no |
 | 13 | **AI "Report" control on assistant messages** (Play GenAI policy P0) | 🟡 **accepted risk for this cut** (§6.1) | no for this upload — ship Report in a follow-up |
 | 14 | **Store-listing hygiene** (EN app_name leading space; KN name mismatch; contact email = personal Gmail) | 🟢 committed `93d8080` — still update Console contact | Console residual (§6.2) |
-| 15 | **Clean, explicit committed ship set** before `bundleRelease` (tree is dirty ~61 files; ignore `ui-kit/build`) | 🔴 tree dirty | **YES** — build from a known commit, not the working folder |
+| 15 | **Clean, explicit committed ship set** before `bundleRelease` (tree is dirty ~61 files; ignore `ui-kit/build`) | 🟢 ship commit `93592d9` (+ `e9b57e5` untracked `ui-kit/build`) | build AAB from this tip |
 
 **Recommendation (order):** (1) commit the 5 WebView/coach/theme files (#12); (2) fix listing strings (#14); (3) AI-Report decision — a 5-min accepted-risk note *or* implement (#13); (4) pin a clean committed ship set (#15) + bump `targetSdk 36` (#10); (5) build AAB → retest on **ColorOS** → refresh **Data-Safety** (§2) → upload. **The Firestore rules switch (#1/#2) is a separate, post-adoption step — the interim rollback rules stay live meanwhile, so it does NOT gate this release.** See §7 for the full plan.
 
