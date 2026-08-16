@@ -14,6 +14,7 @@
 /.idea/render.experimental.xml
 .DS_Store
 /build
+**/build/
 /captures
 .externalNativeBuild
 .cxx
@@ -22,6 +23,7 @@ local.properties
 *.keystore
 app/google-services.json
 app/release/
+ui-kit/build/
 .tools/
 node-v24.17.0-win-x64.zip
 .tools/firebase-ci-token.txt
