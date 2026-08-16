@@ -8,6 +8,110 @@ object SimulationInteractionScript {
     const val FOOTER_TTS_DELAY_MS = 75_000L
 
     /**
+     * ColorOS / OEM dark mode often leaves `body` with a transparent background-color
+     * (gradient-only) and then paints that area white while `.header` / `.section-title`
+     * stay `#fff` → white-on-white. Settings APIs alone are not enough on Oppo.
+     *
+     * Rescue: solid theme-color on html/body + dark chips behind white titles so text
+     * stays readable whether the purple gradient survives or gets whitened.
+     */
+    val contrastRescueScript: String = """
+        (function(){
+            function themeColor(){
+                var t = document.querySelector('meta[name="theme-color"]');
+                var c = t && t.content ? String(t.content).trim() : '';
+                return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(c) ? c : '#667eea';
+            }
+            function ensureMeta(){
+                document.documentElement.style.colorScheme = 'only light';
+                function upsert(name, content){
+                    var m = document.querySelector('meta[name="' + name + '"]');
+                    if (!m) {
+                        m = document.createElement('meta');
+                        m.name = name;
+                        (document.head || document.documentElement).appendChild(m);
+                    }
+                    m.content = content;
+                }
+                upsert('color-scheme', 'only light');
+                upsert('supported-color-schemes', 'light');
+            }
+            function parseRgb(c){
+                if (!c) return null;
+                var m = String(c).match(/rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)(?:\s*,\s*([\d.]+))?\s*\)/i);
+                if (!m) return null;
+                return { r: +m[1], g: +m[2], b: +m[3], a: m[4] === undefined ? 1 : +m[4] };
+            }
+            function lum(p){ return (0.2126 * p.r + 0.7152 * p.g + 0.0722 * p.b) / 255; }
+            function isLightBg(c){
+                var p = parseRgb(c);
+                if (!p || p.a < 0.12) return true;
+                return lum(p) > 0.78;
+            }
+            function isNearWhite(c){
+                var p = parseRgb(c);
+                if (!p || p.a < 0.4) return false;
+                return lum(p) > 0.88;
+            }
+            function apply(){
+                try {
+                    ensureMeta();
+                    var theme = themeColor();
+                    var id = 'edu-contrast-rescue';
+                    var st = document.getElementById(id);
+                    if (!st) {
+                        st = document.createElement('style');
+                        st.id = id;
+                        (document.head || document.documentElement).appendChild(st);
+                    }
+                    // Solid fill so OEM darkening does not treat gradient-only body as empty.
+                    var css = ':root{color-scheme:only light!important}' +
+                        'html,body{background-color:' + theme + '!important}';
+                    var body = document.body;
+                    var bodyBg = body ? getComputedStyle(body).backgroundColor : '?';
+                    var lightBody = !body || isLightBg(bodyBg);
+                    var headers = document.querySelectorAll('.header, .header h1, .header p, .section-title');
+                    var whiteHeaders = false;
+                    for (var i = 0; i < headers.length; i++) {
+                        if (isNearWhite(getComputedStyle(headers[i]).color)) { whiteHeaders = true; break; }
+                    }
+                    // Chip behind titles: readable on purple OR on OEM-whitened body.
+                    if (whiteHeaders) {
+                        css += '.header,.section-title{' +
+                            'color:#fff!important;' +
+                            'background:rgba(32,24,72,0.78)!important;' +
+                            'border-radius:10px!important;' +
+                            'padding:8px 10px!important;' +
+                            'text-shadow:none!important;' +
+                            'display:block!important;' +
+                            '}' +
+                            '.header h1,.header p{color:#fff!important;opacity:1!important;text-shadow:none!important;}';
+                        // If body stayed light despite theme-color, prefer dark text on white.
+                        if (lightBody) {
+                            css += '.header,.header h1,.header p,.section-title{' +
+                                'color:#1a1a1a!important;' +
+                                'background:rgba(255,255,255,0.92)!important;' +
+                                'border:1px solid rgba(0,0,0,0.08)!important;' +
+                                '}';
+                        }
+                    }
+                    st.textContent = css;
+                    console.log('EduContrast apply lightBody=' + lightBody +
+                        ' bodyBg=' + bodyBg + ' theme=' + theme +
+                        ' whiteHeaders=' + whiteHeaders);
+                } catch (e) {
+                    console.log('EduContrast err=' + e);
+                }
+            }
+            apply();
+            setTimeout(apply, 50);
+            setTimeout(apply, 250);
+            setTimeout(apply, 700);
+            setTimeout(apply, 1600);
+        })();
+    """.trimIndent()
+
+    /**
      * Safe `--vh` seed for every sim, plus an aggressive shell rescue ONLY for pages that
      * collapse to a solid dark body when `#app` height goes to 0 (notably science_4_10).
      * Do NOT force paper background / fixed #app height on other sims — that breaks layouts.

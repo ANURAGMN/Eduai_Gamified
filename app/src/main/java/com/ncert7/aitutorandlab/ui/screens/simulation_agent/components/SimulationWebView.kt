@@ -1,6 +1,8 @@
 package com.ncert7.aitutorandlab.ui.screens.simulation_agent.components
 
 import android.annotation.SuppressLint
+import android.content.Context
+import android.content.res.Configuration
 import android.graphics.Color
 import android.os.Build
 import android.os.Handler
@@ -18,7 +20,51 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
+import androidx.webkit.WebSettingsCompat
+import androidx.webkit.WebViewCompat
+import androidx.webkit.WebViewFeature
 import kotlinx.coroutines.delay
+
+/** WebView must see a light UI mode — DayNight + system dark otherwise enables algorithmic darkening. */
+private fun lightUiContext(base: Context): Context {
+    val config = Configuration(base.resources.configuration)
+    config.uiMode =
+        (config.uiMode and Configuration.UI_MODE_NIGHT_MASK.inv()) or Configuration.UI_MODE_NIGHT_NO
+    return base.createConfigurationContext(config)
+}
+
+/** Keep light-only sims from being inverted into white-on-white under app/system dark mode. */
+private fun WebView.disableForcedDarkening() {
+    // View-level: stop framework force-dark from targeting this WebView (OEM / API 29+).
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        isForceDarkAllowed = false
+    }
+    val s = settings
+    // Platform API (API 33+) — some OEM WebViews ignore the AndroidX Compat path alone.
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        s.isAlgorithmicDarkeningAllowed = false
+        android.util.Log.i("SimulationWebView", "platform algorithmicDarkeningAllowed=false")
+    }
+    when {
+        WebViewFeature.isFeatureSupported(WebViewFeature.ALGORITHMIC_DARKENING) -> {
+            WebSettingsCompat.setAlgorithmicDarkeningAllowed(s, false)
+            android.util.Log.i("SimulationWebView", "compat algorithmicDarkeningAllowed=false")
+        }
+        WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK) -> {
+            @Suppress("DEPRECATION")
+            WebSettingsCompat.setForceDark(s, WebSettingsCompat.FORCE_DARK_OFF)
+            android.util.Log.i("SimulationWebView", "compat forceDark=OFF")
+        }
+        else -> android.util.Log.i("SimulationWebView", "no WebView darkening feature")
+    }
+    @Suppress("DEPRECATION")
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        try {
+            s.forceDark = WebSettings.FORCE_DARK_OFF
+        } catch (_: Throwable) {
+        }
+    }
+}
 
 private fun shouldHandlePageFinished(finishedUrl: String?, expectedUrl: String): Boolean {
     if (finishedUrl.isNullOrBlank() || finishedUrl == "about:blank") return false
@@ -148,7 +194,9 @@ fun SimulationWebView(
     AndroidView(
         factory = { context ->
             @SuppressLint("SetJavaScriptEnabled")
-            WebView(context).apply {
+            // Light UI context: algorithmic darkening keys off isLightTheme — DayNight night mode
+            // otherwise darkens light-only sims (white headers on whitened purple bodies).
+            WebView(lightUiContext(context)).apply {
                 webViewRef.value = this
                 setBackgroundColor(Color.WHITE)
                 settings.apply {
@@ -158,24 +206,37 @@ fun SimulationWebView(
                     useWideViewPort = true
                     // Always fetch sim HTML / edu-coach.js from network (GitHub Pages).
                     cacheMode = WebSettings.LOAD_NO_CACHE
-                    // Sims declare `<meta name="color-scheme" content="light">` and are designed
-                    // light-only. On WebViews that ignore that meta (roughly Android 10–12),
-                    // algorithmic dark-mode inverts them into unreadable white-on-white
-                    // (invisible headers, beaker labels, "No change" legend, etc.). Turn force-dark
-                    // OFF so the WebView renders each sim's own palette — matching desktop Chrome.
-                    // API 33+ honors the color-scheme meta natively, so this is a no-op there.
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                        @Suppress("DEPRECATION")
-                        forceDark = WebSettings.FORCE_DARK_OFF
-                    }
+                }
+                disableForcedDarkening()
+                // Run before first paint when supported — ColorOS often darkens before onPageFinished.
+                if (WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) {
+                    WebViewCompat.addDocumentStartJavaScript(
+                        this,
+                        SimulationInteractionScript.contrastRescueScript,
+                        setOf("*"),
+                    )
+                    android.util.Log.i("SimulationWebView", "documentStart contrastRescue registered")
                 }
                 webViewClient =
                     object : WebViewClient() {
                         private fun runVhRescue(view: WebView?, finishedUrl: String?) {
                             if (view == null) return
+                            // ColorOS may flip algorithmic darkening back on after navigation.
+                            view.disableForcedDarkening()
                             // Seed --vh for all pages; shell restyle is gated inside the script
                             // to science_4_10 only. Extra delayed passes only for that sim.
                             view.evaluateJavascript(SimulationInteractionScript.vhRescueScript, null)
+                            // OEM contrast rescue (also registered at document-start when available).
+                            view.evaluateJavascript(SimulationInteractionScript.contrastRescueScript, null)
+                            listOf(300L, 900L, 1800L).forEach { delayMs ->
+                                view.postDelayed({
+                                    view.disableForcedDarkening()
+                                    view.evaluateJavascript(
+                                        SimulationInteractionScript.contrastRescueScript,
+                                        null,
+                                    )
+                                }, delayMs)
+                            }
                             val needsRetries =
                                 (finishedUrl ?: bridge.expectedUrl).contains("science_4_10", ignoreCase = true)
                             if (!needsRetries) return

@@ -177,7 +177,7 @@ fun ConceptSimulationViewer(
     // Build marker — grep logcat for "CoachBuild" to confirm the running APK has the latest coach.
     // If this line is ABSENT from a sim session's log, the build is stale (incremental-compile cache).
     LaunchedEffect(Unit) {
-        DebugLogger.debugLog("CoachBuild", "v5 coach: ONE_CLOCK unlock without harvest (digit MCQ sims); math-label harvest; LOAD_NO_CACHE WebView (build 20260812a)")
+        DebugLogger.debugLog("CoachBuild", "v5 coach: ONE_CLOCK unlock without harvest (digit MCQ sims); math-label harvest; LOAD_NO_CACHE WebView; unlock-on-url (build 20260815a)")
     }
 
     LaunchedEffect(decodedUrl) {
@@ -249,7 +249,11 @@ fun ConceptSimulationViewer(
     // ONE_CLOCK (V4/V5): the page owns coaching via edu-coach.js / __eduRound. Digit-only MCQ
     // options (e.g. Associative Chain, Bracket Tunnel, Distribute Maze) are skipped by the
     // letter-gated harvester, so never block unlock on harvest for that mode.
+    // Include viewerSession.url in keys: guide fetch (local asset) often finishes before
+    // beginViewerSession sets the URL. Without re-running on that URL change, ONE_CLOCK stays
+    // locked → no floating coach (edu-coach.js only emits coachStop every 300ms).
     LaunchedEffect(
+        viewerSession.url,
         viewerSession.harvestJson,
         guideFetchDone,
         introText,

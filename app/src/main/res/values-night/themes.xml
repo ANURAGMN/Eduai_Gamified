@@ -1,6 +1,9 @@
 <resources>
     <!-- Base application theme. -->
     <style name="Theme.EduAI" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- Must stay light for WebView: algorithmic darkening inverts light-only sim HTML. -->
+        <item name="android:isLightTheme">true</item>
+        <item name="android:forceDarkAllowed">false</item>
         <!-- Primary brand color. -->
         <item name="colorPrimary">#3F51B5</item>
         <item name="colorPrimaryVariant">@color/black</item>

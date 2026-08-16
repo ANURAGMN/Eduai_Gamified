@@ -1,5 +1,9 @@
 <resources>
     <style name="Theme.EduAI" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- WebView algorithmic darkening keys off isLightTheme. Keep true so light-only sims
+             (white text on purple headers) are not inverted into white-on-white in system dark mode. -->
+        <item name="android:isLightTheme">true</item>
+        <item name="android:forceDarkAllowed">false</item>
         <!-- Remove status bar color - let Compose handle it -->
         <!-- Primary brand color. -->
         <item name="colorPrimary">@color/black</item>
