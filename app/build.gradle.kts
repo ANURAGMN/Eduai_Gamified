@@ -25,7 +25,7 @@ android {
     defaultConfig {
         applicationId = "com.ncert7.aitutorandlab"
         minSdk = 28
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 13
         versionName = "1.0.11"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -179,6 +179,7 @@ dependencies {
 
 // Legacy / AppCompat / AndroidX Libs from Version Catalog
     implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.webkit)
     implementation(libs.material)
     implementation(libs.androidx.activity)
 
