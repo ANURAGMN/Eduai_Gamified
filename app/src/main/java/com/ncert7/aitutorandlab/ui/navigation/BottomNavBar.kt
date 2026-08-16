@@ -48,6 +48,7 @@ import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.ChatbotScreen
 import com.ncert7.aitutorandlab.ui.screens.conceptscreen.ConceptScreen
 import com.ncert7.aitutorandlab.ui.screens.conceptscreen.components.ConceptSimulationViewer
 import com.ncert7.aitutorandlab.ui.screens.friends.FriendsScreen
+import com.ncert7.aitutorandlab.ui.screens.garden.AvatarTabNavigation
 import com.ncert7.aitutorandlab.ui.screens.home.GamifiedHomeRoute
 import com.ncert7.aitutorandlab.ui.screens.home.HomeScreen
 import com.ncert7.aitutorandlab.ui.screens.textbook.TextbookWebScreen
@@ -823,13 +824,22 @@ private fun BottomNavBarContent(
         } else {
             EngagementAnalyticsTracker.navWalkthroughComplete()
         }
+        // Release the Avatar tab's segment back to the user before leaving the tour.
+        AvatarTabNavigation.setForcedSegment(null)
         navController.navigateToTab(EduBottomNavItem.Home.route)
         sharedPrefs.setNavTourCompleted()
         navTourDone = true
     }
     LaunchedEffect(navTourActive, navTourStep, navWalkthroughSteps) {
-        if (!navTourActive) return@LaunchedEffect
-        val route = navWalkthroughSteps.getOrNull(navTourStep)?.route ?: EduBottomNavItem.Home.route
+        if (!navTourActive) {
+            AvatarTabNavigation.setForcedSegment(null)
+            return@LaunchedEffect
+        }
+        val step = navWalkthroughSteps.getOrNull(navTourStep)
+        val route = step?.route ?: EduBottomNavItem.Home.route
+        // Drive the Avatar tab through Scene → Journey → Look as the cards advance; null on
+        // non-Avatar steps hands control back so normal tab switches behave.
+        AvatarTabNavigation.setForcedSegment(step?.segment)
         EngagementAnalyticsTracker.navWalkthroughStep(route, navTourStep)
         if (currentRoute != route) navController.navigateToTab(route)
     }

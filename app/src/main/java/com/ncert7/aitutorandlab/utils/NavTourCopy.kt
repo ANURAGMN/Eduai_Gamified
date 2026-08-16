@@ -1,11 +1,14 @@
 package com.ncert7.aitutorandlab.utils
 
 import com.anurag.eduai.uikit.navigation.EduBottomNavItem
+import com.ncert7.aitutorandlab.ui.screens.garden.AvatarGardenSegment
 
 data class NavWalkStep(
     val route: String,
     val title: String,
     val body: String,
+    /** When set, the Avatar tab is switched to this segment while the card is shown. */
+    val segment: AvatarGardenSegment? = null,
 )
 
 /** First-run bottom-nav walkthrough titles/bodies + chrome (EN / KN). */
@@ -41,8 +44,21 @@ object NavTourCopy {
             ),
             NavWalkStep(
                 EduBottomNavItem.Avatar.route,
-                "Your world & tutor",
-                "Grow your garden or space as you learn, customise your tutor, and share your progress with friends.",
+                "Your world",
+                "Grow a garden or a space colony as you learn — every task you finish adds to the scene.",
+                segment = AvatarGardenSegment.Scene,
+            ),
+            NavWalkStep(
+                EduBottomNavItem.Avatar.route,
+                "Choose your journey",
+                "Switch between Garden and Space, and travel to new places as you unlock them.",
+                segment = AvatarGardenSegment.Journey,
+            ),
+            NavWalkStep(
+                EduBottomNavItem.Avatar.route,
+                "Customise your tutor",
+                "Give your AI tutor a look you like, and unlock more styles as you keep learning.",
+                segment = AvatarGardenSegment.Look,
             ),
             NavWalkStep(
                 EduBottomNavItem.Leagues.route,
@@ -65,8 +81,21 @@ object NavTourCopy {
             ),
             NavWalkStep(
                 EduBottomNavItem.Avatar.route,
-                "ನಿಮ್ಮ ಜಗತ್ತು ಮತ್ತು ಶಿಕ್ಷಕ",
-                "ಕಲಿಯುತ್ತಾ ನಿಮ್ಮ ತೋಟ ಅಥವಾ ಜಗತ್ತನ್ನು ಬೆಳೆಸಿ, ಶಿಕ್ಷಕನನ್ನು ಹೊಂದಿಸಿ, ಸ್ನೇಹಿತರೊಂದಿಗೆ ಪ್ರಗತಿ ಹಂಚಿಕೊಳ್ಳಿ.",
+                "ನಿಮ್ಮ ಜಗತ್ತು",
+                "ಕಲಿಯುತ್ತಾ ನಿಮ್ಮ ತೋಟ ಅಥವಾ ಬಾಹ್ಯಾಕಾಶ ವಸಾಹತನ್ನು ಬೆಳೆಸಿ — ಪೂರ್ಣಗೊಳಿಸಿದ ಪ್ರತಿ ಕಾರ್ಯವೂ ದೃಶ್ಯಕ್ಕೆ ಸೇರುತ್ತದೆ.",
+                segment = AvatarGardenSegment.Scene,
+            ),
+            NavWalkStep(
+                EduBottomNavItem.Avatar.route,
+                "ನಿಮ್ಮ ಪಯಣ ಆರಿಸಿ",
+                "ತೋಟ ಮತ್ತು ಬಾಹ್ಯಾಕಾಶದ ನಡುವೆ ಬದಲಿಸಿ, ಅನ್‌ಲಾಕ್ ಆದಂತೆ ಹೊಸ ಸ್ಥಳಗಳಿಗೆ ಪಯಣಿಸಿ.",
+                segment = AvatarGardenSegment.Journey,
+            ),
+            NavWalkStep(
+                EduBottomNavItem.Avatar.route,
+                "ನಿಮ್ಮ ಶಿಕ್ಷಕನನ್ನು ಹೊಂದಿಸಿ",
+                "ನಿಮ್ಮ AI ಶಿಕ್ಷಕನಿಗೆ ಇಷ್ಟದ ರೂಪ ನೀಡಿ, ಕಲಿಯುತ್ತಾ ಹೆಚ್ಚಿನ ಶೈಲಿಗಳನ್ನು ಅನ್‌ಲಾಕ್ ಮಾಡಿ.",
+                segment = AvatarGardenSegment.Look,
             ),
             NavWalkStep(
                 EduBottomNavItem.Leagues.route,

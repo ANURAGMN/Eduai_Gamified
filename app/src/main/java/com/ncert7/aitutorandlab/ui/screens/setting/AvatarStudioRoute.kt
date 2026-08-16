@@ -84,6 +84,12 @@ fun AvatarStudioRoute(
     val selectedSegment = AvatarGardenSegment.fromIndex(segment)
     val stateHolder = rememberSaveableStateHolder()
 
+    // First-run walkthrough can drive the segment (Scene → Journey → Look) as its cards advance.
+    val forcedSegment by AvatarTabNavigation.forcedSegment.collectAsState()
+    LaunchedEffect(forcedSegment) {
+        forcedSegment?.let { segment = it.index }
+    }
+
     LaunchedEffect(localeLanguage) {
         gardenViewModel.syncLanguage(localeLanguage)
     }

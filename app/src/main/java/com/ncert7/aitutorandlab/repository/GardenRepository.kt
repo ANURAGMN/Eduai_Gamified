@@ -111,10 +111,14 @@ class GardenRepository @Inject constructor(
 
     /**
      * Grows the garden for any completed learning task (study / sim / revision / math / science),
-     * not just plan-trial items. Plants exactly one row per (conceptId + kind), immediately —
-     * "one task = one plant". Idempotent: a task already planted (same concept + kind) is a no-op,
-     * so replays and the plan-trial path can't double-plant. Uses the same zone/plot/surprise-slot
-     * resolution as [recordStep]; does not touch XP, gems, or streak.
+     * not just plan-trial items. Plants one row **per completion** (a genuine re-do later grows
+     * another plant), with a unique id `task:<concept>:<bucket>:<ts>`. `kind` is normalised to a
+     * coarse bucket (STUDY / REVISION / SIM) so the same completion reported by two paths — the
+     * Plan-trial DONE path (kinds like "SIM_URL") and the free-browse chapter-completion path
+     * ("SIMULATION") — converges. To avoid double-planting the *same* completion (those two paths,
+     * plus burst DONE calls), a plant for the same concept+bucket within
+     * [COMPLETION_DEDUP_WINDOW_MS] is skipped. Uses the same zone/plot/surprise-slot resolution as
+     * [recordStep]; does not touch XP, gems, or streak.
      */
     suspend fun recordCompletion(
         studentId: String,
@@ -124,8 +128,21 @@ class GardenRepository @Inject constructor(
     ): GrownItemEntity? {
         if (studentId.isBlank() || conceptId.isBlank()) return null
 
-        val itemKey = "task:$conceptId:${kind.uppercase()}"
-        if (gardenDao.getItem(itemKey) != null) return null // already planted for this task
+        // Normalise to a coarse activity bucket (STUDY / REVISION / SIM) so the same completion
+        // reported by two paths converges: Plan-trial DONE passes kinds like "SIM_URL"; the
+        // free-browsing chapter-completion path passes "SIMULATION" — both map to one bucket.
+        val bucket = taskKindBucket(kind)
+
+        // Per-completion dedup (not per-concept-forever): a single completion can fire several times
+        // — Plan-DONE + chapter-completion, and repeated DONE calls in a burst — so collapse anything
+        // for the same concept+bucket within a short window. A genuine re-do later still grows a new
+        // plant, so every completion increments the garden.
+        val now = System.currentTimeMillis()
+        val recent = gardenDao.getLatestItemForTask(studentId, conceptId, bucket)
+        if (recent != null && now - recent.completedAt < COMPLETION_DEDUP_WINDOW_MS) {
+            return null
+        }
+        val itemKey = "task:$conceptId:$bucket:$now" // unique per plant
 
         val state = ensureState(studentId)
         val zone = resolvePlantZone(studentId, state)
@@ -151,8 +168,8 @@ class GardenRepository @Inject constructor(
                 slot = slot,
                 conceptId = conceptId,
                 chapterId = chapterId,
-                kind = kind,
-                completedAt = System.currentTimeMillis(),
+                kind = bucket,
+                completedAt = now,
             )
         return try {
             gardenDao.insertItem(planted)
@@ -383,6 +400,14 @@ class GardenRepository @Inject constructor(
         return (hash(plantIndex, 11) * SLOTS_PER_ZONE).toInt().coerceIn(0, SLOTS_PER_ZONE - 1)
     }
 
+    /** Coarse activity bucket for the plant dedup key + label (STUDY / REVISION / SIM). */
+    private fun taskKindBucket(kind: String): String =
+        when (kind.uppercase()) {
+            "STUDY", "CONCEPT", "MATH", "MATH_AGENT" -> "STUDY"
+            "REVISION", "REVISION_AGENT" -> "REVISION"
+            else -> "SIM" // SIMULATION, SIM_URL, SIMULATION_AGENT, SCIENCE, SCIENCE_AGENT
+        }
+
     /**
      * Coalesced Firestore push (unique WorkManager KEEP + delay). Safe on the per-step hot path —
      * rapid [recordStep] calls collapse into one deferred upload.
@@ -397,5 +422,10 @@ class GardenRepository @Inject constructor(
 
     companion object {
         private const val TAG = "GardenRepository"
+
+        /** Window for collapsing the multiple completion callbacks of ONE task completion into a
+         * single plant. Long enough to cover Plan-DONE + chapter-completion + burst DONE calls;
+         * short enough that a deliberate re-do afterwards grows a fresh plant. */
+        private const val COMPLETION_DEDUP_WINDOW_MS = 60_000L
     }
 }

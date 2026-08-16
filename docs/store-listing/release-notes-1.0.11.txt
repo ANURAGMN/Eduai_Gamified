@@ -1,0 +1,51 @@
+EduAI — Release notes (1.0.11)
+
+Short (Play Console — What's new, EN, ~500 chars max)
+---
+• Science labs now guide you step by step — an in-lesson coach walks you through each try, with a hint and the "why"
+• Simulations are now clear and readable in dark mode
+• NCERT textbooks now open right inside the app
+• Your progress, garden, and rewards restore when you reinstall or switch phones
+• Kannada text improvements and stability fixes
+• Updated for the latest Android
+
+Short (Play Console — What's new, KN)
+---
+• ವಿಜ್ಞಾನ ಪ್ರಯೋಗಗಳು ಈಗ ಹಂತ ಹಂತವಾಗಿ ಮಾರ್ಗದರ್ಶನ ನೀಡುತ್ತವೆ — ಪ್ರತಿ ಪ್ರಯತ್ನದಲ್ಲೂ ಸುಳಿವು ಮತ್ತು "ಏಕೆ" ವಿವರಣೆ
+• ಡಾರ್ಕ್ ಮೋಡ್‌ನಲ್ಲಿ ಸಿಮ್ಯುಲೇಶನ್‌ಗಳು ಈಗ ಸ್ಪಷ್ಟವಾಗಿ ಕಾಣುತ್ತವೆ
+• NCERT ಪಠ್ಯಪುಸ್ತಕಗಳು ಈಗ ಆ್ಯಪ್‌ನಲ್ಲೇ ತೆರೆಯುತ್ತವೆ
+• ಮರುಸ್ಥಾಪಿಸಿದಾಗ ಅಥವಾ ಫೋನ್ ಬದಲಿಸಿದಾಗ ನಿಮ್ಮ ಪ್ರಗತಿ, ತೋಟ ಮತ್ತು ಬಹುಮಾನಗಳು ಮರಳಿ ಬರುತ್ತವೆ
+• ಕನ್ನಡ ಪಠ್ಯ ಸುಧಾರಣೆಗಳು ಮತ್ತು ಸ್ಥಿರತೆ ಸರಿಪಡಿಸುವಿಕೆಗಳು
+
+Full (internal / optional)
+---
+Version: 1.0.11 (versionCode 13; confirm Play doesn't already have 13 — bump to 14 if so)
+Track: Closed testing (ColorOS device) → Production
+
+Changes:
+- WebView contrast fix: FORCE_DARK_OFF + ColorOS/OEM contrast rescue + theme isLightTheme/forceDarkAllowed — sims no longer render white-on-white in dark mode (SimulationWebView.kt, themes.xml, values-night/themes.xml)
+- Coach unlock-on-url fix (SimulationInteractionScript.kt, ConceptSimulationViewer.kt) so the native one-clock coach fires reliably
+- In-lesson coach content live for Science chapters (served from GitHub Pages content repo; no APK dependency beyond the WebView fixes above)
+- NCERT textbook section (in-app WebView) on Home, by language
+- P1 reinstall/new-device sync: garden restore hardening, onboarding picks → Firestore profile, gamification (XP/gems/friend code) + exam plan + daily quests restore; quest claim OR-merge + heal
+- P1 review fixes (3e1f90e): immediate quest-claim upload (RV.1), login restore-gate timeout (RV.2), profile LWW helper + unit test (RV.3)
+- Kannada UI sweep (streak, nav tour, friends, leagues, quest claim, notification/avatar settings) + values-kn string parity
+- targetSdk bumped 35 → 36 (Android 16); compileSdk 36
+- Privacy: https://anuragmn.github.io/privacy-policy.html
+- Terms: https://anuragmn.github.io/terms-of-service.html
+
+Known limitations / deferred:
+- AI content "Report" control on assistant messages: accepted risk for this cut (Play GenAI policy) — ship in a follow-up (see COMPLIANCE_BLOCKERS + RELEASE_READINESS §6.1)
+- Firestore rules: interim open rollback stays live so pre-auth clients keep syncing; switch to auth-gated rules (with economy domains, RELEASE_READINESS Appendix A) after min-version adoption
+- Kannada twins for the newer coach chapters (science_3/4) pending (EN live)
+- Under-13 Google Sign-In / parental consent: standing product/legal review
+
+Upload checklist:
+[ ] Install this AAB on a ColorOS/Oppo device (dark mode) → confirm sims readable + coach bar renders (#5)
+[ ] Refresh Play Data Safety: economy app-activity, microphone/audio declaration, AD_ID decision; deletion contact = contact@padaams.in (#4)
+[ ] Confirm in-app contact_email now = contact@padaams.in (committed) matches listing + Data Safety
+[ ] Confirm developer verification shows registered (Console Home)
+[ ] Upload app-release.aab (bundleRelease output, ~24 MB)
+[ ] Paste short release notes (EN + KN) above
+[ ] Confirm privacy policy URL in Play Console matches GitHub Pages
+[ ] Send listing + release for review

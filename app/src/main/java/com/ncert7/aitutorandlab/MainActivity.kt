@@ -18,6 +18,7 @@ import com.ncert7.aitutorandlab.service.logging.CrashlyticsLogger
 import com.ncert7.aitutorandlab.service.logging.ErrorLoggerInitializer
 import com.ncert7.aitutorandlab.service.logging.FirestoreErrorLogger
 import com.ncert7.aitutorandlab.ui.gamification.GamificationRewardHost
+import com.ncert7.aitutorandlab.ui.garden.GardenCelebrationHost
 import com.ncert7.aitutorandlab.ui.components.InAppUpdateHost
 import com.ncert7.aitutorandlab.ui.navigation.LoginNavigator
 import com.ncert7.aitutorandlab.ui.theme.AdaptiveTheme
@@ -59,7 +60,12 @@ class MainActivity : AppCompatActivity() {
                 AppTheme {
                     InAppUpdateHost {
                         GamificationRewardHost {
-                            LoginNavigator()
+                            Box(modifier = Modifier.fillMaxSize()) {
+                                LoginNavigator()
+                                // App-wide plant/space celebration for tasks completed anywhere
+                                // (Plan screen suppresses it to avoid a double pop-up).
+                                GardenCelebrationHost()
+                            }
                         }
                     }
                 }

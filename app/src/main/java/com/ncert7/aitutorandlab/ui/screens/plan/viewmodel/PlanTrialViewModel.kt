@@ -263,6 +263,8 @@ class PlanTrialViewModel @Inject constructor(
     }
 
     fun onTrialScreenVisible() {
+        // This screen runs its own garden celebration chain — mute the app-wide host while it's up.
+        gardenMomentCoordinator.setGlobalHostSuppressed(true)
         viewModelScope.launch {
             syncLanguage(getCurrentLanguageCode())
             _screenActive.value = true
@@ -488,6 +490,8 @@ class PlanTrialViewModel @Inject constructor(
 
     fun onTrialScreenHidden() {
         _screenActive.value = false
+        // Hand plant celebrations back to the app-wide host once the Plan screen is gone.
+        gardenMomentCoordinator.setGlobalHostSuppressed(false)
     }
 
     fun prepareLaunch(item: PlanTrialItemUi) {

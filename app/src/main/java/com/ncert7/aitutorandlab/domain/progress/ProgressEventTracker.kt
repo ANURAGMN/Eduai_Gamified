@@ -68,13 +68,28 @@ class ProgressEventTracker @Inject constructor(
                     conceptId = conceptId,
                     chapterId = chapterId,
                     kind = kind,
-                ) ?: return
+                )
+            if (planted == null) {
+                android.util.Log.i(
+                    "GardenPlant",
+                    "SKIP_NO_NEW_PLANT concept=$conceptId kind=$kind (already planted, full, or blank)",
+                )
+                return
+            }
+            android.util.Log.i(
+                "GardenPlant",
+                "PLANTED id=${planted.id} concept=$conceptId kind=$kind zone=${planted.zone} plot=${planted.plot} slot=${planted.slot}",
+            )
             val progress = gardenRepository.getProgress(studentId) ?: return
             val placeCompleted = progress.filledInZone >= progress.zoneCapacity
             gardenMomentCoordinator.notifyPlanted(
                 planted = planted,
                 progress = progress,
                 placeCompleted = placeCompleted,
+            )
+            android.util.Log.i(
+                "GardenPlant",
+                "CELEBRATION_QUEUED totalPlanted=${progress.totalPlanted} placeCompleted=$placeCompleted remaining=${progress.zoneCapacity - progress.filledInZone}",
             )
         } catch (e: Exception) {
             DebugLogger.errorLog(TAG, "Garden growth failed: ${e.message}")

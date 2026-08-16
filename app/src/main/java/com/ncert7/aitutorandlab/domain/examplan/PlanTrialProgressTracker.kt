@@ -2,12 +2,16 @@ package com.ncert7.aitutorandlab.domain.examplan
 
 import com.ncert7.aitutorandlab.data.local.dao.PlanTrialItemDao
 import com.ncert7.aitutorandlab.data.local.entities.PlanTrialItemStatus
+import com.ncert7.aitutorandlab.domain.garden.GardenMomentCoordinator
+import com.ncert7.aitutorandlab.repository.GardenRepository
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class PlanTrialProgressTracker @Inject constructor(
     private val planTrialItemDao: PlanTrialItemDao,
+    private val gardenRepository: GardenRepository,
+    private val gardenMomentCoordinator: GardenMomentCoordinator,
 ) {
     /** Whether the trial item is currently DONE (used to decide if a soft-proceed should skip celebration). */
     suspend fun isDone(trialItemId: Long): Boolean =
@@ -91,7 +95,7 @@ class PlanTrialProgressTracker @Inject constructor(
     }
 
     private suspend fun applyCount(itemId: Long, newCount: Int, requiredCount: Int) {
-        planTrialItemDao.getItemById(itemId) ?: return
+        val item = planTrialItemDao.getItemById(itemId) ?: return
         val status =
             if (newCount >= requiredCount) {
                 PlanTrialItemStatus.DONE
@@ -104,7 +108,27 @@ class PlanTrialProgressTracker @Inject constructor(
             completedCount = newCount.coerceAtMost(requiredCount),
             celebrated = false,
         )
-        // Garden growth is now centralised in ProgressEventTracker (one plant per completed task,
-        // any path), so it is intentionally NOT triggered here — doing both would double-plant.
+        // A Plan-trial task can reach DONE below the free-browsing engagement gate (e.g. complete@2),
+        // so the chapter-completion path (ProgressEventTracker) may never fire and no plant would
+        // grow. Grow it here too. recordCompletion is idempotent per concept+activity bucket, so this
+        // never double-plants when the chapter-completion path also runs later.
+        if (status == PlanTrialItemStatus.DONE) {
+            val planted =
+                gardenRepository.recordCompletion(
+                    studentId = item.studentId,
+                    conceptId = item.conceptId,
+                    chapterId = item.chapterId,
+                    kind = item.kind,
+                )
+            planted?.let { row ->
+                val progress = gardenRepository.getProgress(item.studentId) ?: return@let
+                val placeCompleted = progress.filledInZone >= progress.zoneCapacity
+                gardenMomentCoordinator.notifyPlanted(
+                    planted = row,
+                    progress = progress,
+                    placeCompleted = placeCompleted,
+                )
+            }
+        }
     }
 }

@@ -50,6 +50,13 @@ interface GardenDao {
     )
     suspend fun getLatestItem(studentId: String): GrownItemEntity?
 
+    /** Most recent plant for a specific task (concept + activity bucket) — used to collapse the
+     * duplicate completion calls that belong to one completion, while still allowing later re-dos. */
+    @Query(
+        "SELECT * FROM garden_item WHERE studentId = :studentId AND conceptId = :conceptId AND kind = :kind ORDER BY completedAt DESC LIMIT 1",
+    )
+    suspend fun getLatestItemForTask(studentId: String, conceptId: String, kind: String): GrownItemEntity?
+
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertItem(item: GrownItemEntity)
 }

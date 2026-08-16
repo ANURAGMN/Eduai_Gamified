@@ -79,7 +79,7 @@ class GardenRepositoryTest {
     }
 
     @Test
-    fun recordCompletion_plantsImmediatelyOncePerConceptKind() = runBlocking {
+    fun recordCompletion_dedupsWithinWindow_plantsAgainLater() = runBlocking {
         val first =
             repository.recordCompletion(
                 studentId = STUDENT,
@@ -88,16 +88,18 @@ class GardenRepositoryTest {
                 kind = "SIMULATION",
             )
         assertNotNull(first)
-        assertEquals("task:c-sim:SIMULATION", first!!.id)
+        assertTrue(first!!.id.startsWith("task:c-sim:SIM:"))
+        assertEquals("SIM", first.kind)
         assertEquals(1, dao.items.size)
         assertEquals(0, dao.state.steps)
 
+        // Same completion reported again (Plan SIM_URL + free SIMULATION) within the window.
         val replay =
             repository.recordCompletion(
                 studentId = STUDENT,
                 conceptId = "c-sim",
                 chapterId = "ch-1",
-                kind = "simulation", // case-insensitive key
+                kind = "SIM_URL",
             )
         assertNull(replay)
         assertEquals(1, dao.items.size)
@@ -111,7 +113,19 @@ class GardenRepositoryTest {
             )
         assertNotNull(otherKind)
         assertEquals(2, dao.items.size)
-        assertEquals("task:c-sim:REVISION", otherKind!!.id)
+        assertTrue(otherKind!!.id.startsWith("task:c-sim:REVISION:"))
+
+        // Past the dedup window → a genuine re-do grows another plant.
+        dao.items[0] = first.copy(completedAt = first.completedAt - 61_000L)
+        val again =
+            repository.recordCompletion(
+                studentId = STUDENT,
+                conceptId = "c-sim",
+                chapterId = "ch-1",
+                kind = "SIMULATION",
+            )
+        assertNotNull(again)
+        assertEquals(3, dao.items.size)
     }
 
     @Test
@@ -243,6 +257,15 @@ class GardenRepositoryTest {
 
         override suspend fun getLatestItem(studentId: String): GrownItemEntity? =
             items.filter { it.studentId == studentId }.maxByOrNull { it.completedAt }
+
+        override suspend fun getLatestItemForTask(
+            studentId: String,
+            conceptId: String,
+            kind: String,
+        ): GrownItemEntity? =
+            items
+                .filter { it.studentId == studentId && it.conceptId == conceptId && it.kind == kind }
+                .maxByOrNull { it.completedAt }
 
         override suspend fun insertItem(item: GrownItemEntity) {
             items.add(item)

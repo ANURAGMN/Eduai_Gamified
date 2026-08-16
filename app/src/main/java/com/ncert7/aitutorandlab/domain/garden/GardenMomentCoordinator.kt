@@ -25,12 +25,26 @@ class GardenMomentCoordinator @Inject constructor(
     private val _pending = MutableStateFlow<GardenCelebration?>(null)
     val pending: StateFlow<GardenCelebration?> = _pending.asStateFlow()
 
+    // The global celebration host (MainActivity) shows the plant/place moment for tasks completed
+    // anywhere in the app. The Plan-trial screen runs its own richer celebration chain, so while it
+    // is on screen it suppresses the global host to avoid a double pop-up over the same pending moment.
+    private val _suppressGlobalHost = MutableStateFlow(false)
+    val suppressGlobalHost: StateFlow<Boolean> = _suppressGlobalHost.asStateFlow()
+
+    fun setGlobalHostSuppressed(suppressed: Boolean) {
+        _suppressGlobalHost.value = suppressed
+    }
+
     fun notifyPlanted(
         planted: GrownItemEntity,
         progress: GardenProgress,
         placeCompleted: Boolean,
     ) {
         if (!GamificationFeatureFlags.isGardenEnabled(context)) return
+        android.util.Log.i(
+            "GardenPlant",
+            "notifyPlanted concept=${planted.conceptId} kind=${planted.kind} zone=${planted.zone} placeCompleted=$placeCompleted total=${progress.totalPlanted}",
+        )
         val theme =
             when (progress.theme.uppercase()) {
                 "OUTPOST" -> Theme.OUTPOST

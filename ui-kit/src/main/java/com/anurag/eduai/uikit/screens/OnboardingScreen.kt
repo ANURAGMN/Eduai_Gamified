@@ -49,9 +49,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
+import androidx.compose.foundation.layout.aspectRatio
 import com.anurag.eduai.uikit.components.Entrance
 import com.anurag.eduai.uikit.components.EduPrimaryButton
 import com.anurag.eduai.uikit.components.pressScaleClickable
+import com.anurag.eduai.uikit.garden.quest.GardenPlantedRow
+import com.anurag.eduai.uikit.garden.quest.GardenSceneSnapshot
+import com.anurag.eduai.uikit.garden.quest.SLOTS_PER_ZONE
+import com.anurag.eduai.uikit.garden.quest.Theme
+import com.anurag.eduai.uikit.garden.quest.ThemeScene
+import com.anurag.eduai.uikit.garden.quest.sceneAspect
+import com.anurag.eduai.uikit.garden.quest.starterZone
+import com.anurag.eduai.uikit.garden.world.rememberSceneTime
 import com.anurag.eduai.uikit.theme.EduAiTheme
 import com.anurag.eduai.uikit.theme.EduChipRole
 import com.anurag.eduai.uikit.theme.forRole
@@ -441,6 +450,21 @@ private fun ChapterRow(
 
 /* ---------------- step 3 · reward world ---------------- */
 
+/** Theme behind each onboarding world key — must match HomeViewModel.applyOnboardingPicksOnce. */
+private fun worldTheme(key: String): Theme =
+    if (key.equals("Space", ignoreCase = true)) Theme.OUTPOST else Theme.GARDEN
+
+/** A lively starter scene so the picker shows the real garden / space art, not an empty plot. */
+private fun previewScene(theme: Theme): GardenSceneSnapshot {
+    val zone = theme.starterZone()
+    return GardenSceneSnapshot(
+        currentZone = zone,
+        steps = 2,
+        previewSeed = theme.ordinal + 1,
+        planted = (0 until 5).map { GardenPlantedRow(zone = zone, plot = it, slot = it % SLOTS_PER_ZONE) },
+    )
+}
+
 @Composable
 private fun ColumnScope.WorldStep(
     copy: OnboardingStrings,
@@ -450,6 +474,7 @@ private fun ColumnScope.WorldStep(
     onBuild: () -> Unit,
 ) {
     val colors = EduAiTheme.colors
+    val time by rememberSceneTime(enabled = true)
     BackLink(copy.backChapter, onBack)
     StepLabel(copy.step3)
     Text(copy.pickWorldTitle, color = colors.text, fontSize = 25.sp, fontWeight = FontWeight.Black)
@@ -461,12 +486,16 @@ private fun ColumnScope.WorldStep(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         copy.worlds.forEachIndexed { index, world ->
+            val theme = worldTheme(world.key)
+            val scene = remember(theme) { previewScene(theme) }
             Entrance(delayMillis = index * 60) {
                 WorldCard(
                     name = world.label,
                     headline = world.headline,
                     sub = world.sub,
-                    icon = if (index == 0) Icons.Filled.Eco else Icons.Filled.RocketLaunch,
+                    theme = theme,
+                    scene = scene,
+                    time = time,
                     role = if (index == 0) EduChipRole.Success else EduChipRole.Pro,
                     selected = selected == world.key,
                 ) { onSelect(world.key) }
@@ -482,14 +511,16 @@ private fun WorldCard(
     name: String,
     headline: String,
     sub: String,
-    icon: ImageVector,
+    theme: Theme,
+    scene: GardenSceneSnapshot,
+    time: Float,
     role: EduChipRole,
     selected: Boolean,
     onClick: () -> Unit,
 ) {
     val colors = EduAiTheme.colors
     val (fg, bg) = colors.forRole(role)
-    Row(
+    Column(
         modifier =
             Modifier
                 .fillMaxWidth()
@@ -501,31 +532,41 @@ private fun WorldCard(
                     shape = RoundedCornerShape(16.dp),
                 )
                 .pressScaleClickable(onClick = onClick, pressedScale = 0.98f)
-                .padding(16.dp),
-        verticalAlignment = Alignment.Top,
+                .padding(10.dp),
     ) {
-        Box(
-            modifier = Modifier.size(52.dp).clip(RoundedCornerShape(15.dp)).background(bg),
-            contentAlignment = Alignment.Center,
-        ) { Icon(icon, contentDescription = null, tint = fg, modifier = Modifier.size(27.dp)) }
-        Spacer(modifier = Modifier.width(14.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(name.uppercase(), color = fg, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-            Text(headline, color = colors.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(sub, color = colors.textSecondary, fontSize = 12.5.sp, lineHeight = 17.sp)
-        }
-        Spacer(modifier = Modifier.width(10.dp))
-        Box(
+        // The actual reward scene — garden woodland / Mars outpost — so the choice shows the art.
+        ThemeScene(
+            state = scene,
+            theme = theme,
+            time = time,
             modifier =
                 Modifier
-                    .size(22.dp)
-                    .clip(CircleShape)
-                    .background(if (selected) fg else colors.surface1)
-                    .border(if (selected) 0.dp else 1.5.dp, colors.border, CircleShape),
-            contentAlignment = Alignment.Center,
-        ) {
-            if (selected) Icon(Icons.Outlined.Check, contentDescription = null, tint = colors.onAccent, modifier = Modifier.size(14.dp))
+                    .fillMaxWidth()
+                    .aspectRatio(sceneAspect(theme))
+                    .clip(RoundedCornerShape(12.dp)),
+            showPreview = true,
+            cover = true,
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(name.uppercase(), color = fg, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                Text(headline, color = colors.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(sub, color = colors.textSecondary, fontSize = 12.5.sp, lineHeight = 17.sp)
+            }
+            Spacer(modifier = Modifier.width(10.dp))
+            Box(
+                modifier =
+                    Modifier
+                        .size(22.dp)
+                        .clip(CircleShape)
+                        .background(if (selected) fg else colors.surface1)
+                        .border(if (selected) 0.dp else 1.5.dp, colors.border, CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (selected) Icon(Icons.Outlined.Check, contentDescription = null, tint = colors.onAccent, modifier = Modifier.size(14.dp))
+            }
         }
     }
 }

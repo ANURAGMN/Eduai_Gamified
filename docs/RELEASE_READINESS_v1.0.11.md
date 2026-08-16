@@ -2,7 +2,7 @@
 
 **App:** `com.ncert7.aitutorandlab` · NCERT Class-7 AI Tutor & Labs
 **Date:** 2026-08-16 · **Prepared for:** Play Console update
-**Verdict: CONDITIONAL GO — clear the release-path blockers first.** For **this AAB upload:** commit WebView/coach/theme fixes (#12), listing strings (#14), AI-Report decision (#13), clean ship set (#15), bump **targetSdk 36** (#10), ColorOS retest, Data-Safety refresh (#4). **Firestore rules (#1/#2) do not gate this cut** — interim rollback stays live; switch after min-version adoption (separate calendar). Everything else is release-ready or an accepted standing risk.
+**Verdict: GO pending re-commit → rebuild → on-device → Console.** The earlier code blockers are committed/pushed (tip `729f1d4`) and a signed AAB was built (~24 MB) — **but four more changes landed after that build and are working-tree only, so the built AAB is now stale.** New since `729f1d4` (all **UNCOMMITTED**, see §1 #16–#19): (16) new EduAI app icon + sign-in logo, (17) first-run world step now renders the real Garden/Space scenes, (18) tutorial walkthrough steps through Avatar → Scene → Journey → Look, (19) garden now grows on **every** task completion (one task = one plant), not just plan-trial tasks. **Remaining before go-live:** commit #16–#19 → rebuild `bundleRelease` → on-device smoke test incl. ColorOS (#5) → Data-Safety refresh (#4) → version + release notes (#9) → upload the 512 store icon (#20) → upload AAB. **Firestore rules (#1/#2) still do not gate this cut** — interim rollback stays live; switch after min-version adoption (separate calendar). Under-13 consent (#6) remains a standing product/legal risk. AI-Report is an accepted risk for this cut (#13).
 
 > Scope of this doc: (1) go/no-go readiness, (2) compliance / Data-Safety refresh vs the last release, (3) Firestore rules **old vs new**. Not legal advice; the under-13 consent item needs product/legal sign-off.
 
@@ -21,6 +21,10 @@ The recent coaching work is **content, not app code** — it lives in the **`Edu
 | P1 sync fixes (garden restore, onboarding, economy, quests) | `Eduapp/app` | APK — committed ✅ |
 | P1 review fixes RV.1/RV.2/RV.3 | `Eduapp/app` | APK — **committed `3e1f90e`** ✅ |
 | Textbook section, header Next button, Kannada UI sweep | `Eduapp/app` | APK — this release |
+| **New EduAI app icon + sign-in logo** (adaptive icon = orange bg + full illustration; `logo.png`; 512 store icon) | `Eduapp/app/.../res/mipmap-*`, `drawable-*/ic_launcher_foreground`, `drawable/logo.png`, `values/colors.xml`, `ic_launcher-playstore.png` | APK + listing — **UNCOMMITTED** (#16) |
+| **First-run world step renders real Garden/Space scenes** | `ui-kit/.../screens/OnboardingScreen.kt` | APK — **UNCOMMITTED** (#17) |
+| **Tutorial walkthrough → Avatar · Scene · Journey · Look** | `app/.../BottomNavBar.kt`, `NavTourCopy.kt`, `AvatarTabNavigation.kt`, `AvatarStudioRoute.kt` | APK — **UNCOMMITTED** (#18) |
+| **Garden grows on every task** (study/sim/revision/math/science; 1 task = 1 plant, deduped) **+ app-wide plant/space celebration dialog** | `app/.../GardenRepository.kt`, `ProgressEventTracker.kt`, `PlanTrialProgressTracker.kt`, **new** `ui/garden/GardenCelebrationHost.kt`, `GardenMomentCoordinator.kt`, `MainActivity.kt`, `PlanTrialViewModel.kt` | APK — **UNCOMMITTED** (#19) |
 
 **Implication:** the coach chapters are already usable in-app, but on dark-mode devices they render white-on-white until the WebView fix ships. **Committed HEAD alone is only a *partial* fix** — it has `FORCE_DARK_OFF` (`c66088e`) but **not** the ColorOS/OEM contrast rescue, the theme `isLightTheme`/`forceDarkAllowed` handling, or the coach unlock-on-url fix, which are still **dirty across five files** (the three Kotlin files plus `values/themes.xml` and `values-night/themes.xml`). A release cut from clean HEAD may still show white-on-white / missing coach / mis-themed WebView on ColorOS (Oppo/Realme). **Commit all five before this cut**, or retest HEAD on a ColorOS device and downgrade the claim to "partial fix."
 
@@ -37,16 +41,23 @@ The recent coaching work is **content, not app code** — it lives in the **`Edu
 | 5 | Contrast/coach verified on **ColorOS / Oppo** (primary); optionally stock Android 10–13 | 🟠 on-device only | strongly rec. — after ship-commit AAB (§7) |
 | 6 | Under-13 Google Sign-In / parental consent | 🟡 standing risk | product/legal call |
 | 7 | Build config (signing, ProGuard, `isDebuggable=false`, targetSdk 35) | 🟢 configured | no |
-| 8 | Signed AAB builds + smoke test on release build | 🟠 you run it | before submit |
+| 8 | Signed AAB builds + smoke test on release build | 🟠 **REBUILD required — prior ~24 MB AAB predates #16–#19** | before submit |
 | 9 | Version + release notes | 🟠 config is vc13/1.0.11; **confirm Play doesn't already have vc13** — if it does, bump to vc14 for this update; then write release notes | before submit |
 | 10 | **targetSdk 36 by Aug 31, 2026** (was 35) | 🟢 bumped to 36 — still need API-36 behavior pass (§5.1) | test before submit |
 | 11 | Android developer verification registered (Sep 30, 2026) | 🟡 account-level, likely auto-registered | no (not a build gate) — see §5.2 |
 | 12 | **Uncommitted WebView/coach/theme fixes** (ColorOS contrast rescue + `isLightTheme`/`forceDarkAllowed` + unlock-on-url) | 🟢 committed `a9f480a` | no |
 | 13 | **AI "Report" control on assistant messages** (Play GenAI policy P0) | 🟡 **accepted risk for this cut** (§6.1) | no for this upload — ship Report in a follow-up |
 | 14 | **Store-listing hygiene** (EN app_name leading space; KN name mismatch; contact email = personal Gmail) | 🟢 committed `93d8080` — still update Console contact | Console residual (§6.2) |
-| 15 | **Clean, explicit committed ship set** before `bundleRelease` (tree is dirty ~61 files; ignore `ui-kit/build`) | 🟢 ship commit `93592d9` (+ `e9b57e5` untracked `ui-kit/build`) | build AAB from this tip |
+| 15 | **Clean, explicit committed ship set** before `bundleRelease` (tree is dirty ~61 files; ignore `ui-kit/build`) | 🟢 ship commit `93592d9` (+ `e9b57e5` untracked `ui-kit/build`) — **superseded: re-pin after #16–#19** | build AAB from the new tip |
+| 16 | **New app icon + sign-in logo** (adaptive icon, `logo.png`, orange `ic_launcher_background`) | 🟠 **UNCOMMITTED** | commit + rebuild before AAB |
+| 17 | **Onboarding world step shows real Garden/Space scenes** | 🟠 **UNCOMMITTED** | commit + rebuild before AAB |
+| 18 | **Tutorial walkthrough → Avatar · Scene · Journey · Look** | 🟠 **UNCOMMITTED** | commit + rebuild before AAB |
+| 19 | **Garden grows on every completion** — a new plant/component each time a task is completed, **however** it completes (free-browse chapter-completion **or** Plan-trial DONE, which can finish below the engagement gate). Dedup is **per-completion, not per-concept-forever**: duplicate callbacks of the *same* completion (Plan-DONE + chapter-completion, burst DONE calls) are collapsed within a 60 s window via `getLatestItemForTask`; a genuine re-do later grows a fresh plant. Kind normalised to a bucket (STUDY/REVISION/SIM); unique per-plant id. **+ full-screen plant/space celebration app-wide** via new global host (Plan screen + plan-launched tasks suppress it to avoid double pop-up). | 🟠 **UNCOMMITTED** | commit + rebuild before AAB |
+| 20 | **Upload 512×512 Play Store icon** (`ic_launcher-playstore.png` — not shipped in AAB) | 🟠 Console listing | before submit |
 
-**Recommendation (order):** (1) commit the 5 WebView/coach/theme files (#12); (2) fix listing strings (#14); (3) AI-Report decision — a 5-min accepted-risk note *or* implement (#13); (4) pin a clean committed ship set (#15) + bump `targetSdk 36` (#10); (5) build AAB → retest on **ColorOS** → refresh **Data-Safety** (§2) → upload. **The Firestore rules switch (#1/#2) is a separate, post-adoption step — the interim rollback rules stay live meanwhile, so it does NOT gate this release.** See §7 for the full plan.
+**Recommendation (order):** (1) commit the four new changes #16–#19; (2) re-pin a clean ship set (#15) on the new tip; (3) **rebuild `bundleRelease`** (#8 — the prior AAB is stale); (4) on-device smoke test on **ColorOS** (#5) covering the new UX + garden growth: launcher icon + sign-in logo, first-run world scenes, tutorial Avatar→Scene→Journey→Look, and one sim/chat/revision each plants a garden item; (5) refresh **Data-Safety** (§2); (6) confirm version + write release notes (#9); (7) upload the **512 store icon** (#20) + the AAB → submit. **The Firestore rules switch (#1/#2) is a separate, post-adoption step — interim rollback rules stay live, so it does NOT gate this release.** See §7 for the full plan.
+
+> **Note on #16–#19:** these are code-verified (types/imports/signatures hand-checked) but **not compiled here** — the build machine must confirm. A fresh install is needed to re-trigger first-run onboarding (#17) and the tutorial (#18). `recordStep` in `GardenRepository` is now unused (left in place, harmless).
 
 ---
 
@@ -92,6 +103,15 @@ There are **two rulesets** in play, and they diverge. The committed file and the
 | **Economy domains** (`gamification`, `exam_plans`, `quests`) | ❌ **absent (0)** | ✅ present (4 matches) |
 
 **Why the rollback exists:** 1.0.8/1.0.9 clients in the wild have **no** `FirebaseAuthBridge`, so auth-gated rules would lock them out of sync. The file's own TODO: *re-deploy auth-gated rules once Play min version ≥ 1.0.11 / vc13.* **This release is vc13** — so that transition becomes possible after adoption.
+
+### What actually happens to old clients when the rules switch (login vs sync)
+It is **not** a login lockout — `users/{userId}` is **open in both rulesets** (`allow read: if true`, `allow create,update: if appName=='eduai_app'`; **no** `request.auth`). So an old (pre-1.0.11) client can still **sign in and read/write its profile doc** even after the switch. What the auth-gated switch locks down is the **student-scoped sync data** (`gamification`, `exam_plans`, `quests`, garden/progress, sessions, analytics, friends…), which becomes owner-only via `ownsStudent()` → `auth_index/{uid}` → requires Firebase Auth. Old clients have `request.auth == null`, so those reads/writes return `permission-denied`.
+
+- **Today (rollback live):** old clients log in **and** sync — no upgrade needed.
+- **After the switch:** old clients can still **sign in**, but **progress/rewards/garden/plans won't load or save** until they upgrade to **1.0.11 / vc13+** (the first build with `FirebaseAuthBridge`). If an old build treats a sync `permission-denied` as a hard error right after sign-in, it can *look like* a broken login even though auth/profile aren't gated.
+- **Mitigation:** set a Play **minimum version** (or forced-update prompt) to move vc≤12 clients to vc13+ **before** flipping the rules, so no active user hits the sync lockout. Sequence: ship 1.0.11 → force-update / adoption → then switch rules.
+
+> ⚠️ **The switch does NOT close the child-data exposure on `users/`.** `read: if true` is present in **both** the rollback **and** the committed auth-gated ruleset — so the world-readable `users` collection flagged in `COMPLIANCE_BLOCKERS.md` stays open even after adopting the current auth-gated rules. Closing it needs a separate change (key the user doc to the Firebase uid and gate `read` to the owner; note the chicken-and-egg — login must read the profile before `auth_index` exists, so this typically means reading by `uid` rather than by `studentId`).
 
 ### 🔴 The two things to fix before re-deploying auth-gated rules
 1. **The auth-gated ruleset is stale** — it predates the P1 economy work and **lacks** `gamification` / `exam_plans` / `quests`. Re-deploying it as-is would **silently break** XP/gems/plan/quest sync (writes denied). It must be updated to include those three domains (owner-scoped) **before** it's ever deployed. (This is review-note **RV.6** made concrete, and **RV.4** — committed ≠ deployed.)
