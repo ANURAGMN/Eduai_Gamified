@@ -1,14 +1,14 @@
 # Changes for review — 2026-08-16 (coworker session)
 
-**Status (as of `3484d0f`):**
+**Status (as of `ad380f2`):**
 
 | Area | State |
 |------|-------|
 | App icon + sign-in logo (§1) | ✅ **committed** `33ba26a` on `gamified/main` |
 | Garden growth via `ProgressEventTracker` — one-plant-per-concept-forever (§4, first cut) | ✅ **committed** `6f104c2` |
-| Per-completion keys + 60 s window + Plan-DONE plant, celebration host, DAO `getLatestItemForTask`, onboarding scenes, Avatar tutorial | ✅ **committed** `3484d0f` on `gamified/main` (local; push when ready) |
+| Per-completion keys + 60 s window + Plan-DONE plant, celebration host, DAO `getLatestItemForTask`, onboarding scenes, Avatar tutorial | ✅ **committed** `ad380f2` on `gamified/main` (local; push when ready) |
 
-**Rebuild required:** the APK last tested on device did **not** include the Plan-DONE plant path (that's why trials showed XP but 0 new `task:` rows). Install a build from `3484d0f` (or later) before re-testing.
+**Rebuild required:** the APK last tested on device did **not** include the Plan-DONE plant path (that's why trials showed XP but 0 new `task:` rows). Install a build from `ad380f2` (or later) before re-testing.
 
 **Not compiled here** — hand-checked against the code; the build machine must confirm. Two Hilt constructors change (see §4) — clean install before re-test if DI acts up.
 
@@ -85,7 +85,7 @@ Feature areas below, independent enough to commit separately.
 - **Hilt:** two constructors changed — clean install if the graph complains (no cycles expected; both are existing `@Singleton`s).
 - **Zones fill 12/plot:** 84 legacy items may already fill early zones; new plants land in the next unlocked zone, or no-op if every place is full — check the whole scene, not just zone 1.
 
-**Test (on device, after installing a build from `3484d0f` — not the older APK):** free-browse a sim → new `task:…:<ts>` row + celebration (watch logcat `GardenPlant`). Redo after a minute → another new plant. Finish a Plan trial at a low bar (`complete@2`) → plant + celebration once. Do a Plan sim that also crosses the tap gate → still one plant.
+**Test (on device, after installing a build from `ad380f2` — not the older APK):** free-browse a sim → new `task:…:<ts>` row + celebration (watch logcat `GardenPlant`). Redo after a minute → another new plant. Finish a Plan trial at a low bar (`complete@2`) → plant + celebration once. Do a Plan sim that also crosses the tap gate → still one plant.
 
 ---
 
