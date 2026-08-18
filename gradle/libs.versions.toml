@@ -2,6 +2,7 @@
 agp = "8.13.2"
 kotlin = "2.2.21"
 appcompat = "1.7.1"
+webkit = "1.12.1"
 material = "1.13.0"
 activity = "1.12.2"
 foundation = "1.10.0"
@@ -20,6 +21,7 @@ lottie = "6.4.0"
 
 [libraries]
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+androidx-webkit = { group = "androidx.webkit", name = "webkit", version.ref = "webkit" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 androidx-activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }
 androidx-foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "foundation" }

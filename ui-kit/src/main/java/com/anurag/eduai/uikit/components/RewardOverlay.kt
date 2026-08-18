@@ -60,6 +60,7 @@ fun RewardOverlay(
     weeklyXpTotal: Int = 0,
     weeklyXpTarget: Int = 500,
     onCollect: () -> Unit,
+    copy: RewardOverlayCopy = defaultRewardOverlayCopy(),
     modifier: Modifier = Modifier,
 ) {
     val colors = EduAiTheme.colors
@@ -139,13 +140,13 @@ fun RewardOverlay(
 
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Day complete!",
+                        text = copy.title,
                         color = colors.text,
                         fontSize = 22.sp,
                         fontWeight = FontWeight.Bold,
                     )
                     Text(
-                        text = "You finished today's focus",
+                        text = copy.subtitle,
                         color = colors.textSecondary,
                         fontSize = 13.sp,
                         textAlign = TextAlign.Center,
@@ -160,7 +161,7 @@ fun RewardOverlay(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
-                            text = "Weekly XP",
+                            text = copy.weeklyXpLabel,
                             color = colors.textMuted,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold,
@@ -198,14 +199,14 @@ fun RewardOverlay(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         RewardStat(
-                            label = "XP earned",
+                            label = copy.xpEarnedLabel,
                             value = xpEarned,
                             prefix = "+",
                             valueColor = colors.accent,
                             modifier = Modifier.weight(1f),
                         )
                         RewardStat(
-                            label = "Gems",
+                            label = copy.gemsLabel,
                             value = gemsEarned,
                             prefix = "+",
                             valueColor = colors.pro,
@@ -216,7 +217,7 @@ fun RewardOverlay(
 
                     Spacer(modifier = Modifier.height(20.dp))
                     EduPrimaryButton(
-                        text = "Collect reward",
+                        text = copy.collectCta,
                         onClick = onCollect,
                         fillMaxWidth = true,
                     )

@@ -7,6 +7,7 @@ import com.ncert7.aitutorandlab.domain.gamification.InviteRewardService
 import com.ncert7.aitutorandlab.domain.progress.model.ProgressStatus
 import com.ncert7.aitutorandlab.debug.DebugLogger
 import com.ncert7.aitutorandlab.domain.garden.GardenMomentCoordinator
+import com.ncert7.aitutorandlab.domain.examplan.TrialSessionStore
 import com.ncert7.aitutorandlab.repository.ConceptRepository
 import com.ncert7.aitutorandlab.repository.GardenRepository
 import com.ncert7.aitutorandlab.repository.ProgressRepository
@@ -80,6 +81,16 @@ class ProgressEventTracker @Inject constructor(
                 "GardenPlant",
                 "PLANTED id=${planted.id} concept=$conceptId kind=$kind zone=${planted.zone} plot=${planted.plot} slot=${planted.slot}",
             )
+            // Plan-trial completions are celebrated on the Plan screen (queueCelebrationForUnshownPlant).
+            // Notifying here while a trial item is active pops the moment over the sim, then again
+            // when returning to Plan.
+            if (TrialSessionStore.activeTrialItemId != null) {
+                android.util.Log.i(
+                    "GardenPlant",
+                    "CELEBRATION_DEFER_TO_PLAN concept=$conceptId (active trial)",
+                )
+                return
+            }
             val progress = gardenRepository.getProgress(studentId) ?: return
             val placeCompleted = progress.filledInZone >= progress.zoneCapacity
             gardenMomentCoordinator.notifyPlanted(

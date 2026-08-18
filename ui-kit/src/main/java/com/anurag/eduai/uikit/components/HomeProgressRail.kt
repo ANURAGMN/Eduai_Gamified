@@ -1,7 +1,6 @@
 package com.anurag.eduai.uikit.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -56,14 +55,19 @@ fun HomeProgressRail(
     onSeeAll: () -> Unit = {},
     onLeagueClick: () -> Unit = {},
     onInvite: () -> Unit = {},
+    copy: HomeProgressRailCopy = defaultHomeProgressRailCopy(),
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxWidth().padding(bottom = 18.dp)) {
-        SectionHeader(title = "Your week", seeAllLabel = "See all", onSeeAllClick = onSeeAll)
+        SectionHeader(
+            title = copy.sectionTitle,
+            seeAllLabel = copy.seeAllLabel,
+            onSeeAllClick = onSeeAll,
+        )
         HorizontalRail {
             MomentCard(
-                title = if (streak == 1) "1-day streak" else "$streak-day streak",
-                subtitle = "Keep it alive today",
+                title = copy.streakTitle(streak),
+                subtitle = copy.streakSubtitle,
                 icon = Icons.Outlined.LocalFireDepartment,
                 role = EduChipRole.Warning,
             )
@@ -73,19 +77,19 @@ fun HomeProgressRail(
             }
 
             MomentCard(
-                title =
-                    if (leagueRank > 0) {
-                        "$leagueName · Rank $leagueRank"
-                    } else {
-                        leagueName
-                    },
-                subtitle = "Top $promoteCount promote · tap to open",
+                title = copy.leagueTitle(leagueName, leagueRank),
+                subtitle = copy.leagueSubtitle(promoteCount),
                 icon = Icons.Outlined.EmojiEvents,
                 role = EduChipRole.Pro,
                 onClick = onLeagueClick,
             )
 
-            InviteCard(onInvite = onInvite)
+            InviteCard(
+                title = copy.inviteTitle,
+                subtitle = copy.inviteSubtitle,
+                shareLabel = copy.shareLabel,
+                onInvite = onInvite,
+            )
         }
     }
 }
@@ -102,7 +106,7 @@ private fun MomentCard(
     val (fg, bg) = colors.forRole(role)
     RailCard(onClick = onClick ?: {}, modifier = Modifier.width(150.dp)) {
         IconBubble(icon = icon, fg = fg, bg = bg)
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(Modifier.height(10.dp))
         Text(text = title, color = colors.text, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
         Text(
             text = subtitle,
@@ -114,23 +118,27 @@ private fun MomentCard(
 }
 
 @Composable
-private fun InviteCard(onInvite: () -> Unit) {
+private fun InviteCard(
+    title: String,
+    subtitle: String,
+    shareLabel: String,
+    onInvite: () -> Unit,
+) {
     val colors = EduAiTheme.colors
     RailCard(onClick = onInvite, modifier = Modifier.width(150.dp)) {
         IconBubble(icon = Icons.Outlined.PersonAddAlt, fg = colors.accent, bg = colors.accentBg)
-        Spacer(modifier = Modifier.height(10.dp))
-        Text(text = "Invite friends", color = colors.text, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-        Text(text = "Learn together", color = colors.textSecondary, fontSize = 11.sp, lineHeight = 14.sp)
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(Modifier.height(10.dp))
+        Text(text = title, color = colors.text, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+        Text(text = subtitle, color = colors.textSecondary, fontSize = 11.sp, lineHeight = 14.sp)
+        Spacer(Modifier.height(8.dp))
         Row(
-            modifier =
-                Modifier
-                    .clip(RoundedCornerShape(EduAiDimens.chipRadius))
-                    .background(colors.accent)
-                    .padding(horizontal = 12.dp, vertical = 4.dp),
+            Modifier
+                .clip(RoundedCornerShape(EduAiDimens.chipRadius))
+                .background(colors.accent)
+                .padding(horizontal = 12.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(text = "Share", color = colors.onAccent, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+            Text(text = shareLabel, color = colors.onAccent, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
         }
     }
 }

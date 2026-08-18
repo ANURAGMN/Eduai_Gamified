@@ -67,21 +67,15 @@ class GardenRepository @Inject constructor(
             return null
         }
 
-        val zone = resolvePlantZone(studentId, state)
-        if (zone < 0) {
+        val placement = resolvePlantPlacement(studentId, state)
+        if (placement == null) {
             DebugLogger.debugLog(TAG, "Garden all places full — holding step at 6")
             gardenDao.updateSteps(studentId, STEPS_PER_TASK - 1)
             scheduleGardenUpload()
             return null
         }
-
-        val plot = nextFreePlot(studentId, zone)
-        if (plot < 0) {
-            DebugLogger.debugLog(TAG, "Garden place full at zone $zone — holding step at 6")
-            gardenDao.updateSteps(studentId, STEPS_PER_TASK - 1)
-            scheduleGardenUpload()
-            return null
-        }
+        val zone = placement.zone
+        val plot = placement.plot
 
         val freshState = gardenDao.getState(studentId) ?: state
         val plantIndex = gardenDao.countItems(studentId)
@@ -145,14 +139,9 @@ class GardenRepository @Inject constructor(
         val itemKey = "task:$conceptId:$bucket:$now" // unique per plant
 
         val state = ensureState(studentId)
-        val zone = resolvePlantZone(studentId, state)
-        if (zone < 0) {
+        val placement = resolvePlantPlacement(studentId, state)
+        if (placement == null) {
             DebugLogger.debugLog(TAG, "Garden all places full — completion plant skipped")
-            return null
-        }
-        val plot = nextFreePlot(studentId, zone)
-        if (plot < 0) {
-            DebugLogger.debugLog(TAG, "Garden place full at zone $zone — completion plant skipped")
             return null
         }
 
@@ -163,8 +152,8 @@ class GardenRepository @Inject constructor(
             GrownItemEntity(
                 id = itemKey,
                 studentId = studentId,
-                zone = zone,
-                plot = plot,
+                zone = placement.zone,
+                plot = placement.plot,
                 slot = slot,
                 conceptId = conceptId,
                 chapterId = chapterId,
@@ -301,7 +290,7 @@ class GardenRepository @Inject constructor(
     suspend fun unlockZoneIfNeeded(studentId: String, zone: Int) {
         if (studentId.isBlank() || zone !in ZONES.indices) return
         val state = ensureState(studentId)
-        val alreadyCurrent = GardenRouteUtils.currentZone(state.route) >= zone
+        val alreadyCurrent = GardenRouteUtils.currentZone(state.route) == zone
         appendZoneToRoute(studentId, state.route, zone)
         if (!alreadyCurrent) {
             // New place → Surprise again (same default as a fresh journey).
@@ -362,13 +351,42 @@ class GardenRepository @Inject constructor(
         return updated
     }
 
+    private data class PlantPlacement(val zone: Int, val plot: Int)
+
+    /**
+     * Picks where the next plant/module goes:
+     * 1. Fill the current place, then walk forward unlocking the next.
+     * 2. If the forward path is exhausted, use any place that still has a free plot
+     *    (e.g. zone 0 / Luna when the journey started at Woodland/Mars and never visited it).
+     *    Switching GARDEN → OUTPOST so the learner "proceeds to space".
+     * 3. If every place plot is full, switch to COLONY (spaceship) and overflow-plant so
+     *    completions never stall.
+     */
+    private suspend fun resolvePlantPlacement(
+        studentId: String,
+        state: GardenStateEntity,
+    ): PlantPlacement? {
+        val zone = resolvePlantZone(studentId, state)
+        if (zone >= 0) {
+            val plot = nextFreePlot(studentId, zone)
+            if (plot >= 0) return PlantPlacement(zone, plot)
+        }
+        // All 8×12 place plots taken → spaceship overflow.
+        advanceThemeToColony(studentId)
+        val overflowZone = (ZONES.size - 1).coerceAtLeast(0)
+        val overflowPlot = ZONE_CAPACITY + gardenDao.countItems(studentId)
+        val route = gardenDao.getState(studentId)?.route ?: state.route
+        appendZoneToRoute(studentId, route, overflowZone)
+        return PlantPlacement(overflowZone, overflowPlot)
+    }
+
     private suspend fun resolvePlantZone(studentId: String, state: GardenStateEntity): Int {
         var zone = GardenRouteUtils.currentZone(state.route)
-        while (nextFreePlot(studentId, zone) < 0) {
+        while (zone in ZONES.indices && nextFreePlot(studentId, zone) < 0) {
             val next = zone + 1
-            if (next >= ZONES.size) return -1
+            if (next >= ZONES.size) break
             val route = gardenDao.getState(studentId)?.route ?: state.route
-            val alreadyCurrent = GardenRouteUtils.currentZone(route) >= next
+            val alreadyCurrent = GardenRouteUtils.currentZone(route) == next
             appendZoneToRoute(studentId, route, next)
             if (!alreadyCurrent) {
                 // New place → Surprise again (don't carry a locked plant across places).
@@ -376,11 +394,43 @@ class GardenRepository @Inject constructor(
             }
             zone = next
         }
-        return zone
+        if (zone in ZONES.indices && nextFreePlot(studentId, zone) >= 0) {
+            return zone
+        }
+
+        // Forward path full — any remaining free place (often the skipped starter index 0).
+        val freeZone = ZONES.indices.firstOrNull { nextFreePlot(studentId, it) >= 0 } ?: return -1
+        advanceThemePastGardenIfNeeded(studentId)
+        val route = gardenDao.getState(studentId)?.route ?: state.route
+        val alreadyCurrent = GardenRouteUtils.currentZone(route) == freeZone
+        appendZoneToRoute(studentId, route, freeZone)
+        if (!alreadyCurrent) {
+            gardenDao.updatePreferredSlot(studentId, PREFERRED_SLOT_SURPRISE)
+        }
+        return freeZone
     }
 
+    /** Garden journey exhausted → continue growth under the Outpost (space) skin. */
+    private suspend fun advanceThemePastGardenIfNeeded(studentId: String) {
+        val theme = gardenDao.getState(studentId)?.theme ?: return
+        if (!theme.equals(GardenTheme.GARDEN, ignoreCase = true)) return
+        gardenDao.updateTheme(studentId, GardenTheme.OUTPOST)
+        gardenDao.updatePreferredSlot(studentId, PREFERRED_SLOT_SURPRISE)
+        scheduleGardenUpload()
+    }
+
+    /** Every place plot filled → Colony / spaceship single-scene growth. */
+    private suspend fun advanceThemeToColony(studentId: String) {
+        val theme = gardenDao.getState(studentId)?.theme ?: return
+        if (theme.equals(GardenTheme.COLONY, ignoreCase = true)) return
+        gardenDao.updateTheme(studentId, GardenTheme.COLONY)
+        gardenDao.updatePreferredSlot(studentId, PREFERRED_SLOT_SURPRISE)
+        scheduleGardenUpload()
+    }
+
+    /** Focus [zone] by appending it as the journey's current place (may revisit earlier indices). */
     private suspend fun appendZoneToRoute(studentId: String, currentRoute: String, zone: Int) {
-        if (GardenRouteUtils.currentZone(currentRoute) >= zone) return
+        if (GardenRouteUtils.currentZone(currentRoute) == zone) return
         val newRoute =
             if (currentRoute.isBlank()) {
                 zone.toString()

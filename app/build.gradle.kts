@@ -61,6 +61,11 @@ android {
             "GARDEN_ENABLED",
             prop("GARDEN_ENABLED", "false").equals("true", ignoreCase = true).toString()
         )
+        buildConfigField(
+            "boolean",
+            "REELS_ENABLED",
+            prop("REELS_ENABLED", "false").equals("true", ignoreCase = true).toString()
+        )
         // Manifest placeholders for runtime value substitution
         manifestPlaceholders["ADMOB_APP_ID"] = prop("ADMOB_APP_ID")
 
@@ -138,6 +143,7 @@ dependencies {
 // Jetpack Compose - Core
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-tooling-preview")
+    implementation(libs.androidx.foundation)
     implementation(libs.androidx.foundation.layout)
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.androidx.lifecycle.process)

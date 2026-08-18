@@ -134,13 +134,6 @@ fun ConceptSimulationViewer(
         sharedPrefs.setSimulationVoiceEnabled(voiceEnabled)
     }
 
-    LaunchedEffect(sessionInteractions) {
-        if (inTrialMode) {
-            // Clicks only advance knowledge-bite progress — never the Explore/next overlay.
-            viewModel.syncTrialSimClickCount(sessionInteractions)
-        }
-    }
-
     val decodedTitle = try {
         URLDecoder.decode(simulationTitle, "UTF-8")
     } catch (e: Exception) {
@@ -166,6 +159,17 @@ fun ConceptSimulationViewer(
     }
 
     var progressMarked by remember(decodedUrl) { mutableStateOf(false) }
+    // Gate trial click→DB sync until THIS url's InteractionTracker.startSession has run. Otherwise
+    // the first composition can see the previous sim's leftover sessionInteractionCount (e.g. 15)
+    // while activeTrialItemId is already the next item — marking the next task DONE for free.
+    var trialClickSyncReady by remember(decodedUrl) { mutableStateOf(false) }
+
+    LaunchedEffect(sessionInteractions, trialClickSyncReady, inTrialMode) {
+        if (inTrialMode && trialClickSyncReady) {
+            // Clicks only advance knowledge-bite progress — never the Explore/next overlay.
+            viewModel.syncTrialSimClickCount(sessionInteractions)
+        }
+    }
 
     // Iframe / init stall — after 15s offer "continue to next" (EN/KN via string resources).
     var pageReady by remember(decodedUrl) { mutableStateOf(false) }
@@ -178,6 +182,13 @@ fun ConceptSimulationViewer(
     // If this line is ABSENT from a sim session's log, the build is stale (incremental-compile cache).
     LaunchedEffect(Unit) {
         DebugLogger.debugLog("CoachBuild", "v5 coach: ONE_CLOCK unlock without harvest (digit MCQ sims); math-label harvest; LOAD_NO_CACHE WebView; unlock-on-url (build 20260815a)")
+    }
+
+    // Mute the app-wide plant/space celebration while a free-browse sim is on screen, so a plant
+    // earned mid-run surfaces once on the next safe screen instead of popping over the simulation.
+    DisposableEffect(Unit) {
+        viewModel.onViewerVisible()
+        onDispose { viewModel.onViewerHidden() }
     }
 
     LaunchedEffect(decodedUrl) {
@@ -340,6 +351,8 @@ fun ConceptSimulationViewer(
             if (TrialSessionStore.activeTrialItemId != null) {
                 InteractionTracker.setSessionCountingEnabled(false)
             }
+            // Count is 0 after startSession — safe to mirror into the active trial item.
+            trialClickSyncReady = true
         }
     }
 

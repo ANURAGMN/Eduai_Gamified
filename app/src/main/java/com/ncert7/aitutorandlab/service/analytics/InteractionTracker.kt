@@ -102,11 +102,22 @@ object InteractionTracker {
     }
 
     fun endSession() {
-        if (sessionStartMs <= 0L) return
+        // Always clear the session counter — even on early exits — so the next Plan sim cannot
+        // inherit the previous item's click total via LaunchedEffect(sessionInteractions).
+        fun clearSessionCounters() {
+            _sessionInteractionCount.value = 0
+            _sessionInteractionBudget.value = 0
+            sessionStartMs = 0L
+        }
+
+        if (sessionStartMs <= 0L) {
+            clearSessionCounters()
+            return
+        }
 
         val current = _events.value
         if (current.isEmpty()) {
-            sessionStartMs = 0L
+            clearSessionCounters()
             return
         }
 
@@ -116,7 +127,7 @@ object InteractionTracker {
                 it.chapterName == sessionChapter
         }
         if (lastIndex < 0) {
-            sessionStartMs = 0L
+            clearSessionCounters()
             return
         }
 
@@ -135,7 +146,7 @@ object InteractionTracker {
                 )
             }
         }
-        sessionStartMs = 0L
+        clearSessionCounters()
     }
 
     fun logInteraction(rawName: String) {

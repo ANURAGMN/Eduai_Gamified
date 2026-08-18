@@ -30,6 +30,14 @@ interface ChapterDao {
     @Query("SELECT * FROM chapters WHERE subjectId = :subjectId ORDER BY orderIndex ASC")
     suspend fun getChaptersForSubjectSync(subjectId: String): List<ChapterEntity>
 
+    /** Chapter counts per subject, for the Home subject rows ("N chapters"). */
+    @Query("SELECT subjectId AS subjectId, COUNT(*) AS chapterCount FROM chapters GROUP BY subjectId")
+    suspend fun getChapterCountsBySubject(): List<SubjectChapterCount>
+
+    /** Reactive variant — emits again when chapters are synced/inserted. */
+    @Query("SELECT subjectId AS subjectId, COUNT(*) AS chapterCount FROM chapters GROUP BY subjectId")
+    fun getChapterCountsBySubjectFlow(): Flow<List<SubjectChapterCount>>
+
     @Query("SELECT * FROM chapters WHERE chapterId = :chapterId")
     suspend fun getChapter(chapterId: String): ChapterEntity?
 
@@ -83,3 +91,9 @@ interface ChapterDao {
     @Query("SELECT * FROM chapters WHERE chapterName = :chapterName LIMIT 1")
     suspend fun getChapterByName(chapterName: String): ChapterEntity?
 }
+
+/** Room projection: number of chapters in a subject. */
+data class SubjectChapterCount(
+    val subjectId: String,
+    val chapterCount: Int,
+)

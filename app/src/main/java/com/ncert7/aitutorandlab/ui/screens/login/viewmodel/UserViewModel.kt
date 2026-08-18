@@ -190,18 +190,19 @@ class UserViewModel @Inject constructor(
     fun handleGoogleLogin(firebaseUser: User) {
         viewModelScope.launch {
             _loginState.value = LoginState.Loading
+            val currentLanguage = _selectedLanguage.value
+            updateLanguage(currentLanguage)
             try {
                 withTimeout(LOGIN_FIRESTORE_TIMEOUT_MS) {
                     withContext(Dispatchers.IO) {
                         // Best-effort; rules need auth_index but login must not hang on quota writes.
                         try {
-                            repo.ensureAuthIndex(firebaseUser.id)
+                            withTimeout(AUTH_INDEX_TIMEOUT_MS) {
+                                repo.ensureAuthIndex(firebaseUser.id)
+                            }
                         } catch (e: Exception) {
                             DebugLogger.warnLog("UserViewModel", "auth_index skipped: ${e.message}")
                         }
-
-                        val currentLanguage = _selectedLanguage.value
-                        updateLanguage(currentLanguage)
 
                         when (val result = repo.checkUserExists(firebaseUser.email, firebaseUser.id)) {
                             is UserCheckResult.Found -> {
@@ -217,21 +218,66 @@ class UserViewModel @Inject constructor(
                             }
 
                             is UserCheckResult.Error -> {
-                                _loginState.value = LoginState.Error(result.exception)
+                                if (isTransientLoginFailure(result.exception)) {
+                                    completeGoogleLoginFromLocal(firebaseUser, currentLanguage)
+                                } else {
+                                    _loginState.value = LoginState.Error(result.exception)
+                                }
                             }
                         }
                     }
                 }
             } catch (e: TimeoutCancellationException) {
-                _loginState.value = LoginState.Error(
-                    Exception("Service busy, try again shortly.")
-                )
-                DebugLogger.errorLog("UserViewModel", "Login timed out waiting for Firestore")
+                DebugLogger.warnLog("UserViewModel", "Login timed out waiting for Firestore — using local session")
+                completeGoogleLoginFromLocal(firebaseUser, currentLanguage)
             } catch (e: Exception) {
-                _loginState.value = LoginState.Error(e)
-                DebugLogger.debugLog("UserViewModel", "Error during login: ${e.message}")
+                if (isTransientLoginFailure(e)) {
+                    completeGoogleLoginFromLocal(firebaseUser, currentLanguage)
+                } else {
+                    _loginState.value = LoginState.Error(e)
+                    DebugLogger.debugLog("UserViewModel", "Error during login: ${e.message}")
+                }
             }
         }
+    }
+
+    /** Firestore quota / timeout must not trap a signed-in Google user on the login screen. */
+    private suspend fun completeGoogleLoginFromLocal(firebaseUser: User, language: String) {
+        val local =
+            studentLocalRepository.getStudentSync(firebaseUser.id)
+                ?: studentLocalRepository.getStudentSync(firebaseUser.email)
+        val user =
+            if (local != null) {
+                firebaseUser.copy(
+                    id = local.studentId.ifBlank { firebaseUser.id },
+                    displayName = local.studentName.ifBlank { firebaseUser.displayName },
+                    schoolName = local.studentSchool,
+                    phoneNumber = local.phoneNumber,
+                    studentClass = local.classLevel,
+                    language = normalizeLanguageCode(local.language.ifBlank { language }),
+                    profilePictureUri = local.profilePhotoUrl ?: firebaseUser.profilePictureUri,
+                    createdAt = local.createdAt,
+                    lastLogin = System.currentTimeMillis(),
+                    appName = AppConfig.APP_NAME,
+                )
+            } else {
+                firebaseUser.copy(language = language, appName = AppConfig.APP_NAME)
+            }
+        _user.value = user
+        _loginState.value = LoginState.ExistingUser(user)
+        DebugLogger.warnLog(
+            "UserViewModel",
+            "Google login continued without Firestore (local=${local != null}) for ${firebaseUser.email}",
+        )
+    }
+
+    private fun isTransientLoginFailure(error: Throwable): Boolean {
+        val message = error.message.orEmpty()
+        return message.contains("busy", ignoreCase = true) ||
+            message.contains("quota", ignoreCase = true) ||
+            message.contains("RESOURCE_EXHAUSTED", ignoreCase = true) ||
+            message.contains("unavailable", ignoreCase = true) ||
+            error is TimeoutCancellationException
     }
 
     /**
@@ -520,4 +566,5 @@ sealed class ExistingUserSyncState {
 }
 
 private const val LOGIN_FIRESTORE_TIMEOUT_MS = 25_000L
+private const val AUTH_INDEX_TIMEOUT_MS = 4_000L
 private const val LOGIN_SYNC_TIMEOUT_MS = 30_000L

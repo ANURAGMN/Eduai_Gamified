@@ -17,6 +17,7 @@ import com.ncert7.aitutorandlab.data.local.entities.PlanTrialItemEntity
 import com.ncert7.aitutorandlab.data.local.entities.ProgressEntity
 import com.ncert7.aitutorandlab.data.local.entities.QuestDailyEntity
 import com.ncert7.aitutorandlab.data.local.entities.SubjectEntity
+import com.ncert7.aitutorandlab.debug.DebugLogger
 import com.anurag.eduai.uikit.garden.quest.GardenPlantedRow
 import com.anurag.eduai.uikit.garden.quest.SLOTS_PER_ZONE
 import com.anurag.eduai.uikit.garden.quest.starterSlot
@@ -95,6 +96,8 @@ object GamifiedHomeMapper {
         friends: List<com.anurag.eduai.uikit.components.FriendUpdate> = emptyList(),
         friendCount: Int = 0,
         availableSubjects: List<SubjectEntity> = emptyList(),
+        chapterCountsBySubject: Map<String, Int> = emptyMap(),
+        completedChapterCountsBySubject: Map<String, Int> = emptyMap(),
         gardenEnabled: Boolean = false,
         gardenProgress: GardenProgress? = null,
         gardenHighlightNewPlant: Boolean = false,
@@ -195,7 +198,7 @@ object GamifiedHomeMapper {
                 bookmarks = mapBookmarks(progressConcepts, progressSimulations, languageCode),
                 revision = mapRevision(progressConcepts, languageCode),
                 subjectsSectionTitle = HomeCopy.subjectsSectionTitle(languageCode),
-                subjects = mapSubjectTiles(availableSubjects, languageCode, selectedSubjectName, selectedSubjectId),
+                subjects = mapSubjectTiles(availableSubjects, chapterCountsBySubject, completedChapterCountsBySubject, languageCode, selectedSubjectName, selectedSubjectId),
                 tutorTitle = HomeCopy.tutorTitle(languageCode),
                 tutorMessage = HomeCopy.tutorMessage(languageCode),
                 garden = gardenRail,
@@ -826,25 +829,62 @@ object GamifiedHomeMapper {
 
     private fun mapSubjectTiles(
         availableSubjects: List<SubjectEntity>,
+        chapterCountsBySubject: Map<String, Int>,
+        completedChapterCountsBySubject: Map<String, Int>,
         languageCode: String,
         selectedSubjectName: String,
         selectedSubjectId: String,
     ): List<SubjectTile> {
-        if (availableSubjects.isNotEmpty()) {
-            return availableSubjects.map { subject ->
-                val name = subject.getLocalizedName(languageCode)
-                SubjectTile(
-                    name = name,
-                    role = chipRoleForSubject(subject, languageCode),
-                    subjectId = subject.subjectId,
-                    iconUrl = resolveSubjectIconUrl(subject.subjectId, name, subject.iconUrl),
-                )
+        val tiles =
+            if (availableSubjects.isNotEmpty()) {
+                availableSubjects.map { subject ->
+                    val name = subject.getLocalizedName(languageCode)
+                    SubjectTile(
+                        name = name,
+                        role = chipRoleForSubject(subject, languageCode),
+                        subjectId = subject.subjectId,
+                        iconUrl = resolveSubjectIconUrl(subject.subjectId, name, subject.iconUrl),
+                        subtitle = subjectSubtitle(subject.subjectId, chapterCountsBySubject, languageCode),
+                        progress = subjectProgress(subject.subjectId, chapterCountsBySubject, completedChapterCountsBySubject),
+                    )
+                }
+            } else {
+                defaultSubjectTiles(languageCode, chapterCountsBySubject, completedChapterCountsBySubject)
             }
-        }
-        return defaultSubjectTiles(languageCode)
+        DebugLogger.debugLog(
+            "SubjectRowDBG",
+            "tiles(source=${if (availableSubjects.isNotEmpty()) "available" else "default"}) = " +
+                tiles.joinToString { "${it.name}[sub=${it.subtitle}, prog=${it.progress}]" },
+        )
+        return tiles
     }
 
-    private fun defaultSubjectTiles(languageCode: String): List<SubjectTile> {
+    /** "N chapters" for a subject, or null when the count is unknown/zero. */
+    private fun subjectSubtitle(
+        subjectId: String,
+        chapterCountsBySubject: Map<String, Int>,
+        languageCode: String,
+    ): String? =
+        chapterCountsBySubject[subjectId]?.takeIf { it > 0 }
+            ?.let { HomeCopy.chapterCount(languageCode, it) }
+
+    /** Completed chapters / total (0f..1f), or null when the subject has no chapters yet. */
+    private fun subjectProgress(
+        subjectId: String,
+        chapterCountsBySubject: Map<String, Int>,
+        completedChapterCountsBySubject: Map<String, Int>,
+    ): Float? {
+        val total = chapterCountsBySubject[subjectId] ?: 0
+        if (total <= 0) return null
+        val completed = completedChapterCountsBySubject[subjectId] ?: 0
+        return (completed.toFloat() / total).coerceIn(0f, 1f)
+    }
+
+    private fun defaultSubjectTiles(
+        languageCode: String,
+        chapterCountsBySubject: Map<String, Int> = emptyMap(),
+        completedChapterCountsBySubject: Map<String, Int> = emptyMap(),
+    ): List<SubjectTile> {
         val kannada = isKannadaLanguage(languageCode)
         return listOf(
             SubjectTile(
@@ -852,12 +892,16 @@ object GamifiedHomeMapper {
                 role = EduChipRole.Pro,
                 subjectId = SubjectIds.MATH,
                 iconUrl = SubjectIconUrls.MATH,
+                subtitle = subjectSubtitle(SubjectIds.MATH, chapterCountsBySubject, languageCode),
+                progress = subjectProgress(SubjectIds.MATH, chapterCountsBySubject, completedChapterCountsBySubject),
             ),
             SubjectTile(
                 name = if (kannada) "ವಿಜ್ಞಾನ" else "Science",
                 role = EduChipRole.Accent,
                 subjectId = SubjectIds.SCIENCE,
                 iconUrl = SubjectIconUrls.SCIENCE,
+                subtitle = subjectSubtitle(SubjectIds.SCIENCE, chapterCountsBySubject, languageCode),
+                progress = subjectProgress(SubjectIds.SCIENCE, chapterCountsBySubject, completedChapterCountsBySubject),
             ),
         )
     }

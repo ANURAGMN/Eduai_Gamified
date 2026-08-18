@@ -24,6 +24,9 @@ object EngagementAnalyticsTracker {
     fun onboardingWorldSelected(world: String) =
         log("onboarding_world_selected", ScreenName.ONBOARDING, mapOf("world" to world))
 
+    fun onboardingAvatarSelected(presetId: String) =
+        log("onboarding_avatar_selected", ScreenName.ONBOARDING, mapOf("preset_id" to presetId))
+
     fun onboardingPicks(subject: String, chapter: String, world: String) =
         log(
             "onboarding_picks",

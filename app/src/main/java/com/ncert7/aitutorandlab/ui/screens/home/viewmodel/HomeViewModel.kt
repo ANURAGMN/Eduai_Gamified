@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ncert7.aitutorandlab.config.AppConfig
 import com.ncert7.aitutorandlab.data.local.SharedPreferenceUtils
+import com.ncert7.aitutorandlab.data.local.dao.ChapterAgentProgressDao
 import com.ncert7.aitutorandlab.data.local.dao.ChapterDao
 import com.ncert7.aitutorandlab.data.local.dao.ConceptDao
 import com.ncert7.aitutorandlab.data.local.dao.ProgressDao
@@ -45,6 +46,7 @@ import com.ncert7.aitutorandlab.domain.garden.GardenProgress
 import com.ncert7.aitutorandlab.domain.garden.GardenStarterHighlight
 import com.ncert7.aitutorandlab.domain.onboarding.OnboardingChapterCatalog
 import com.ncert7.aitutorandlab.repository.GardenRepository
+import com.ncert7.aitutorandlab.repository.TutorConfigRepository
 import com.ncert7.aitutorandlab.repository.YoutubeVideoRepository
 import com.ncert7.aitutorandlab.ui.screens.friends.FriendUiMapper
 import com.ncert7.aitutorandlab.utils.getLocalizedName
@@ -52,7 +54,10 @@ import com.ncert7.aitutorandlab.utils.isKannada
 import com.ncert7.aitutorandlab.utils.getCurrentLanguageCode
 import com.ncert7.aitutorandlab.utils.normalizeLanguageCode
 import com.ncert7.aitutorandlab.utils.TrialTitleResolver
+import com.anurag.eduai.uikit.avatar.AvatarUnlockStore
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import android.content.Context
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -71,6 +76,7 @@ import javax.inject.Inject
 class HomeViewModel @Inject constructor(
     private val conceptDao: ConceptDao,
     private val chapterDao: ChapterDao,
+    private val chapterAgentProgressDao: ChapterAgentProgressDao,
     private val progressDao: ProgressDao,
     private val studentDao: StudentDao,
     private val streakRepository: StreakRepository,
@@ -86,6 +92,8 @@ class HomeViewModel @Inject constructor(
     private val subjectRepository: SubjectRepository,
     private val youtubeVideoRepository: YoutubeVideoRepository,
     private val gardenRepository: GardenRepository,
+    private val tutorConfigRepository: TutorConfigRepository,
+    @ApplicationContext private val appContext: Context,
 ) : ViewModel(){
 
     private val userId: String
@@ -143,6 +151,14 @@ class HomeViewModel @Inject constructor(
 
     private val _availableSubjects = MutableStateFlow<List<SubjectEntity>>(emptyList())
     val availableSubjects: StateFlow<List<SubjectEntity>> = _availableSubjects
+
+    /** chapterId count per subjectId, for the Home subject rows ("N chapters"). */
+    private val _chapterCounts = MutableStateFlow<Map<String, Int>>(emptyMap())
+    val chapterCounts: StateFlow<Map<String, Int>> = _chapterCounts
+
+    /** Completed-chapter count per subjectId, for the Home subject-row progress ring. */
+    private val _completedChapterCounts = MutableStateFlow<Map<String, Int>>(emptyMap())
+    val completedChapterCounts: StateFlow<Map<String, Int>> = _completedChapterCounts
 
     private val _gamificationProfile = MutableStateFlow<GamificationProfileEntity?>(null)
     val gamificationProfile: StateFlow<GamificationProfileEntity?> = _gamificationProfile
@@ -267,6 +283,7 @@ class HomeViewModel @Inject constructor(
             val classLevel = _student.value?.classLevel ?: 7
             _availableSubjects.value =
                 subjectRepository.getSubjectsForClass(classLevel).sortedBy { it.orderIndex }
+            refreshCompletedChapterCounts()
         }
     }
 
@@ -276,8 +293,51 @@ class HomeViewModel @Inject constructor(
                 .collectLatest { classLevel ->
                     _availableSubjects.value =
                         subjectRepository.getSubjectsForClass(classLevel).sortedBy { it.orderIndex }
+                    refreshCompletedChapterCounts()
                 }
         }
+    }
+
+    /**
+     * Total chapters per subject for the Home rows ("N chapters"). Reactive: re-emits when
+     * chapters are synced/inserted, so counts appear even if sync finishes after home renders.
+     */
+    private fun observeChapterCounts() {
+        viewModelScope.launch {
+            chapterDao.getChapterCountsBySubjectFlow().collectLatest { rows ->
+                _chapterCounts.value = rows.associate { it.subjectId to it.chapterCount }
+                DebugLogger.debugLog(
+                    "SubjectRowDBG",
+                    "total chapters by subject = ${_chapterCounts.value}",
+                )
+                // Chapters just changed — refresh completed counts so the ring stays in sync.
+                refreshCompletedChapterCounts()
+            }
+        }
+    }
+
+    /** Completed-chapter count per subject for the progress ring. Best-effort one-shot. */
+    private suspend fun refreshCompletedChapterCounts() {
+        val id = userId.takeIf { it.isNotBlank() } ?: run {
+            DebugLogger.debugLog("SubjectRowDBG", "completed skipped — blank userId")
+            return
+        }
+        runCatching {
+            chapterAgentProgressDao.getCompletedChapterCountsBySubject(
+                studentId = id,
+                language = _currentLanguage.value,
+                appName = AppConfig.APP_NAME,
+            )
+        }
+            .getOrNull()
+            ?.associate { it.subjectId to it.chapterCount }
+            ?.let {
+                _completedChapterCounts.value = it
+                DebugLogger.debugLog(
+                    "SubjectRowDBG",
+                    "completed chapters by subject = $it (lang=${_currentLanguage.value})",
+                )
+            }
     }
 
     val startOfDay = LocalDate.now()
@@ -302,6 +362,7 @@ class HomeViewModel @Inject constructor(
         observeProgressConceptsAndSimulations()
         observeSelectedSubjectName()
         observeAvailableSubjects()
+        observeChapterCounts()
         observeGamificationProfile()
         observeLeagueRank()
         observeExamPlan()
@@ -390,6 +451,19 @@ class HomeViewModel @Inject constructor(
             }
             _gardenProgress.value = gardenRepository.getProgress(id)
             refreshGardenPlantedItems(id)
+
+            // Re-apply onboarding tutor so Room/Firestore don't keep an earlier default Scholar seed.
+            sharedPrefs.getOnboardingAvatar()?.takeIf { it.isNotBlank() }?.let { presetId ->
+                AvatarUnlockStore.unlock(appContext, presetId)
+                runCatching {
+                    tutorConfigRepository.applyPreset(appContext, id, presetId)
+                }.onFailure { e ->
+                    DebugLogger.errorLog(
+                        "HomeViewModel",
+                        "Onboarding avatar apply failed: ${e.message}",
+                    )
+                }
+            }
 
             sharedPrefs.setOnboardingPicksApplied()
             try {

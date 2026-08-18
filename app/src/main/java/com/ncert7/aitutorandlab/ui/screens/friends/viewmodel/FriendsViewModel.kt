@@ -43,12 +43,8 @@ class FriendsViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             if (userId.isBlank()) return@launch
+            // Show the local code immediately — Firestore social sync must not block the UI.
             gamificationRepository.getOrCreateProfile(userId)
-            friendRepository.seedDemoFriendRequestsIfNeeded(userId)
-            friendFeedService.simulateBotFriendFeedIfNeeded(userId)
-            friendRepository.syncFriendCodeToRemote(userId)
-            friendRepository.syncFriendSocialData(userId)
-            friendRepository.markHomeFeedSeen(userId)
             _myFriendCode.value = friendRepository.getMyFriendCode(userId)
             friendRepository.observeFriendCount(userId).collectLatest { count ->
                 _friendCount.value = count
@@ -58,6 +54,18 @@ class FriendsViewModel @Inject constructor(
             if (userId.isBlank()) return@launch
             friendRepository.observePendingRequests(userId).collectLatest { pending ->
                 _pendingRequests.value = pending
+            }
+        }
+        viewModelScope.launch {
+            if (userId.isBlank()) return@launch
+            runCatching {
+                friendRepository.seedDemoFriendRequestsIfNeeded(userId)
+                friendFeedService.simulateBotFriendFeedIfNeeded(userId)
+                friendRepository.syncFriendCodeToRemote(userId)
+                friendRepository.syncFriendSocialData(userId)
+                friendRepository.markHomeFeedSeen(userId)
+                val code = friendRepository.getMyFriendCode(userId)
+                if (code.isNotBlank()) _myFriendCode.value = code
             }
         }
     }

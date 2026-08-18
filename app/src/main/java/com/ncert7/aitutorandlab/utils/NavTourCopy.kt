@@ -43,6 +43,11 @@ object NavTourCopy {
                 "Your whole plan, day by day. Follow it to study a little every day and stay on track for your exam.",
             ),
             NavWalkStep(
+                EduBottomNavItem.Reels.route,
+                "Quick video lessons",
+                "Short lessons you can watch here — under a minute each, made for your class.",
+            ),
+            NavWalkStep(
                 EduBottomNavItem.Avatar.route,
                 "Your world",
                 "Grow a garden or a space colony as you learn — every task you finish adds to the scene.",
@@ -78,6 +83,11 @@ object NavTourCopy {
                 EduBottomNavItem.Plan.route,
                 "ನಿಮ್ಮ ಪರೀಕ್ಷಾ ಯೋಜನೆ",
                 "ದಿನದಿಂದ ದಿನಕ್ಕೆ ನಿಮ್ಮ ಸಂಪೂರ್ಣ ಯೋಜನೆ. ಪ್ರತಿದಿನ ಸ್ವಲ್ಪ ಅಧ್ಯಯನ ಮಾಡಿ ಪರೀಕ್ಷೆಗೆ ಸಿದ್ಧರಾಗಿ.",
+            ),
+            NavWalkStep(
+                EduBottomNavItem.Reels.route,
+                "ತ್ವರಿತ ವೀಡಿಯೊ ಪಾಠಗಳು",
+                "ಇಲ್ಲಿ ಚಿಕ್ಕ ಪಾಠಗಳನ್ನು ನೋಡಿ — ಪ್ರತಿಯೊಂದೂ ಒಂದು ನಿಮಿಷಕ್ಕಿಂತ ಕಡಿಮೆ, ನಿಮ್ಮ ತರಗತಿಗಾಗಿ.",
             ),
             NavWalkStep(
                 EduBottomNavItem.Avatar.route,

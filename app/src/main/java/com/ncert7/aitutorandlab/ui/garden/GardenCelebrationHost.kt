@@ -9,6 +9,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
+import com.ncert7.aitutorandlab.data.local.SharedPreferenceUtils
 import com.ncert7.aitutorandlab.domain.garden.GardenMomentCoordinator
 import com.ncert7.aitutorandlab.domain.moment.MomentUiModel
 import com.ncert7.aitutorandlab.ui.screens.plan.components.TrialMomentHost
@@ -19,13 +20,34 @@ import javax.inject.Inject
 @HiltViewModel
 class GardenCelebrationViewModel @Inject constructor(
     private val coordinator: GardenMomentCoordinator,
+    private val sharedPrefs: SharedPreferenceUtils,
 ) : ViewModel() {
+    init {
+        // Seed the coordinator's in-memory dedup guard from persisted state, so a plant already
+        // celebrated before an app restart is not shown again.
+        val studentId = sharedPrefs.getUserId().orEmpty()
+        if (studentId.isNotBlank()) {
+            coordinator.syncCelebratedTotal(sharedPrefs.getLastGardenCelebrationPlantTotal(studentId))
+        }
+    }
+
     val pending = coordinator.pending
     val suppressed = coordinator.suppressGlobalHost
 
     fun build(languageCode: String): MomentUiModel? = coordinator.buildMoment(languageCode)
 
-    fun dismiss() = coordinator.clear()
+    /** Mark this plant total as shown so Plan won't re-queue the same moment. */
+    fun markCelebrationShown() {
+        val celebration = coordinator.pending.value ?: return
+        val studentId = sharedPrefs.getUserId().orEmpty()
+        if (studentId.isBlank()) return
+        sharedPrefs.setLastGardenCelebrationPlantTotal(studentId, celebration.totalPlanted)
+    }
+
+    fun dismiss() {
+        markCelebrationShown()
+        coordinator.clear()
+    }
 }
 
 /**
@@ -34,6 +56,9 @@ class GardenCelebrationViewModel @Inject constructor(
  * — not just Plan-trial tasks — shows its full-screen moment. The Plan-trial screen runs its own
  * celebration chain and suppresses this host while it is on screen (see
  * [GardenMomentCoordinator.setGlobalHostSuppressed]) so the moment is never shown twice.
+ *
+ * Plan-trial sims defer notifying this host (plant row is written; Plan queues the moment on
+ * return) so learners don't see a plant popup mid-sim and again on back.
  */
 @Composable
 fun GardenCelebrationHost(
@@ -48,7 +73,13 @@ fun GardenCelebrationHost(
         // While the Plan-trial screen is visible it sets suppressGlobalHost=true and runs its own
         // celebration chain. Do NOT also key off activeTrialItemId — that id often stays set after
         // leaving Plan, which blocked the app-wide host (showingMoment=false) and dropped the popup.
-        moment = if (pending != null && !suppressed) viewModel.build(language) else null
+        val show = pending != null && !suppressed
+        if (show) {
+            viewModel.markCelebrationShown()
+            moment = viewModel.build(language)
+        } else {
+            moment = null
+        }
         if (pending != null) {
             android.util.Log.i(
                 "GardenPlant",

@@ -23,4 +23,9 @@ data class CollectionShelfState(
     val lockedSlotCount: Int = 3,
     /** Shown on the first empty slot — e.g. complete tasks to unlock more. */
     val lockedSlotHint: String = "",
+    /**
+     * Labels for empty “up next” slots (colony modules, island landmarks).
+     * Index 0 is the next build after the last collected item.
+     */
+    val upcomingLabels: List<String> = emptyList(),
 )

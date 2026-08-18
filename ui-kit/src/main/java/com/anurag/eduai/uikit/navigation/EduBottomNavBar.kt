@@ -34,6 +34,8 @@ fun EduBottomNavBar(
     badges: EduBottomNavBadges,
     onItemSelected: (EduBottomNavItem) -> Unit,
     modifier: Modifier = Modifier,
+    /** Which tabs to render, in order. Lets the app swap Quests↔Reels behind a flag. */
+    items: List<EduBottomNavItem> = EduBottomNavItem.defaultBarItems,
     /** Reports each tab's on-screen bounds (root coords) so a coach-mark tour can spotlight them. */
     onItemBounds: (EduBottomNavItem, Rect) -> Unit = { _, _ -> },
 ) {
@@ -45,7 +47,7 @@ fun EduBottomNavBar(
             tonalElevation = 0.dp,
             contentColor = colors.textMuted,
         ) {
-            EduBottomNavItem.entries.forEach { item ->
+            items.forEach { item ->
                 val selected = currentRoute == item.route
                 val showDot =
                     when (item) {

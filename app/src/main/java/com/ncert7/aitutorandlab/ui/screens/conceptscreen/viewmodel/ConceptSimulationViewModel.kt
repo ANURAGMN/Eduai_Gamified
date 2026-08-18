@@ -7,6 +7,7 @@ import com.ncert7.aitutorandlab.debug.DebugLogger
 import com.ncert7.aitutorandlab.domain.examplan.PlanTrialProgressTracker
 import com.ncert7.aitutorandlab.domain.examplan.SimulationTrialThresholds
 import com.ncert7.aitutorandlab.domain.examplan.TrialSessionStore
+import com.ncert7.aitutorandlab.domain.garden.GardenMomentCoordinator
 import com.ncert7.aitutorandlab.domain.progress.ProgressEventTracker
 import com.ncert7.aitutorandlab.repository.ChapterRepository
 import com.ncert7.aitutorandlab.repository.ConceptRepository
@@ -43,11 +44,29 @@ class ConceptSimulationViewModel @Inject constructor(
     private val progressEventTracker: ProgressEventTracker,
     private val planTrialProgressTracker: PlanTrialProgressTracker,
     private val streakManager: StreakManager,
-    private val sharedPrefs: SharedPreferenceUtils
+    private val sharedPrefs: SharedPreferenceUtils,
+    private val gardenMomentCoordinator: GardenMomentCoordinator,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ConceptScreenState())
     val state: StateFlow<ConceptScreenState> = _state.asStateFlow()
+
+    // A plant earned mid-sim must not pop over the running simulation. For FREE-browse sims we mute
+    // the app-wide celebration host while the viewer is on screen; it surfaces the plant once, on
+    // the next safe screen. Plan-launched sims (activeTrialItemId set) are already handled by the
+    // Plan screen's own suppression + the growGarden defer, so we don't touch the flag for them
+    // (avoids a shared-flag tug-of-war during the sim → Plan handoff).
+    fun onViewerVisible() {
+        if (TrialSessionStore.activeTrialItemId == null) {
+            gardenMomentCoordinator.setGlobalHostSuppressed(true)
+        }
+    }
+
+    fun onViewerHidden() {
+        if (TrialSessionStore.activeTrialItemId == null) {
+            gardenMomentCoordinator.setGlobalHostSuppressed(false)
+        }
+    }
 
     private val _isAdCheckPending = MutableStateFlow(true)
     val isAdCheckPending: StateFlow<Boolean> = _isAdCheckPending.asStateFlow()
@@ -72,6 +91,14 @@ class ConceptSimulationViewModel @Inject constructor(
         const val TRIAL_EXPLORE_PROMPT_MS = SimulationViewerTiming.TRIAL_OVERLAY_MS
         /** In-sim taps required before chapter progress counts a URL sim as completed. */
         const val MIN_INTERACTIONS_FOR_CHAPTER_PROGRESS = 7
+
+        /**
+         * TEMP kill-switch. When false, completing a sim by *free browsing* (not from the Plan)
+         * does nothing — no chapter-progress bump, no XP/gems, no garden plant/celebration. Only
+         * the streak-on-open (recorded elsewhere) remains. Plan-trial sims are unaffected.
+         * Flip back to true to restore free-browse chapter progress + rewards.
+         */
+        const val CHAPTER_PROGRESS_FROM_FREE_BROWSE_ENABLED = false
     }
 
     private var timeExplorePromptShown = false
@@ -93,6 +120,11 @@ class ConceptSimulationViewModel @Inject constructor(
             if (TrialSessionStore.activeTrialItemId != null) {
                 DebugLogger.debugLog(TAG, "Trial mode — streak only (URL completion via click count)")
                 streakManager.recordLearningActivityForUser(studentId)
+                return@launch
+            }
+            // TEMP: free-browse chapter progress + rewards are disabled. No chapter %, XP, or plant.
+            if (!CHAPTER_PROGRESS_FROM_FREE_BROWSE_ENABLED) {
+                DebugLogger.debugLog(TAG, "Free-browse chapter progress DISABLED — no completion/XP/plant for $conceptId")
                 return@launch
             }
             val language = getCurrentLanguageCode()
@@ -510,6 +542,13 @@ class ConceptSimulationViewModel @Inject constructor(
 
     fun markSimulationCompleted(conceptId: String) {
         viewModelScope.launch {
+            // Free-browse (no trial item) chapter progress + rewards are temporarily disabled:
+            // no chapter %, XP, or garden plant. Plan-trial crediting (trialItemId set) still runs.
+            val trialItemId = TrialSessionStore.activeTrialItemId ?: capturedTrialItemId
+            if (trialItemId == null && !CHAPTER_PROGRESS_FROM_FREE_BROWSE_ENABLED) {
+                DebugLogger.debugLog(TAG, "Free-browse chapter progress DISABLED — skipping $conceptId")
+                return@launch
+            }
             try {
                 val studentId = sharedPrefs.getUserId() ?: ""
                 val language = getCurrentLanguageCode()

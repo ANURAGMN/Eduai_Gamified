@@ -188,21 +188,43 @@ class ProgressAnalyticsSessionSyncManager(
                 .document(studentAppDocId)
                 .collection("data")
                 .document("current")
-            
-            val data = mapOf(
-                "studentId" to studentId,
-                "streakCount" to streak.streakCount,
-                "lastStreakDate" to streak.lastStreakDate,
-                "createdAt" to streak.createdAt,
-                "updatedAt" to streak.updatedAt,
-                "appName" to AppConfig.APP_NAME,
-                "syncedAt" to System.currentTimeMillis()
+            val now = System.currentTimeMillis()
+
+            val merged = firestore.runTransaction { txn ->
+                val snap = txn.get(docRef)
+                val remoteCount = if (snap.exists()) (snap.getLong("streakCount") ?: 0L).toInt() else 0
+                val remoteDate = if (snap.exists()) snap.getLong("lastStreakDate") ?: 0L else 0L
+                val write = com.ncert7.aitutorandlab.domain.gamification.StreakSyncPolicy.mergeCloudWrite(
+                    incomingCount = streak.streakCount,
+                    incomingLastDate = streak.lastStreakDate,
+                    remoteCount = remoteCount,
+                    remoteLastDate = remoteDate,
+                    nowMs = now,
+                )
+                val data = mapOf(
+                    "studentId" to studentId,
+                    "userId" to studentId,
+                    "streakCount" to write.streakCount,
+                    "lastStreakDate" to write.lastStreakDate,
+                    "createdAt" to streak.createdAt,
+                    "updatedAt" to now,
+                    "appName" to AppConfig.APP_NAME,
+                    "syncedAt" to now,
+                )
+                txn.set(docRef, data, SetOptions.merge())
+                write
+            }.await()
+
+            streakDao.insertStreak(
+                streak.copy(
+                    streakCount = merged.streakCount,
+                    lastStreakDate = merged.lastStreakDate,
+                    updatedAt = now,
+                    isSynced = true,
+                ),
             )
-            
-            docRef.set(data, SetOptions.merge()).await()
-            streakDao.markStreakAsSynced(studentId)
-            
-            SyncResult(true, "Synced streak data")
+
+            SyncResult(true, "Synced streak data (count=${merged.streakCount})")
         } catch (e: Exception) {
             SyncResult(false, "Streak sync error: ${e.message}")
         }

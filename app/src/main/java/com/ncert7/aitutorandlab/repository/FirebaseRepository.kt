@@ -478,22 +478,36 @@ class FirebaseRepository(
 
             val studentAppDocId = "${AppConfig.APP_NAME}_$userId"
             val now = System.currentTimeMillis()
-            // Merge so we don't clobber createdAt / other fields on every deferred flush.
-            val payload = mapOf(
-                "userId" to userId,
-                "streakCount" to streakCount,
-                "lastStreakDate" to lastStreakDate,
-                "updatedAt" to now,
-                "appName" to AppConfig.APP_NAME,
-            )
-
-            streakCollection.document(studentAppDocId)
+            val docRef = streakCollection.document(studentAppDocId)
                 .collection("data")
                 .document("current")
-                .set(payload, SetOptions.merge())
-                .await()
 
-            DebugLogger.debugLog("FirebaseRepository", "Streak updated for $studentAppDocId: count=$streakCount")
+            val mergedCount = firestore.runTransaction { txn ->
+                val snap = txn.get(docRef)
+                val remoteCount = if (snap.exists()) (snap.getLong("streakCount") ?: 0L).toInt() else 0
+                val remoteDate = if (snap.exists()) snap.getLong("lastStreakDate") ?: 0L else 0L
+                val merged = com.ncert7.aitutorandlab.domain.gamification.StreakSyncPolicy.mergeCloudWrite(
+                    incomingCount = streakCount,
+                    incomingLastDate = lastStreakDate,
+                    remoteCount = remoteCount,
+                    remoteLastDate = remoteDate,
+                    nowMs = now,
+                )
+                val payload = mapOf(
+                    "userId" to userId,
+                    "streakCount" to merged.streakCount,
+                    "lastStreakDate" to merged.lastStreakDate,
+                    "updatedAt" to now,
+                    "appName" to AppConfig.APP_NAME,
+                )
+                txn.set(docRef, payload, SetOptions.merge())
+                merged.streakCount
+            }.await()
+
+            DebugLogger.debugLog(
+                "FirebaseRepository",
+                "Streak updated for $studentAppDocId: incoming=$streakCount merged=$mergedCount",
+            )
             true
         } catch (e: FirebaseNetworkException) {
             DebugLogger.errorLog("FirebaseRepository", "Network error updating streak: ${e.message}")

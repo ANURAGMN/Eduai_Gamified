@@ -2,7 +2,9 @@ package com.ncert7.aitutorandlab.repository
 
 import com.ncert7.aitutorandlab.data.local.dao.GardenDao
 import com.ncert7.aitutorandlab.data.local.entities.GardenStateEntity
+import com.ncert7.aitutorandlab.data.local.entities.GardenTheme
 import com.ncert7.aitutorandlab.data.local.entities.GrownItemEntity
+import com.ncert7.aitutorandlab.domain.garden.GardenRouteUtils
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
@@ -205,6 +207,94 @@ class GardenRepositoryTest {
         assertEquals("0,1", dao.state.route)
         assertEquals(1, planted!!.zone)
         assertEquals(0, planted.plot)
+    }
+
+    @Test
+    fun recordCompletion_whenForwardPlacesFull_usesFreeZoneAndSwitchesToOutpost() = runBlocking {
+        // Mimic the device: journey started at Woodland (1) and filled zones 1…7; zone 0 empty.
+        dao.state =
+            GardenStateEntity(
+                studentId = STUDENT,
+                theme = GardenTheme.GARDEN,
+                route = "1,2,3,4,5,6,7",
+                steps = 0,
+                preferredSlot = -1,
+            )
+        var id = 0
+        for (zone in 1..7) {
+            for (plot in 0 until 12) {
+                dao.items.add(
+                    GrownItemEntity(
+                        id = "legacy-${id++}",
+                        studentId = STUDENT,
+                        zone = zone,
+                        plot = plot,
+                        slot = 0,
+                        conceptId = "c",
+                        chapterId = "ch",
+                        kind = "SIM",
+                        completedAt = id.toLong(),
+                    ),
+                )
+            }
+        }
+        assertEquals(84, dao.items.size)
+
+        val planted =
+            repository.recordCompletion(
+                studentId = STUDENT,
+                conceptId = "fresh-sim",
+                chapterId = "ch-1",
+                kind = "SIM_URL",
+            )
+        assertNotNull(planted)
+        assertEquals(0, planted!!.zone)
+        assertEquals(0, planted.plot)
+        assertEquals(GardenTheme.OUTPOST, dao.state.theme)
+        assertTrue(dao.state.route.endsWith(",0") || dao.state.route.endsWith("0"))
+        assertEquals(0, GardenRouteUtils.currentZone(dao.state.route))
+    }
+
+    @Test
+    fun recordCompletion_whenAllPlacesFull_switchesToColonyOverflow() = runBlocking {
+        dao.state =
+            GardenStateEntity(
+                studentId = STUDENT,
+                theme = GardenTheme.OUTPOST,
+                route = "0,1,2,3,4,5,6,7",
+                steps = 0,
+            )
+        var id = 0
+        for (zone in 0 until 8) {
+            for (plot in 0 until 12) {
+                dao.items.add(
+                    GrownItemEntity(
+                        id = "full-${id++}",
+                        studentId = STUDENT,
+                        zone = zone,
+                        plot = plot,
+                        slot = 0,
+                        conceptId = "c",
+                        chapterId = "ch",
+                        kind = "SIM",
+                        completedAt = id.toLong(),
+                    ),
+                )
+            }
+        }
+        assertEquals(96, dao.items.size)
+
+        val planted =
+            repository.recordCompletion(
+                studentId = STUDENT,
+                conceptId = "overflow-sim",
+                chapterId = "ch-1",
+                kind = "SIMULATION",
+            )
+        assertNotNull(planted)
+        assertEquals(GardenTheme.COLONY, dao.state.theme)
+        assertTrue(planted!!.plot >= 12)
+        assertEquals(97, dao.items.size)
     }
 
     private class FakeGardenDao : GardenDao {

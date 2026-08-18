@@ -56,6 +56,9 @@ fun LeagueHeroBanner(
     totalParticipants: Int,
     promotionCount: Int = 5,
     promotionTargetName: String = "Gold",
+    daysLeftLabel: String = if (daysRemaining == 1) "1 day left" else "$daysRemaining days left",
+    standingLine: String =
+        "You're rank $currentRank of $totalParticipants — top $promotionCount promote to $promotionTargetName",
     modifier: Modifier = Modifier,
 ) {
     val colors = EduAiTheme.colors
@@ -88,7 +91,7 @@ fun LeagueHeroBanner(
                 )
             }
             Text(
-                text = if (daysRemaining == 1) "1 day left" else "$daysRemaining days left",
+                text = daysLeftLabel,
                 color = colors.onAccent,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Medium,
@@ -96,8 +99,7 @@ fun LeagueHeroBanner(
         }
         Spacer(modifier = Modifier.height(6.dp))
         Text(
-            text =
-                "You're rank $currentRank of $totalParticipants — top $promotionCount promote to $promotionTargetName",
+            text = standingLine,
             color = colors.onAccent.copy(alpha = 0.9f),
             fontSize = 12.sp,
         )

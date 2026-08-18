@@ -12,6 +12,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -41,9 +42,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.anurag.eduai.uikit.garden.quest.ColonyModuleThumb
 import com.anurag.eduai.uikit.garden.quest.SlotThumb
 import com.anurag.eduai.uikit.garden.quest.Theme
 import com.anurag.eduai.uikit.garden.quest.placeBased
+import com.anurag.eduai.uikit.garden.world.COLONY_PALETTE
+import com.anurag.eduai.uikit.garden.world.IslandTileThumb
 import com.anurag.eduai.uikit.theme.EduAiTheme
 
 @Composable
@@ -57,6 +61,7 @@ fun CollectionShelf(
     val lockedCount = state.lockedSlotCount.coerceAtLeast(0)
     val totalSlots = collectedCount + lockedCount
     val listState = rememberLazyListState()
+    val showComponentLabels = !state.theme.placeBased
 
     LaunchedEffect(collectedCount, state.totalCount) {
         if (totalSlots > 0) {
@@ -67,7 +72,7 @@ fun CollectionShelf(
     Box(
         modifier
             .fillMaxWidth()
-            .height(80.dp)
+            .height(if (showComponentLabels) 96.dp else 80.dp)
             .clip(RoundedCornerShape(12.dp))
             .border(1.dp, colors.border, RoundedCornerShape(12.dp))
             .background(colors.surface2)
@@ -90,27 +95,47 @@ fun CollectionShelf(
             items(count = totalSlots) { index ->
                 if (index < collectedCount) {
                     val item = state.items[index]
-                    if (state.theme.placeBased) {
-                        CollectionShelfThumb(
-                            zone = item.zone,
-                            slot = item.slot,
-                            theme = state.theme,
-                            isNewest = index == collectedCount - 1,
-                            modifier = Modifier.width(54.dp),
-                        )
-                    } else {
-                        CollectionShelfMarker(
-                            theme = state.theme,
-                            index = index + 1,
-                            label = item.label,
-                            isNewest = index == collectedCount - 1,
-                        )
+                    when {
+                        state.theme.placeBased ->
+                            CollectionShelfThumb(
+                                zone = item.zone,
+                                slot = item.slot,
+                                theme = state.theme,
+                                isNewest = index == collectedCount - 1,
+                                modifier = Modifier.width(54.dp),
+                            )
+                        state.theme == Theme.COLONY ->
+                            CollectionShelfColonyItem(
+                                slot = item.slot,
+                                label = item.label,
+                                isNewest = index == collectedCount - 1,
+                            )
+                        state.theme == Theme.ISLAND ->
+                            CollectionShelfIslandItem(
+                                cellIndex = item.slot,
+                                label = item.label,
+                                isNewest = index == collectedCount - 1,
+                            )
+                        else ->
+                            CollectionShelfIslandItem(
+                                cellIndex = item.slot,
+                                label = item.label.ifBlank { "Tile" },
+                                isNewest = index == collectedCount - 1,
+                            )
                     }
                 } else {
+                    val upcomingIndex = index - collectedCount
+                    val upcoming = state.upcomingLabels.getOrNull(upcomingIndex).orEmpty()
                     CollectionShelfEmptySlot(
                         theme = state.theme,
-                        showHint = index == collectedCount,
-                        hint = state.lockedSlotHint.ifBlank { state.emptyMessage },
+                        showHint = upcoming.isNotBlank() || upcomingIndex == 0,
+                        hint =
+                            when {
+                                upcoming.isNotBlank() -> upcoming
+                                upcomingIndex == 0 ->
+                                    state.lockedSlotHint.ifBlank { state.emptyMessage }
+                                else -> ""
+                            },
                     )
                 }
             }
@@ -125,13 +150,13 @@ private fun CollectionShelfEmptySlot(
     hint: String,
 ) {
     val colors = EduAiTheme.colors
-    val width = if (theme.placeBased) 54.dp else 52.dp
+    val width = if (theme.placeBased) 54.dp else 56.dp
     val dashColor = colors.textMuted.copy(alpha = 0.45f)
 
     Box(
         Modifier
             .width(width)
-            .height(if (theme.placeBased) 72.dp else 64.dp)
+            .height(if (theme.placeBased) 72.dp else 84.dp)
             .clip(RoundedCornerShape(8.dp))
             .background(colors.surface1.copy(alpha = if (theme.placeBased) 0.35f else 0.85f))
             .drawBehind {
@@ -154,8 +179,8 @@ private fun CollectionShelfEmptySlot(
             Text(
                 text = hint,
                 color = colors.textMuted,
-                fontSize = 8.sp,
-                lineHeight = 10.sp,
+                fontSize = if (hint.length <= 10) 10.sp else 8.sp,
+                lineHeight = 11.sp,
                 fontWeight = FontWeight.Medium,
                 maxLines = 4,
                 overflow = TextOverflow.Ellipsis,
@@ -225,51 +250,141 @@ private fun CollectionShelfThumb(
 }
 
 @Composable
-private fun CollectionShelfMarker(
-    theme: Theme,
-    index: Int,
+private fun CollectionShelfColonyItem(
+    slot: Int,
     label: String,
     isNewest: Boolean,
 ) {
     val colors = EduAiTheme.colors
-    val bg =
-        when (theme) {
-            Theme.ISLAND -> colors.successBg
-            Theme.COLONY -> colors.accentBg
-            else -> colors.surface1
-        }
-    val accent =
-        when (theme) {
-            Theme.ISLAND -> colors.success
-            Theme.COLONY -> colors.accent
-            else -> colors.textMuted
+    // Mars dusk — matches COLONY_PALETTE, not the app accent purple wash.
+    val thumbBg = COLONY_PALETTE.skyTop
+    val thumbBorder = COLONY_PALETTE.trim
+    val pulse =
+        if (isNewest) {
+            val transition = rememberInfiniteTransition(label = "colonyNewest")
+            transition.animateFloat(
+                initialValue = 0.55f,
+                targetValue = 1f,
+                animationSpec =
+                    infiniteRepeatable(
+                        animation = tween(900, easing = LinearEasing),
+                        repeatMode = RepeatMode.Reverse,
+                    ),
+                label = "colonyNewestAlpha",
+            ).value
+        } else {
+            1f
         }
 
-    Box(
-        Modifier
-            .width(52.dp)
-            .height(64.dp)
-            .clip(RoundedCornerShape(10.dp))
-            .background(bg)
-            .then(
-                if (isNewest) {
-                    Modifier.border(1.5.dp, accent, RoundedCornerShape(10.dp))
-                } else {
-                    Modifier.border(1.dp, colors.border, RoundedCornerShape(10.dp))
-                },
-            )
-            .padding(6.dp),
-        contentAlignment = Alignment.Center,
+    Column(
+        Modifier.width(56.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(
-            text = label.ifBlank { index.toString() },
-            color = accent,
-            fontSize = if (label.length > 2) 9.sp else 14.sp,
-            fontWeight = FontWeight.SemiBold,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            textAlign = TextAlign.Center,
-        )
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(58.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(thumbBg)
+                .then(
+                    if (isNewest) {
+                        Modifier.border(
+                            1.5.dp,
+                            thumbBorder.copy(alpha = pulse),
+                            RoundedCornerShape(8.dp),
+                        )
+                    } else {
+                        Modifier.border(1.dp, COLONY_PALETTE.bodyDark, RoundedCornerShape(8.dp))
+                    },
+                ),
+            contentAlignment = Alignment.BottomCenter,
+        ) {
+            ColonyModuleThumb(
+                slot = slot,
+                modifier = Modifier.fillMaxSize().padding(2.dp),
+            )
+        }
+        if (label.isNotBlank()) {
+            Text(
+                text = label,
+                color = colors.text,
+                fontSize = 9.sp,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(top = 2.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun CollectionShelfIslandItem(
+    cellIndex: Int,
+    label: String,
+    isNewest: Boolean,
+) {
+    val colors = EduAiTheme.colors
+    val thumbBg = Color(0xFFD7EFE3)
+    val thumbBorder = colors.success
+    val pulse =
+        if (isNewest) {
+            val transition = rememberInfiniteTransition(label = "islandNewest")
+            transition.animateFloat(
+                initialValue = 0.55f,
+                targetValue = 1f,
+                animationSpec =
+                    infiniteRepeatable(
+                        animation = tween(900, easing = LinearEasing),
+                        repeatMode = RepeatMode.Reverse,
+                    ),
+                label = "islandNewestAlpha",
+            ).value
+        } else {
+            1f
+        }
+
+    Column(
+        Modifier.width(56.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(58.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(thumbBg)
+                .then(
+                    if (isNewest) {
+                        Modifier.border(
+                            1.5.dp,
+                            thumbBorder.copy(alpha = pulse),
+                            RoundedCornerShape(8.dp),
+                        )
+                    } else {
+                        Modifier.border(1.dp, colors.border, RoundedCornerShape(8.dp))
+                    },
+                ),
+            contentAlignment = Alignment.Center,
+        ) {
+            IslandTileThumb(
+                cellIndex = cellIndex,
+                modifier = Modifier.fillMaxSize().padding(2.dp),
+            )
+        }
+        if (label.isNotBlank()) {
+            Text(
+                text = label,
+                color = colors.text,
+                fontSize = 8.sp,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(top = 2.dp),
+            )
+        }
     }
 }
 
@@ -283,7 +398,7 @@ private fun DrawScope.drawCollectionShelfBackdrop(theme: Theme) {
             when {
                 garden -> listOf(Color(0xFFF2FAF4), Color(0xFFDDF0E4))
                 island -> listOf(Color(0xFFE8F4E8), Color(0xFFC8E6C9))
-                theme == Theme.COLONY -> listOf(Color(0xFF2A2A40), Color(0xFF3D3D58))
+                theme == Theme.COLONY -> listOf(Color(0xFF2A1E18), Color(0xFF5A3424))
                 else -> listOf(Color(0xFF20263C), Color(0xFF39405C))
             },
             startY = 0f,
@@ -295,7 +410,7 @@ private fun DrawScope.drawCollectionShelfBackdrop(theme: Theme) {
         when {
             garden -> Color(0xFFBFE3CB)
             island -> Color(0xFF9FD4A8)
-            theme == Theme.COLONY -> Color(0xFF4A4160)
+            theme == Theme.COLONY -> Color(0xFFC4643A)
             else -> Color(0xFF4A4160)
         },
         topLeft = Offset(0f, groundTop),

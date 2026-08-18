@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Policy
+import androidx.compose.material.icons.outlined.TrackChanges
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -65,6 +66,7 @@ import com.anurag.eduai.uikit.components.EduScreenTopBar
 import com.anurag.eduai.uikit.theme.EduAiTheme
 import com.ncert7.aitutorandlab.BuildConfig
 import com.ncert7.aitutorandlab.R
+import com.ncert7.aitutorandlab.config.ReelsFeatureFlags
 import androidx.compose.material3.Switch
 import com.ncert7.aitutorandlab.config.GamificationFeatureFlags
 import com.ncert7.aitutorandlab.data.local.SharedPreferenceUtils
@@ -108,6 +110,7 @@ fun SettingScreen(
     onNavigateToFriends: () -> Unit = {},
     onNavigateToAvatarStudio: () -> Unit = {},
     onNavigateToProgress: () -> Unit = {},
+    onNavigateToQuests: () -> Unit = {},
 ) {
     TrackScreenEvent(screenName = ScreenName.SETTINGS)
 
@@ -318,6 +321,15 @@ fun SettingScreen(
                             title = "Progress & skills",
                             onClick = onNavigateToProgress,
                         )
+                        // Quests move here when the Reels tab takes their bottom-bar slot.
+                        if (ReelsFeatureFlags.isReelsEnabled()) {
+                            SettingsItem(
+                                icon = Icons.Outlined.TrackChanges,
+                                iconTint = BrandPrimary,
+                                title = "Today's quest",
+                                onClick = onNavigateToQuests,
+                            )
+                        }
                     }
                     SettingsSection(title = "Social") {
                         SettingsItem(

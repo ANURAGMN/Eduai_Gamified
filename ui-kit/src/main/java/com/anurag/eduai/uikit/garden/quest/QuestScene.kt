@@ -14,11 +14,14 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
+import com.anurag.eduai.uikit.garden.world.COLONY_PALETTE
 import com.anurag.eduai.uikit.garden.world.ISLAND_CELLS
 import com.anurag.eduai.uikit.garden.world.ISLAND_H
 import com.anurag.eduai.uikit.garden.world.ISLAND_W
 import com.anurag.eduai.uikit.garden.world.IslandScene
 import com.anurag.eduai.uikit.garden.world.IslandState
+import com.anurag.eduai.uikit.garden.world.LANDMARKS
+import com.anurag.eduai.uikit.garden.world.ModuleKind
 import com.anurag.eduai.uikit.garden.world.PLOTS
 import com.anurag.eduai.uikit.garden.world.SCENE_H
 import com.anurag.eduai.uikit.garden.world.SCENE_W
@@ -397,6 +400,28 @@ fun SlotThumb(
     }
 }
 
+/** Home-shelf thumb for a Space-colony module (Dome / Array / Mast / Lab / Pad / Tank). */
+@Composable
+fun ColonyModuleThumb(
+    slot: Int,
+    modifier: Modifier = Modifier,
+) {
+    val kind = ModuleKind.entries[slot.coerceAtLeast(0) % ModuleKind.entries.size]
+    Canvas(modifier) {
+        drawSceneItemPreview {
+            drawPlotShadow(Theme.OUTPOST, it)
+            drawModule(
+                kind,
+                COLONY_PALETTE,
+                it.x,
+                it.y,
+                it.scale * 1.35f,
+                0f,
+            )
+        }
+    }
+}
+
 @Composable
 fun SurpriseThumb(
     zoneIndex: Int,
@@ -405,18 +430,29 @@ fun SurpriseThumb(
 ) {
     val zone = ZONES[zoneIndex.coerceIn(0, ZONES.lastIndex)]
     Canvas(modifier) {
-        drawSceneBandContent(
-            magnification = SCENE_SURPRISE_PREVIEW_MAGNIFICATION,
-            bottomAlign = true,
-        ) {
-            listOf(
-                Triple(0, 0, 0.85f),
-                Triple(2, 2, 0.90f),
-                Triple(5, 5, 0.80f),
-            ).forEach { (slot, plotIndex, growth) ->
-                val plot = PLOTS[plotIndex]
-                drawPlotShadow(theme, plot)
-                drawSceneSlotAt(zone, theme, slot, plot.x, plot.y, growth, plot.scale, plotIndex, 0f)
+        // Same bottom-anchored preview as SlotThumb. The old band-crop + top-row plots
+        // (PLOTS 0/2/5) landed above the square thumb after 3.5× zoom and looked blank.
+        // Draw three offset species so Surprise reads as a combo, not an empty tile.
+        listOf(
+            Triple(0, -0.28f, 0.82f),
+            Triple(2, 0.28f, 0.82f),
+            Triple(5, 0f, 0.95f),
+        ).forEach { (slot, xFrac, growth) ->
+            translate(size.width * xFrac * 0.5f, 0f) {
+                drawSceneItemPreview(magnification = SCENE_SURPRISE_PREVIEW_MAGNIFICATION) {
+                    drawPlotShadow(theme, it)
+                    drawSceneSlotAt(
+                        zone,
+                        theme,
+                        slot,
+                        it.x,
+                        it.y,
+                        growth,
+                        it.scale,
+                        SCENE_PREVIEW_PLOT_INDEX,
+                        0f,
+                    )
+                }
             }
         }
     }

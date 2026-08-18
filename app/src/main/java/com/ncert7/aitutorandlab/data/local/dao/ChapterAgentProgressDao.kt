@@ -3,6 +3,7 @@ package com.ncert7.aitutorandlab.data.local.dao
 import androidx.room.*
 import com.ncert7.aitutorandlab.data.local.entities.ChapterAgentProgressEntity
 import kotlinx.coroutines.flow.Flow
+// SubjectChapterCount projection is declared alongside ChapterDao.
 
 /**
  * Data Access Object for managing chapter-wise agent progress tracking
@@ -242,6 +243,26 @@ ORDER BY ch.orderIndex ASC
 
     @Query("UPDATE chapter_agent_progress SET isSynced = 1 WHERE progressId IN (:ids)")
     suspend fun markAsSynced(ids: List<Long>)
+
+    /** Count of COMPLETED chapters per subject, for the Home subject-row progress ring. */
+    @Query(
+        """
+        SELECT ch.subjectId AS subjectId, COUNT(*) AS chapterCount
+        FROM chapter_agent_progress cap
+        INNER JOIN chapters ch ON cap.chapterId = ch.chapterId
+        WHERE cap.studentId = :studentId
+          AND cap.language = :language
+          AND cap.appName = :appName
+          AND cap.status = :completedStatus
+        GROUP BY ch.subjectId
+        """
+    )
+    suspend fun getCompletedChapterCountsBySubject(
+        studentId: String,
+        language: String,
+        appName: String,
+        completedStatus: String = "COMPLETED",
+    ): List<SubjectChapterCount>
 }
 
 /**

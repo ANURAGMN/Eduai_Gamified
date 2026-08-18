@@ -32,6 +32,10 @@ class YoutubeVideoRepository @Inject constructor() {
                         title = doc.getString(FIELD_TITLE)?.trim().orEmpty().ifBlank { "EduAI video" },
                         titleKannada = doc.getString(FIELD_TITLE_KN)?.trim().orEmpty(),
                         publishedAtMillis = doc.getLong(FIELD_PUBLISHED_AT) ?: 0L,
+                        viewCount = doc.getLong(FIELD_VIEW_COUNT) ?: 0L,
+                        caption = doc.getString(FIELD_CAPTION)?.trim().orEmpty(),
+                        // Missing field = not verified kids-safe → false (defensive; reels filters on this).
+                        madeForKids = doc.getBoolean(FIELD_MADE_FOR_KIDS) ?: false,
                     )
                 }
             if (remote.isNotEmpty()) remote else defaultVideos()
@@ -60,12 +64,14 @@ class YoutubeVideoRepository @Inject constructor() {
                 title = "EduAI learning video",
                 titleKannada = "EduAI ಕಲಿಕೆ ವೀಡಿಯೋ",
                 publishedAtMillis = 2L,
+                madeForKids = true,
             ),
             YoutubeVideo(
                 videoId = "qTs6e_XmYNo",
                 title = "EduAI learning video",
                 titleKannada = "EduAI ಕಲಿಕೆ ವೀಡಿಯೋ",
                 publishedAtMillis = 1L,
+                madeForKids = true,
             ),
         )
 
@@ -77,5 +83,8 @@ class YoutubeVideoRepository @Inject constructor() {
         const val FIELD_TITLE_KN = "titleKannada"
         const val FIELD_PUBLISHED_AT = "publishedAtMillis"
         const val FIELD_ACTIVE = "active"
+        const val FIELD_VIEW_COUNT = "viewCount"
+        const val FIELD_CAPTION = "caption"
+        const val FIELD_MADE_FOR_KIDS = "madeForKids"
     }
 }

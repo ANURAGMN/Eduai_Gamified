@@ -37,13 +37,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.anurag.eduai.uikit.avatar.AdRewardOverlay
-import com.anurag.eduai.uikit.avatar.AdRewardRequest
-import com.anurag.eduai.uikit.avatar.AvatarPreset
-import com.anurag.eduai.uikit.avatar.AvatarUnlockStore
-import com.anurag.eduai.uikit.avatar.EduTutorAvatar
 import com.anurag.eduai.uikit.avatar.TutorConfig
-import com.anurag.eduai.uikit.avatar.TutorConfigStore
 import com.anurag.eduai.uikit.avatar.core.AvatarState
 import com.anurag.eduai.uikit.avatar.core.TutorCharacter
 import com.anurag.eduai.uikit.avatar.daysUntilNextDrop
@@ -51,6 +45,11 @@ import com.anurag.eduai.uikit.avatar.rememberSavedTutorConfig
 import com.anurag.eduai.uikit.avatar.rememberUnlockedAvatars
 import com.anurag.eduai.uikit.avatar.shareAvatar
 import com.anurag.eduai.uikit.avatar.weeklyAvatarPresets
+import com.anurag.eduai.uikit.avatar.EduTutorAvatar
+import com.anurag.eduai.uikit.avatar.AvatarUnlockStore
+import com.anurag.eduai.uikit.avatar.AvatarPreset
+import com.anurag.eduai.uikit.avatar.AdRewardOverlay
+import com.anurag.eduai.uikit.avatar.AdRewardRequest
 import com.anurag.eduai.uikit.components.EduChip
 import com.anurag.eduai.uikit.components.EduPrimaryButton
 import com.anurag.eduai.uikit.components.EduSecondaryButton
@@ -287,7 +286,7 @@ fun EduAvatarStudioScreen(
                             )
                     },
                     onUse = {
-                        TutorConfigStore.save(context, preset.config)
+                        // Persist only via host (Room/Firestore + TutorConfigStore under mutex).
                         onConfigPersisted(preset.config, preset.id)
                         character = preset.config.character
                         outfit = preset.config.outfit
@@ -313,7 +312,7 @@ fun EduAvatarStudioScreen(
               when {
                   sessionId == "save_custom" -> {
                       val config = currentDraftConfig()
-                      TutorConfigStore.save(context, config)
+                      // Persist only via host so Room/Firestore and SharedPrefs stay in sync.
                       onConfigPersisted(config, null)
                       feedback.claim()
                       saveErrorMessage = null

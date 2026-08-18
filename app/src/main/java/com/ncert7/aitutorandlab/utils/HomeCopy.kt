@@ -45,6 +45,14 @@ object HomeCopy {
     fun subjectsSectionTitle(languageCode: String): String =
         if (isKannadaLanguage(languageCode)) "ವಿಷಯಗಳು" else "Subjects"
 
+    /** Second line on a subject row, e.g. "14 chapters" / "1 chapter". */
+    fun chapterCount(languageCode: String, count: Int): String =
+        if (isKannadaLanguage(languageCode)) {
+            "$count ಅಧ್ಯಾಯ${if (count == 1) "" else "ಗಳು"}"
+        } else {
+            "$count chapter${if (count == 1) "" else "s"}"
+        }
+
     // —— Plan trail ——
     fun planSectionTitle(languageCode: String): String =
         if (isKannadaLanguage(languageCode)) "ನಿಮ್ಮ ಪರೀಕ್ಷಾ ತಯಾರಿ ಯೋಜನೆ" else "Your exam prep plan"

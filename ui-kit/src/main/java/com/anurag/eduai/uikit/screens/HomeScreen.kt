@@ -56,9 +56,7 @@ import com.anurag.eduai.uikit.components.FriendUpdate
 import com.anurag.eduai.uikit.components.FriendsInviteRail
 import com.anurag.eduai.uikit.components.FriendsUpdatesRail
 import com.anurag.eduai.uikit.components.EduIntroTourOverlay
-import com.anurag.eduai.uikit.components.HeroDoneCard
-import com.anurag.eduai.uikit.components.HeroFocusCard
-import com.anurag.eduai.uikit.components.HomeTutorBubble
+import com.anurag.eduai.uikit.components.HomeFocusStrip
 import com.anurag.eduai.uikit.components.PlanDayNode
 import com.anurag.eduai.uikit.components.PlanDayStatus
 import com.anurag.eduai.uikit.components.PlanDayType
@@ -282,41 +280,35 @@ fun EduHomeScreen(
         }
         } // end rail-0 bounds
 
+        // Tutor + today's focus in one compact strip (avatar · task · Start).
         Box(Modifier.fillMaxWidth().onGloballyPositioned { railBounds = railBounds + (1 to it.boundsInRoot()) }) {
-        Entrance(delayMillis = 80) {
-            if (state.todayDone) {
-                HeroDoneCard(
-                    eyebrow = "All done for today · +${state.heroXpEarned} XP earned",
-                    title = state.heroDoneTitle,
-                    subtitle = state.heroDoneSubtitle,
-                    buttonLabel = state.heroDoneButtonLabel,
-                    onActionClick = onStartToday,
-                    xpEarned = state.heroXpEarned,
-                )
-            } else {
-                HeroFocusCard(
-                    eyebrow = state.heroEyebrow,
-                    title = state.heroTitle,
-                    subtitle = state.heroSubtitle,
-                    buttonLabel = state.heroButtonLabel,
-                    onStartClick = onStartToday,
-                )
+            Entrance(delayMillis = 80) {
+                if (state.todayDone) {
+                    HomeFocusStrip(
+                        eyebrow = "",
+                        title = state.heroDoneTitle,
+                        subtitle = state.heroDoneSubtitle,
+                        buttonLabel = state.heroDoneButtonLabel,
+                        onStartClick = onStartToday,
+                        onTutorClick = onTutorClick,
+                        todayDone = true,
+                        xpEarned = state.heroXpEarned,
+                    )
+                } else {
+                    HomeFocusStrip(
+                        eyebrow = state.heroEyebrow,
+                        title = state.heroTitle,
+                        subtitle = state.heroSubtitle.ifBlank { state.tutorMessage },
+                        buttonLabel = state.heroButtonLabel,
+                        onStartClick = onStartToday,
+                        onTutorClick = onTutorClick,
+                    )
+                }
             }
-        }
-        } // end rail-1 bounds
-
-        Spacer(modifier = Modifier.height(18.dp))
-
-        Entrance(delayMillis = 130) {
-            HomeTutorBubble(
-                title = state.tutorTitle,
-                message = state.tutorMessage,
-                onClick = onTutorClick,
-            )
-        }
+        } // end rail-1 bounds (focus + tutor merged)
 
         // Subjects sits above the garden so browsing by subject is the first thing after
-        // the tutor greeting.
+        // the focus strip.
         Entrance(delayMillis = 150) {
             SubjectsRail(
                 title = state.subjectsSectionTitle,
@@ -326,8 +318,9 @@ fun EduHomeScreen(
             )
         }
 
+        // Space / garden colony — above video lessons.
         Box(Modifier.fillMaxWidth().onGloballyPositioned { railBounds = railBounds + (2 to it.boundsInRoot()) }) {
-        Entrance(delayMillis = 160) {
+        Entrance(delayMillis = 158) {
             when {
                 state.garden != null ->
                     GrowRail(
@@ -360,6 +353,11 @@ fun EduHomeScreen(
             }
         }
         } // end rail-2 bounds
+
+        // Video lessons (+ textbooks from the app slot) — below the colony.
+        Entrance(delayMillis = 165) {
+            belowSubjectsContent()
+        }
 
         Entrance(delayMillis = 220) {
             if (state.friendCount == 0 && state.friends.isEmpty()) {
@@ -418,12 +416,7 @@ fun EduHomeScreen(
             )
         }
 
-        // Video lessons.
-        Entrance(delayMillis = 560) {
-            belowSubjectsContent()
-        }
-
-        // Bookmarks moved below the video-lesson section.
+        // Bookmarks.
         Entrance(delayMillis = 640) {
             BookmarksRail(
                 bookmarks = state.bookmarks,

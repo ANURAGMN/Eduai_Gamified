@@ -23,7 +23,9 @@ enum class ScreenName(val displayName: String) {
     QUESTS("QUESTS"),
     FRIENDS("FRIENDS"),
     LEAGUES("LEAGUES"),
-    AVATAR("AVATAR")
+    AVATAR("AVATAR"),
+    REELS("REELS"),
+    REELS_PLAYER("REELS_PLAYER")
 
 }
 

@@ -41,17 +41,39 @@ fun YoutubeVideosSection(
     videos: List<YoutubeVideoItem>,
     onVideoClick: (YoutubeVideoItem) -> Unit,
     modifier: Modifier = Modifier,
+    seeAllLabel: String? = null,
+    onSeeAll: (() -> Unit)? = null,
 ) {
     if (videos.isEmpty()) return
     val colors = EduAiTheme.colors
     Column(modifier = modifier.fillMaxWidth().padding(top = 18.dp)) {
-        Text(
-            text = title,
-            color = colors.text,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(bottom = 10.dp),
-        )
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 10.dp),
+        ) {
+            Text(
+                text = title,
+                color = colors.text,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.align(Alignment.CenterStart),
+            )
+            if (onSeeAll != null && !seeAllLabel.isNullOrBlank()) {
+                Text(
+                    text = seeAllLabel,
+                    color = colors.accent,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier =
+                        Modifier
+                            .align(Alignment.CenterEnd)
+                            .pressScaleClickable(onClick = onSeeAll)
+                            .padding(vertical = 4.dp, horizontal = 2.dp),
+                )
+            }
+        }
         HorizontalRail {
             videos.forEach { video ->
                 RailCard(

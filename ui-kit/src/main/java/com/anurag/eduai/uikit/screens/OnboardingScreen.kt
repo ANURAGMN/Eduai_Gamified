@@ -13,6 +13,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -61,6 +65,10 @@ import com.anurag.eduai.uikit.garden.quest.ThemeScene
 import com.anurag.eduai.uikit.garden.quest.sceneAspect
 import com.anurag.eduai.uikit.garden.quest.starterZone
 import com.anurag.eduai.uikit.garden.world.rememberSceneTime
+import com.anurag.eduai.uikit.avatar.EduTutorAvatar
+import com.anurag.eduai.uikit.avatar.OnboardingTutorPresets
+import com.anurag.eduai.uikit.avatar.avatarFaceZoom
+import com.anurag.eduai.uikit.avatar.core.TutorCharacter
 import com.anurag.eduai.uikit.theme.EduAiTheme
 import com.anurag.eduai.uikit.theme.EduChipRole
 import com.anurag.eduai.uikit.theme.forRole
@@ -71,6 +79,8 @@ data class OnboardingResult(
     val chapter: String,
     /** "Garden" or "Space" — the reward world. */
     val world: String,
+    /** Chosen tutor avatar preset id (see AllAvatarPresets); empty if skipped. */
+    val avatarPresetId: String = "",
 )
 
 private data class OnboardingSlide(
@@ -90,11 +100,20 @@ private val defaultOnboardingChapters =
 private const val STAGE_SUBJECT = 0
 private const val STAGE_CHAPTER = 1
 private const val STAGE_WORLD = 2
+private const val STAGE_TUTOR = 3
+
+/** Tutor grid tiles — 30% shorter than a square. */
+private const val TUTOR_CHOICE_SIZE_SCALE = 0.70f
+
+/** Reward-world scene previews — a further 20% shorter than tutor scale. */
+private const val WORLD_CHOICE_SIZE_SCALE = TUTOR_CHOICE_SIZE_SCALE * 0.80f
+
+/** Face avatars in onboarding tutor cards — nudge down so hair sits inside the clip. */
+private const val ONBOARDING_TUTOR_FACE_OFFSET_Y = 0.17f
 
 /**
- * First-run onboarding — three intro slides, then three picks: subject → chapter → reward world.
- * Mirrors the approved prototype flow. Calls [onFinish] with the chosen subject, chapter and world
- * when the student taps "Build my plan".
+ * First-run onboarding — intro slides, then Subject → Chapter → World → Meet your tutor,
+ * finishing with "Build my plan". Calls [onFinish] with the chosen picks.
  */
 @Composable
 fun EduOnboardingScreen(
@@ -105,6 +124,7 @@ fun EduOnboardingScreen(
     onSubjectSelected: (String) -> Unit = {},
     onChapterSelected: (String) -> Unit = {},
     onWorldSelected: (String) -> Unit = {},
+    onAvatarSelected: (String) -> Unit = {},
     onFinish: (OnboardingResult) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -122,6 +142,7 @@ fun EduOnboardingScreen(
     var subject by rememberSaveable { mutableStateOf("") }
     var chapter by rememberSaveable { mutableStateOf("") }
     var world by rememberSaveable { mutableStateOf("") }
+    var tutor by rememberSaveable { mutableStateOf("") }
     val colors = EduAiTheme.colors
 
     LaunchedEffect(slide, pickStage) {
@@ -176,7 +197,7 @@ fun EduOnboardingScreen(
                             }
                         },
                     )
-                else ->
+                STAGE_WORLD ->
                     WorldStep(
                         copy = copy,
                         selected = world,
@@ -185,7 +206,20 @@ fun EduOnboardingScreen(
                         onBuild = {
                             if (world.isNotEmpty()) {
                                 onWorldSelected(world)
-                                onFinish(OnboardingResult(subject, chapter, world))
+                                pickStage = STAGE_TUTOR
+                            }
+                        },
+                    )
+                else ->
+                    TutorStep(
+                        copy = copy,
+                        selected = tutor,
+                        onSelect = { tutor = it },
+                        onBack = { pickStage = STAGE_WORLD },
+                        onBuild = {
+                            if (tutor.isNotEmpty()) {
+                                onAvatarSelected(tutor)
+                                onFinish(OnboardingResult(subject, chapter, world, tutor))
                             }
                         },
                     )
@@ -477,13 +511,13 @@ private fun ColumnScope.WorldStep(
     val time by rememberSceneTime(enabled = true)
     BackLink(copy.backChapter, onBack)
     StepLabel(copy.step3)
-    Text(copy.pickWorldTitle, color = colors.text, fontSize = 25.sp, fontWeight = FontWeight.Black)
-    Spacer(modifier = Modifier.height(6.dp))
-    Text(copy.pickWorldSub, color = colors.textSecondary, fontSize = 14.sp)
-    Spacer(modifier = Modifier.height(18.dp))
+    Text(copy.pickWorldTitle, color = colors.text, fontSize = 22.sp, fontWeight = FontWeight.Black)
+    Spacer(modifier = Modifier.height(4.dp))
+    Text(copy.pickWorldSub, color = colors.textSecondary, fontSize = 13.sp)
+    Spacer(modifier = Modifier.height(12.dp))
     Column(
         modifier = Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         copy.worlds.forEachIndexed { index, world ->
             val theme = worldTheme(world.key)
@@ -502,8 +536,153 @@ private fun ColumnScope.WorldStep(
             }
         }
     }
-    Spacer(modifier = Modifier.height(14.dp))
+    Spacer(modifier = Modifier.height(10.dp))
+    EduPrimaryButton(text = copy.continueLabel, onClick = onBuild, fillMaxWidth = true, enabled = selected.isNotEmpty())
+}
+
+/* ---------------- step 4 · tutor avatar ---------------- */
+
+@Composable
+private fun ColumnScope.TutorStep(
+    copy: OnboardingStrings,
+    selected: String,
+    onSelect: (String) -> Unit,
+    onBack: () -> Unit,
+    onBuild: () -> Unit,
+) {
+    val colors = EduAiTheme.colors
+    BackLink(copy.backWorld, onBack)
+    StepLabel(copy.step4)
+    Text(copy.pickTutorTitle, color = colors.text, fontSize = 22.sp, fontWeight = FontWeight.Black)
+    Spacer(modifier = Modifier.height(4.dp))
+    Text(copy.pickTutorSub, color = colors.textSecondary, fontSize = 13.sp)
+    Spacer(modifier = Modifier.height(12.dp))
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(2),
+        modifier = Modifier.fillMaxWidth().weight(1f),
+        horizontalArrangement = Arrangement.spacedBy(7.dp),
+        verticalArrangement = Arrangement.spacedBy(7.dp),
+    ) {
+        items(OnboardingTutorPresets, key = { it.id }) { preset ->
+            val c = preset.config
+            val isOrb = c.character == TutorCharacter.Orb
+            TutorCard(
+                name = preset.name,
+                tagline = preset.tagline,
+                selected = selected == preset.id,
+                // Orbs glow — show them on a dark frame so they're clearly visible; faces on light.
+                avatarBg = if (isOrb) Color(0xFF17263A) else colors.surface1,
+                avatar = {
+                    EduTutorAvatar(
+                        character = c.character,
+                        modifier =
+                            if (isOrb) {
+                                Modifier.fillMaxSize()
+                            } else {
+                                Modifier.fillMaxSize().avatarFaceZoom(1.9f, ONBOARDING_TUTOR_FACE_OFFSET_Y)
+                            },
+                        outfitVariant = c.outfit,
+                        hairStyle = c.hair,
+                        hairColor = c.hairColor,
+                        glassesStyle = c.glasses,
+                        glassesColor = c.frameColor,
+                        neckStyle = c.neck,
+                        underEyeLine = c.eyeLine,
+                        cheekShading = c.cheeks,
+                    )
+                },
+                onClick = { onSelect(preset.id) },
+            )
+        }
+    }
+    Spacer(modifier = Modifier.height(10.dp))
+    Text(
+        text = copy.surpriseMe,
+        color = colors.accent,
+        fontSize = 13.sp,
+        fontWeight = FontWeight.Medium,
+        modifier = Modifier
+            .align(Alignment.CenterHorizontally)
+            .pressScaleClickable(
+                onClick = { OnboardingTutorPresets.randomOrNull()?.let { onSelect(it.id) } },
+                pressedScale = 0.9f,
+            )
+            .padding(vertical = 4.dp),
+    )
+    Spacer(modifier = Modifier.height(6.dp))
     EduPrimaryButton(text = copy.buildPlan, onClick = onBuild, fillMaxWidth = true, enabled = selected.isNotEmpty())
+}
+
+@Composable
+private fun TutorCard(
+    name: String,
+    tagline: String,
+    selected: Boolean,
+    avatarBg: Color,
+    avatar: @Composable () -> Unit,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = EduAiTheme.colors
+    Box(modifier = modifier) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(colors.surface2)
+                    .border(
+                        width = if (selected) 2.dp else 1.dp,
+                        color = if (selected) colors.accent else colors.border,
+                        shape = RoundedCornerShape(12.dp),
+                    )
+                    .pressScaleClickable(onClick = onClick, pressedScale = 0.96f)
+                    .padding(8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            // 30% shorter than a square so eight tutors fit without heavy scrolling.
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(1f / TUTOR_CHOICE_SIZE_SCALE)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(avatarBg),
+                contentAlignment = Alignment.Center,
+            ) {
+                avatar()
+            }
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(name, color = colors.text, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+            Text(
+                tagline,
+                color = colors.textMuted,
+                fontSize = 10.sp,
+                lineHeight = 12.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(top = 1.dp),
+            )
+        }
+        if (selected) {
+            Box(
+                modifier =
+                    Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(6.dp)
+                        .size(20.dp)
+                        .clip(CircleShape)
+                        .background(colors.accent),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Check,
+                    contentDescription = null,
+                    tint = colors.onAccent,
+                    modifier = Modifier.size(13.dp),
+                )
+            }
+        }
+    }
 }
 
 @Composable
@@ -524,17 +703,17 @@ private fun WorldCard(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
+                .clip(RoundedCornerShape(12.dp))
                 .background(if (selected) bg else colors.surface2)
                 .border(
                     width = if (selected) 2.dp else 1.dp,
                     color = if (selected) fg else colors.border,
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(12.dp),
                 )
                 .pressScaleClickable(onClick = onClick, pressedScale = 0.98f)
-                .padding(10.dp),
+                .padding(7.dp),
     ) {
-        // The actual reward scene — garden woodland / Mars outpost — so the choice shows the art.
+        // Shorter scene band so Garden + Space both fit above Continue.
         ThemeScene(
             state = scene,
             theme = theme,
@@ -542,18 +721,18 @@ private fun WorldCard(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .aspectRatio(sceneAspect(theme))
-                    .clip(RoundedCornerShape(12.dp)),
+                    .aspectRatio(sceneAspect(theme) / WORLD_CHOICE_SIZE_SCALE)
+                    .clip(RoundedCornerShape(8.dp)),
             showPreview = true,
             cover = true,
         )
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(8.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(name.uppercase(), color = fg, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                Text(headline, color = colors.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(sub, color = colors.textSecondary, fontSize = 12.5.sp, lineHeight = 17.sp)
+                Text(name.uppercase(), color = fg, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                Text(headline, color = colors.text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(sub, color = colors.textSecondary, fontSize = 11.sp, lineHeight = 14.sp)
             }
             Spacer(modifier = Modifier.width(10.dp))
             Box(

@@ -68,6 +68,8 @@ fun MomentOverlay(
     onSecondary: () -> Unit = {},
     gems: Int = 0,
     xp: Int = 0,
+    xpLabel: String = "XP",
+    gemsLabel: String = "gems",
     illustration: (@Composable () -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
@@ -206,10 +208,10 @@ fun MomentOverlay(
                         Spacer(modifier = Modifier.height(18.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                             if (xp > 0) {
-                                RewardChip(value = xp, label = "XP", valueColor = colors.accent)
+                                RewardChip(value = xp, label = xpLabel, valueColor = colors.accent)
                             }
                             if (gems > 0) {
-                                RewardChip(value = gems, label = "gems", valueColor = colors.pro)
+                                RewardChip(value = gems, label = gemsLabel, valueColor = colors.pro)
                             }
                         }
                     }

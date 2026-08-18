@@ -35,12 +35,34 @@ class GardenMomentCoordinator @Inject constructor(
         _suppressGlobalHost.value = suppressed
     }
 
+    // Highest plant-total already surfaced. notifyPlanted is reached from several paths for one
+    // plant (Plan re-queue is called twice, plus the chapter-completion path), so ignore any total
+    // that was already celebrated. This is the single guard that kills the double pop-up AND the
+    // "shows again on the next screen" re-arm. Seed it from persisted state via [syncCelebratedTotal]
+    // so a plant shown before an app restart is not re-shown.
+    @Volatile
+    private var lastCelebratedTotal = -1
+
+    /** Seed the in-memory guard from the persisted `lastGardenCelebrationPlantTotal` (per student). */
+    fun syncCelebratedTotal(total: Int) {
+        if (total > lastCelebratedTotal) lastCelebratedTotal = total
+    }
+
+    @Synchronized
     fun notifyPlanted(
         planted: GrownItemEntity,
         progress: GardenProgress,
         placeCompleted: Boolean,
     ) {
         if (!GamificationFeatureFlags.isGardenEnabled(context)) return
+        if (progress.totalPlanted <= lastCelebratedTotal) {
+            android.util.Log.i(
+                "GardenPlant",
+                "notifyPlanted IGNORED total=${progress.totalPlanted} <= lastCelebrated=$lastCelebratedTotal",
+            )
+            return
+        }
+        lastCelebratedTotal = progress.totalPlanted
         android.util.Log.i(
             "GardenPlant",
             "notifyPlanted concept=${planted.conceptId} kind=${planted.kind} zone=${planted.zone} placeCompleted=$placeCompleted total=${progress.totalPlanted}",

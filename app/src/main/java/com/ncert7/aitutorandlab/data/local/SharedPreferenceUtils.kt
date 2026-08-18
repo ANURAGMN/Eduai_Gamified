@@ -79,6 +79,7 @@ class SharedPreferenceUtils(context: Context) : AppMigrationVersionStore {
         private const val KEY_ONBOARDING_SUBJECT = "onboarding_subject"
         private const val KEY_ONBOARDING_CHAPTER = "onboarding_chapter"
         private const val KEY_ONBOARDING_WORLD = "onboarding_world"
+        private const val KEY_ONBOARDING_AVATAR = "onboarding_avatar"
         private const val KEY_HOME_TOUR_COMPLETED = "home_tour_completed"
         private const val KEY_NAV_TOUR_COMPLETED = "nav_tour_completed"
         private const val KEY_STREAK_GREETING_DAY = "streak_greeting_day"
@@ -332,6 +333,7 @@ class SharedPreferenceUtils(context: Context) : AppMigrationVersionStore {
             remove(KEY_ONBOARDING_SUBJECT)
             remove(KEY_ONBOARDING_CHAPTER)
             remove(KEY_ONBOARDING_WORLD)
+            remove(KEY_ONBOARDING_AVATAR)
         }
     }
 
@@ -439,6 +441,7 @@ class SharedPreferenceUtils(context: Context) : AppMigrationVersionStore {
             remove(KEY_ONBOARDING_SUBJECT)
             remove(KEY_ONBOARDING_CHAPTER)
             remove(KEY_ONBOARDING_WORLD)
+            remove(KEY_ONBOARDING_AVATAR)
             putBoolean(KEY_HOME_TOUR_COMPLETED, false)
             putBoolean(KEY_NAV_TOUR_COMPLETED, false)
         }
@@ -577,6 +580,13 @@ class SharedPreferenceUtils(context: Context) : AppMigrationVersionStore {
 
     /** "Garden" or "Space" — the reward world the student picked at first run. */
     fun getOnboardingWorld(): String? = prefs.getString(KEY_ONBOARDING_WORLD, null)
+
+    /** Tutor avatar preset id chosen at first run (see AllAvatarPresets). */
+    fun setOnboardingAvatar(presetId: String) {
+        prefs.edit { putString(KEY_ONBOARDING_AVATAR, presetId) }
+    }
+
+    fun getOnboardingAvatar(): String? = prefs.getString(KEY_ONBOARDING_AVATAR, null)
 
     /** Whether the onboarding picks (subject selection + garden theme) have been applied once. */
     fun hasAppliedOnboardingPicks(): Boolean =

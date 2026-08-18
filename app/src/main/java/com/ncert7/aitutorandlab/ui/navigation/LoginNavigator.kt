@@ -23,7 +23,11 @@ import com.ncert7.aitutorandlab.ui.screens.login.UserDetailEntryScreen
 import com.ncert7.aitutorandlab.ui.screens.login.viewmodel.UserViewModel
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.collectAsState
+import com.anurag.eduai.uikit.avatar.AllAvatarPresets
+import com.anurag.eduai.uikit.avatar.AvatarUnlockStore
+import com.anurag.eduai.uikit.avatar.TutorConfigStore
 import com.anurag.eduai.uikit.screens.EduOnboardingScreen
+import com.ncert7.aitutorandlab.di.TutorConfigEntryPoint
 import com.ncert7.aitutorandlab.ui.screens.onboarding.OnboardingViewModel
 import com.ncert7.aitutorandlab.utils.getCurrentLanguageCode
 import com.ncert7.aitutorandlab.service.analytics.EngagementAnalyticsTracker
@@ -32,6 +36,7 @@ import com.ncert7.aitutorandlab.service.analytics.FunnelStep
 import com.ncert7.aitutorandlab.service.analytics.ScreenName
 import com.ncert7.aitutorandlab.service.analytics.TrackScreenEvent
 import com.ncert7.aitutorandlab.repository.FirebaseRepository
+import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -117,6 +122,9 @@ fun LoginNavigator() {
                         FunnelAnalyticsTracker.track(FunnelStep.ONBOARDING_WORLD_SELECTED)
                         EngagementAnalyticsTracker.onboardingWorldSelected(world)
                     },
+                    onAvatarSelected = { presetId ->
+                        EngagementAnalyticsTracker.onboardingAvatarSelected(presetId)
+                    },
                     onFinish = { result ->
                         FunnelAnalyticsTracker.track(FunnelStep.ONBOARDING_COMPLETE)
                         EngagementAnalyticsTracker.onboardingPicks(
@@ -129,6 +137,27 @@ fun LoginNavigator() {
                             chapter = result.chapter,
                             world = result.world,
                         )
+                        // Persist the chosen tutor look (free onboarding pick) so it renders everywhere
+                        // (Home mascot, top bar, moments) and shows as unlocked in Avatar studio.
+                        // Must go through TutorConfigRepository — store-only saves get overwritten by
+                        // ensureLoaded()'s default Scholar seed from Room.
+                        result.avatarPresetId.takeIf { it.isNotBlank() }?.let { presetId ->
+                            AvatarUnlockStore.unlock(context, presetId)
+                            sharedPreferenceUtils.setOnboardingAvatar(presetId)
+                            val userId = sharedPreferenceUtils.getUserId().orEmpty()
+                            val appCtx = context.applicationContext
+                            AllAvatarPresets.firstOrNull { it.id == presetId }?.let { preset ->
+                                TutorConfigStore.save(appCtx, preset.config)
+                            }
+                            CoroutineScope(Dispatchers.IO).launch {
+                                runCatching {
+                                    EntryPointAccessors
+                                        .fromApplication(appCtx, TutorConfigEntryPoint::class.java)
+                                        .tutorConfigRepository()
+                                        .applyPreset(appCtx, userId, presetId)
+                                }
+                            }
+                        }
                         val userId = sharedPreferenceUtils.getUserId().orEmpty()
                         if (userId.isNotBlank()) {
                             // Best-effort cloud mirror — local prefs already gate the UI.

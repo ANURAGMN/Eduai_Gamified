@@ -58,6 +58,11 @@ fun EduIntroTourOverlay(
     onBack: () -> Unit,
     onNext: () -> Unit,
     onSkip: () -> Unit,
+    skipLabel: String = "Skip",
+    backLabel: String = "Back",
+    nextLabel: String = "Next",
+    doneLabel: String = "Got it",
+    stepOfTotal: (Int, Int) -> String = { s, t -> "${s + 1} of $t" },
 ) {
     val colors = EduAiTheme.colors
     val targetInTopHalf = target != null && viewport != null && target.center.y < viewport.center.y
@@ -140,11 +145,16 @@ fun EduIntroTourOverlay(
                         .background(colors.accentBg)
                         .padding(horizontal = 8.dp, vertical = 3.dp),
                 ) {
-                    Text("${step + 1} of $total", color = colors.accent, fontSize = 11.sp, fontWeight = FontWeight.Medium)
+                    Text(
+                        stepOfTotal(step, total),
+                        color = colors.accent,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium,
+                    )
                 }
                 Spacer(Modifier.weight(1f))
                 Text(
-                    "Skip",
+                    skipLabel,
                     color = colors.textMuted, fontSize = 12.sp,
                     modifier = Modifier.clickable { onSkip() }.padding(4.dp),
                 )
@@ -168,7 +178,7 @@ fun EduIntroTourOverlay(
                 Spacer(Modifier.weight(1f))
                 if (step > 0) {
                     Text(
-                        "Back",
+                        backLabel,
                         color = colors.textMuted, fontSize = 13.sp, fontWeight = FontWeight.Medium,
                         modifier = Modifier.clickable { onBack() }.padding(horizontal = 10.dp, vertical = 8.dp),
                     )
@@ -182,7 +192,7 @@ fun EduIntroTourOverlay(
                         .padding(horizontal = 22.dp, vertical = 10.dp),
                 ) {
                     Text(
-                        if (step >= total - 1) "Got it" else "Next",
+                        if (step >= total - 1) doneLabel else nextLabel,
                         color = colors.onAccent, fontSize = 14.sp, fontWeight = FontWeight.Medium,
                     )
                 }

@@ -2,7 +2,6 @@ package com.ncert7.aitutorandlab.domain.examplan
 
 import com.ncert7.aitutorandlab.data.local.dao.PlanTrialItemDao
 import com.ncert7.aitutorandlab.data.local.entities.PlanTrialItemStatus
-import com.ncert7.aitutorandlab.domain.garden.GardenMomentCoordinator
 import com.ncert7.aitutorandlab.repository.GardenRepository
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -11,7 +10,6 @@ import javax.inject.Singleton
 class PlanTrialProgressTracker @Inject constructor(
     private val planTrialItemDao: PlanTrialItemDao,
     private val gardenRepository: GardenRepository,
-    private val gardenMomentCoordinator: GardenMomentCoordinator,
 ) {
     /** Whether the trial item is currently DONE (used to decide if a soft-proceed should skip celebration). */
     suspend fun isDone(trialItemId: Long): Boolean =
@@ -71,8 +69,10 @@ class PlanTrialProgressTracker @Inject constructor(
     }
 
     /**
-     * Adjusts the trial item's required bite count from the HTML click budget and returns
-     * the effective prompt/completion thresholds for this session.
+     * Syncs the trial item's required bite count to the fixed Plan goal ([SimulationTrialThresholds.DEFAULT_GOAL])
+     * and returns session thresholds. HTML click budget is logged/returned for coaching only — it does
+     * **not** lower [completionAt]. Existing items that still have requiredCount 2/7 are upgraded to 15
+     * the next time the sim opens.
      */
     suspend fun applyHtmlInteractionBudget(
         trialItemId: Long,
@@ -80,7 +80,8 @@ class PlanTrialProgressTracker @Inject constructor(
     ): SimulationTrialThresholds {
         val item = planTrialItemDao.getItemById(trialItemId)
             ?: return SimulationTrialThresholds.compute(htmlBudget)
-        val thresholds = SimulationTrialThresholds.compute(htmlBudget, item.requiredCount)
+        val thresholds =
+            SimulationTrialThresholds.compute(htmlBudget, SimulationTrialThresholds.DEFAULT_GOAL)
         if (thresholds.completionAt != item.requiredCount) {
             planTrialItemDao.updateRequiredCount(trialItemId, thresholds.completionAt)
             val refreshed = planTrialItemDao.getItemById(trialItemId)
@@ -96,6 +97,7 @@ class PlanTrialProgressTracker @Inject constructor(
 
     private suspend fun applyCount(itemId: Long, newCount: Int, requiredCount: Int) {
         val item = planTrialItemDao.getItemById(itemId) ?: return
+        val wasDone = item.status == PlanTrialItemStatus.DONE
         val status =
             if (newCount >= requiredCount) {
                 PlanTrialItemStatus.DONE
@@ -106,29 +108,22 @@ class PlanTrialProgressTracker @Inject constructor(
             itemId = itemId,
             status = status,
             completedCount = newCount.coerceAtMost(requiredCount),
-            celebrated = false,
+            // Keep celebrated sticky once set — re-syncing an already-DONE item must not re-arm
+            // the XP/garden celebration chain.
+            celebrated = if (wasDone) item.celebrated else false,
         )
-        // A Plan-trial task can reach DONE below the free-browsing engagement gate (e.g. complete@2),
-        // so the chapter-completion path (ProgressEventTracker) may never fire and no plant would
-        // grow. Grow it here too. recordCompletion is idempotent per concept+activity bucket, so this
-        // never double-plants when the chapter-completion path also runs later.
-        if (status == PlanTrialItemStatus.DONE) {
-            val planted =
-                gardenRepository.recordCompletion(
-                    studentId = item.studentId,
-                    conceptId = item.conceptId,
-                    chapterId = item.chapterId,
-                    kind = item.kind,
-                )
-            planted?.let { row ->
-                val progress = gardenRepository.getProgress(item.studentId) ?: return@let
-                val placeCompleted = progress.filledInZone >= progress.zoneCapacity
-                gardenMomentCoordinator.notifyPlanted(
-                    planted = row,
-                    progress = progress,
-                    placeCompleted = placeCompleted,
-                )
-            }
-        }
+        // Plant only on the transition into DONE. Re-applying the same DONE (flush on back,
+        // HTML budget refresh, soft-proceed) must not grow another plant or re-queue a moment.
+        if (status != PlanTrialItemStatus.DONE || wasDone) return
+
+        // Grow the row here (Plan trials can finish below the free-browse tap gate). Do NOT
+        // notifyPlanted — the global host would pop over the sim, then Plan would show it again
+        // via queueCelebrationForUnshownPlant. Plan owns the one celebration for trial plants.
+        gardenRepository.recordCompletion(
+            studentId = item.studentId,
+            conceptId = item.conceptId,
+            chapterId = item.chapterId,
+            kind = item.kind,
+        )
     }
 }

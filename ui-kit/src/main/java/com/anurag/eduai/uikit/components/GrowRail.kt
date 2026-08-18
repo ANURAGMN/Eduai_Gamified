@@ -29,6 +29,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -37,9 +38,12 @@ import androidx.compose.ui.unit.sp
 import com.anurag.eduai.uikit.garden.CollectionShelf
 import com.anurag.eduai.uikit.garden.CollectionShelfState
 import com.anurag.eduai.uikit.garden.BigGrowingItem
+import com.anurag.eduai.uikit.garden.quest.ColonyProgress
+import com.anurag.eduai.uikit.garden.quest.IslandProgress
 import com.anurag.eduai.uikit.garden.quest.SlotThumb
 import com.anurag.eduai.uikit.garden.quest.SurpriseThumb
 import com.anurag.eduai.uikit.garden.quest.Theme
+import com.anurag.eduai.uikit.garden.quest.STEPS_PER_TASK
 import com.anurag.eduai.uikit.garden.world.rememberSceneTime
 import com.anurag.eduai.uikit.theme.EduAiDimens
 import com.anurag.eduai.uikit.theme.EduAiTheme
@@ -68,6 +72,8 @@ data class GardenRailState(
     val slotPickerTitle: String = "",
     val surpriseLabel: String = "Surprise",
     val surprisePreview: (String) -> String = { name -> "You'll get a ${name.lowercase()}" },
+    /** Tasks finished — drives Island / Space-colony scene previews on the home rail. */
+    val totalPlanted: Int = 0,
     val collection: CollectionShelfState? = null,
 )
 
@@ -147,6 +153,13 @@ fun GrowRail(
         ) {
             val art = (maxWidth * 0.30f).coerceIn(88.dp, 168.dp)
             val band = (maxWidth * 0.42f).coerceIn(120.dp, 240.dp)
+            val artBg =
+                when (state.theme) {
+                    Theme.COLONY -> Color(0xFF2A1E18)
+                    Theme.OUTPOST -> Color(0xFF20263C)
+                    Theme.ISLAND -> Color(0xFFD7EFE3)
+                    Theme.GARDEN -> colors.successBg
+                }
 
             if (variant == GrowRailVariant.Compact) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -154,17 +167,9 @@ fun GrowRail(
                         Modifier
                             .size(art)
                             .clip(RoundedCornerShape(10.dp))
-                            .background(colors.successBg),
+                            .background(artBg),
                     ) {
-                        BigGrowingItem(
-                            theme = state.theme,
-                            currentZone = state.currentZone,
-                            slot = state.slot,
-                            steps = state.artSteps,
-                            stepsPerTask = state.stepsPerPlant,
-                            time = time,
-                            modifier = Modifier.fillMaxSize(),
-                        )
+                        GrowRailArt(state = state, time = time, modifier = Modifier.fillMaxSize())
                     }
                     Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) { GrowRailDetails(state, highlightPulse) }
@@ -176,17 +181,9 @@ fun GrowRail(
                             .fillMaxWidth()
                             .height(band)
                             .clip(RoundedCornerShape(10.dp))
-                            .background(colors.successBg),
+                            .background(artBg),
                     ) {
-                        BigGrowingItem(
-                            theme = state.theme,
-                            currentZone = state.currentZone,
-                            slot = state.slot,
-                            steps = state.artSteps,
-                            stepsPerTask = state.stepsPerPlant,
-                            time = time,
-                            modifier = Modifier.fillMaxSize(),
-                        )
+                        GrowRailArt(state = state, time = time, modifier = Modifier.fillMaxSize())
                     }
                     Spacer(Modifier.height(10.dp))
                     GrowRailDetails(state, highlightPulse)
@@ -201,6 +198,45 @@ fun GrowRail(
                 onOpenCollection = onOpenWorld,
             )
         }
+    }
+}
+
+@Composable
+private fun GrowRailArt(
+    state: GardenRailState,
+    time: Float,
+    modifier: Modifier = Modifier,
+) {
+    val partial =
+        (state.artSteps / state.stepsPerPlant.coerceAtLeast(1).toFloat())
+            .coerceIn(0f, 1f)
+    when (state.theme) {
+        Theme.ISLAND ->
+            IslandProgress(
+                finished = state.totalPlanted,
+                partial = partial,
+                modifier = modifier,
+                time = time,
+                cover = true,
+            )
+        Theme.COLONY ->
+            ColonyProgress(
+                finished = state.totalPlanted,
+                partial = partial,
+                modifier = modifier,
+                time = time,
+                cover = true,
+            )
+        Theme.GARDEN, Theme.OUTPOST ->
+            BigGrowingItem(
+                theme = state.theme,
+                currentZone = state.currentZone,
+                slot = state.slot,
+                steps = state.artSteps,
+                stepsPerTask = state.stepsPerPlant.coerceAtLeast(STEPS_PER_TASK),
+                time = time,
+                modifier = modifier,
+            )
     }
 }
 

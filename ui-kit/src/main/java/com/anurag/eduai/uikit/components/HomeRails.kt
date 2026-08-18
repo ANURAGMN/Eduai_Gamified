@@ -1,12 +1,13 @@
 package com.anurag.eduai.uikit.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -20,6 +21,7 @@ import androidx.compose.material.icons.outlined.Biotech
 import androidx.compose.material.icons.outlined.Bolt
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.Calculate
+import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.EmojiEvents
 import androidx.compose.material.icons.outlined.LocalFireDepartment
 import androidx.compose.material.icons.outlined.MenuBook
@@ -32,15 +34,21 @@ import androidx.compose.material.icons.outlined.SportsEsports
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.foundation.Canvas
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlin.math.roundToInt
 import com.anurag.eduai.uikit.avatar.SavedTutorAvatar
 import com.anurag.eduai.uikit.avatar.core.AvatarState
 import com.anurag.eduai.uikit.theme.EduAiDimens
@@ -83,6 +91,10 @@ data class SubjectTile(
     val subjectId: String = "",
     /** Optional remote icon (from the backend); falls back to a subject glyph when null. */
     val iconUrl: String? = null,
+    /** Second line on the row (e.g. "14 chapters"). Falls back to the rail's CTA label when null. */
+    val subtitle: String? = null,
+    /** Completion fraction 0f..1f (completed chapters / total). Null → no ring shown. */
+    val progress: Float? = null,
 )
 
 /**
@@ -365,6 +377,7 @@ fun SubjectsRail(
     subjects: List<SubjectTile>,
     onOpen: (SubjectTile) -> Unit = {},
     modifier: Modifier = Modifier,
+    ctaLabel: String = "Continue",
     // App fills this to render the live remote icon (ui-kit has no image loader). Default
     // is the built-in subject glyph.
     iconContent: @Composable (SubjectTile, Color) -> Unit = { subject, tint ->
@@ -372,7 +385,7 @@ fun SubjectsRail(
             imageVector = subjectMaterialIcon(subject.name),
             contentDescription = null,
             tint = tint,
-            modifier = Modifier.size(44.dp),
+            modifier = Modifier.size(30.dp),
         )
     },
 ) {
@@ -385,35 +398,127 @@ fun SubjectsRail(
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.padding(bottom = 10.dp),
         )
-        HorizontalRail {
-            subjects.forEach { subject ->
-                val (fg, bg) = colors.forRole(subject.role)
-                Column(
-                    modifier =
-                        Modifier
-                            .width(110.dp)
-                            .pressScaleClickable(onClick = { onOpen(subject) }, pressedScale = 0.94f),
-                ) {
-                    Box(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .aspectRatio(1f)
-                                .clip(RoundedCornerShape(18.dp))
-                                .background(bg),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        iconContent(subject, fg)
-                    }
-                    Text(
-                        text = subject.name,
-                        color = colors.text,
-                        fontSize = 12.sp,
-                        modifier = Modifier.padding(top = 6.dp),
-                    )
-                }
+        // Full-width list rows: icon chip · name + detail · chevron. Each row is one tap
+        // target → opens the subject's chapters. Role tint only on the icon chip so the
+        // card surface stays theme-safe (no white-on-white in dark mode).
+        subjects.forEachIndexed { index, subject ->
+            if (index > 0) Spacer(modifier = Modifier.height(10.dp))
+            SubjectRow(
+                subject = subject,
+                ctaLabel = ctaLabel,
+                onOpen = onOpen,
+                iconContent = iconContent,
+            )
+        }
+    }
+}
+
+@Composable
+private fun SubjectRow(
+    subject: SubjectTile,
+    ctaLabel: String,
+    onOpen: (SubjectTile) -> Unit,
+    iconContent: @Composable (SubjectTile, Color) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = EduAiTheme.colors
+    val (fg, bg) = colors.forRole(subject.role)
+    Row(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(14.dp))
+                .background(colors.surface2)
+                .border(1.dp, colors.border, RoundedCornerShape(14.dp))
+                .pressScaleClickable(onClick = { onOpen(subject) }, pressedScale = 0.98f)
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        // Role-tinted icon chip, glyph tinted with the role foreground.
+        Box(
+            modifier =
+                Modifier
+                    .size(44.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(bg),
+            contentAlignment = Alignment.Center,
+        ) {
+            iconContent(subject, fg)
+        }
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = subject.name,
+                color = colors.text,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = subject.subtitle ?: ctaLabel,
+                color = colors.textSecondary,
+                fontSize = 13.sp,
+                modifier = Modifier.padding(top = 1.dp),
+            )
+        }
+        subject.progress?.let { fraction ->
+            SubjectProgressRing(progress = fraction, color = fg)
+            Spacer(modifier = Modifier.width(10.dp))
+        }
+        Icon(
+            imageVector = Icons.Outlined.ChevronRight,
+            contentDescription = null,
+            tint = colors.textMuted,
+            modifier = Modifier.size(20.dp),
+        )
+    }
+}
+
+/** Compact completion ring with a centred percentage — trailing element on a subject row. */
+@Composable
+private fun SubjectProgressRing(
+    progress: Float,
+    color: Color,
+    modifier: Modifier = Modifier,
+) {
+    val colors = EduAiTheme.colors
+    val fraction = progress.coerceIn(0f, 1f)
+    val percent = (fraction * 100).roundToInt()
+    Box(
+        modifier = modifier.size(38.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val strokeWidth = 4.dp.toPx()
+            val inset = strokeWidth / 2f
+            val arcSize = Size(size.width - strokeWidth, size.height - strokeWidth)
+            val topLeft = Offset(inset, inset)
+            drawArc(
+                color = colors.border,
+                startAngle = -90f,
+                sweepAngle = 360f,
+                useCenter = false,
+                topLeft = topLeft,
+                size = arcSize,
+                style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
+            )
+            if (fraction > 0f) {
+                drawArc(
+                    color = color,
+                    startAngle = -90f,
+                    sweepAngle = 360f * fraction,
+                    useCenter = false,
+                    topLeft = topLeft,
+                    size = arcSize,
+                    style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
+                )
             }
         }
+        Text(
+            text = "$percent%",
+            color = colors.text,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.SemiBold,
+        )
     }
 }
 

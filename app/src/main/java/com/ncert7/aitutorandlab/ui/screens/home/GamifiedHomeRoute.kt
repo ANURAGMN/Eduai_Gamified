@@ -46,8 +46,10 @@ import com.anurag.eduai.uikit.screens.EduHomeScreen
 import com.anurag.eduai.uikit.theme.EduAiTheme
 import com.ncert7.aitutorandlab.R
 import com.ncert7.aitutorandlab.config.GamificationFeatureFlags
+import com.ncert7.aitutorandlab.config.ReelsFeatureFlags
 import com.ncert7.aitutorandlab.data.local.SharedPreferenceUtils
 import com.ncert7.aitutorandlab.domain.gamification.QuestClaimType
+import com.ncert7.aitutorandlab.utils.ReelsCopy
 import com.ncert7.aitutorandlab.service.analytics.ContentClickNavigation
 import com.ncert7.aitutorandlab.service.analytics.EngagementAnalyticsTracker
 import com.ncert7.aitutorandlab.service.analytics.FunnelAnalyticsTracker
@@ -111,6 +113,7 @@ fun GamifiedHomeRoute(
     onNavigateToLeagues: () -> Unit,
     onNavigateToFriends: () -> Unit,
     onNavigateToAvatar: () -> Unit = {},
+    onNavigateToReels: () -> Unit = {},
     onNavigateToRevision: (String) -> Unit,
     onLessonClick: (String) -> Unit,
     onNavigateToTrial: (Int) -> Unit,
@@ -144,6 +147,8 @@ fun GamifiedHomeRoute(
     val studentLoaded by viewModel.studentLoaded.collectAsState()
     val selectedSubjectName by viewModel.selectedSubjectName.collectAsState()
     val availableSubjects by viewModel.availableSubjects.collectAsState()
+    val chapterCounts by viewModel.chapterCounts.collectAsState()
+    val completedChapterCounts by viewModel.completedChapterCounts.collectAsState()
     val gamificationProfile by viewModel.gamificationProfile.collectAsState()
     val leagueRank by viewModel.leagueRank.collectAsState()
     val planDays by viewModel.planDays.collectAsState()
@@ -288,6 +293,8 @@ fun GamifiedHomeRoute(
             friendFeed,
             friendCount,
             availableSubjects,
+            chapterCounts,
+            completedChapterCounts,
             gardenEnabled,
             gardenProgress,
             gardenPlantedItems,
@@ -316,6 +323,8 @@ fun GamifiedHomeRoute(
                 friends = friendFeed,
                 friendCount = friendCount,
                 availableSubjects = availableSubjects,
+                chapterCountsBySubject = chapterCounts,
+                completedChapterCountsBySubject = completedChapterCounts,
                 gardenEnabled = gardenEnabled,
                 gardenProgress = gardenProgress,
                 gardenHighlightNewPlant = gardenHighlightNewPlant,
@@ -401,13 +410,19 @@ fun GamifiedHomeRoute(
         }
 
         Box(modifier = Modifier.fillMaxSize()) {
-        selectedYoutubeVideo?.let { video ->
-            YoutubePlayerDialog(
-                videoId = video.videoId,
-                title = video.title,
-                languageCode = currentLanguage,
-                onDismiss = { selectedYoutubeVideo = null },
-            )
+        // When Reels is on, Home taps go to the nocookie Reels player route (passed by parent).
+        // Legacy dialog stays for the flag-off path.
+        if (!ReelsFeatureFlags.isReelsEnabled()) {
+            selectedYoutubeVideo?.let { video ->
+                val startIndex =
+                    youtubeItems.indexOfFirst { it.videoId == video.videoId }.coerceAtLeast(0)
+                YoutubePlayerDialog(
+                    videos = youtubeItems.ifEmpty { listOf(video) },
+                    startIndex = startIndex,
+                    languageCode = currentLanguage,
+                    onDismiss = { selectedYoutubeVideo = null },
+                )
+            }
         }
         if (student == null && !studentLoaded) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -620,13 +635,31 @@ fun GamifiedHomeRoute(
                 },
                 belowSubjectsContent = {
                     Column {
-                        TextbookEntryCard(onClick = onOpenTextbooks)
-                        Spacer(modifier = Modifier.height(12.dp))
                         YoutubeVideosSection(
                             title = HomeCopy.youtubeSectionTitle(currentLanguage),
                             videos = youtubeItems,
-                            onVideoClick = { selectedYoutubeVideo = it },
+                            onVideoClick = { video ->
+                                if (ReelsFeatureFlags.isReelsEnabled()) {
+                                    onNavigateToRoute("reels_player/${video.videoId}")
+                                } else {
+                                    selectedYoutubeVideo = video
+                                }
+                            },
+                            seeAllLabel =
+                                if (ReelsFeatureFlags.isReelsEnabled()) {
+                                    ReelsCopy.seeAll(currentLanguage)
+                                } else {
+                                    null
+                                },
+                            onSeeAll =
+                                if (ReelsFeatureFlags.isReelsEnabled()) {
+                                    onNavigateToReels
+                                } else {
+                                    null
+                                },
                         )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        TextbookEntryCard(onClick = onOpenTextbooks)
                     }
                 },
             )

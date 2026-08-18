@@ -69,6 +69,15 @@ val AllAvatarPresets: List<AvatarPreset> =
         ),
     )
 
+/**
+ * Distinct-looking subset shown in the onboarding tutor picker. Drops visual duplicates:
+ * `quill` / `naturalist` read the same as `scholar` (outfit 1, hair 1, no glasses), and `pulse`
+ * is the identical Orb config as `nova`. Order is stable.
+ */
+val OnboardingTutorPresets: List<AvatarPreset> =
+    listOf("scholar", "nova", "ace", "sage", "spark", "inventor", "astronomer", "mathematician")
+        .mapNotNull { id -> AllAvatarPresets.firstOrNull { it.id == id } }
+
 private const val WEEK_MILLIS = 7L * 24 * 60 * 60 * 1000
 
 private fun epochWeek(now: Long): Int = (now / WEEK_MILLIS).toInt()

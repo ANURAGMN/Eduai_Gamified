@@ -366,3 +366,25 @@ fun IslandScene(
         }
     }
 }
+
+/**
+ * Single island tile (+ landmark/feature) for the home collection shelf.
+ * [cellIndex] is the order the tile was earned (0 = peak).
+ */
+@Composable
+fun IslandTileThumb(
+    cellIndex: Int,
+    modifier: Modifier = Modifier,
+) {
+    val cell = ISLAND_CELLS.getOrNull(cellIndex.coerceAtLeast(0)) ?: return
+    Canvas(modifier) {
+        val target = Offset(size.width / 2f, size.height * 0.68f)
+        val unit = (minOf(size.width, size.height) / 42f).coerceAtLeast(1.6f)
+        scale(unit, unit, pivot = target) {
+            translate(target.x - cell.x, target.y - cell.y) {
+                tile(cell)
+                feature(cell)
+            }
+        }
+    }
+}

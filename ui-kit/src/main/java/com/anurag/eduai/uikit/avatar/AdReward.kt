@@ -54,7 +54,7 @@ fun AdRewardOverlay(
     request: AdRewardRequest?,
     onComplete: (sessionId: String) -> Unit,
     onCancel: (sessionId: String) -> Unit,
-    totalAds: Int = 2,
+    totalAds: Int = 1,
     showRewardedAds: (suspend (sessionId: String, totalAds: Int, actionLabel: String) -> Boolean)? = null,
 ) {
     if (request == null) return

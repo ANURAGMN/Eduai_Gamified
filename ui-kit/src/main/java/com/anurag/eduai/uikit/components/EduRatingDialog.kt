@@ -37,6 +37,9 @@ import com.anurag.eduai.uikit.theme.EduAiTheme
  * Note on Play policy: this dialog is a *custom* sentiment step, and the "high → store" path should
  * deep-link to the store listing, NOT invoke the Play In-App Review API (whose guidelines forbid
  * gating on sentiment). The host wires that.
+ *
+ * The live Eduapp build currently uses Play In-App Review only ([AppRatingHost] note); this
+ * component remains for previews / future reuse and accepts [RatingDialogCopy] for EN/KN.
  */
 private const val HIGH_RATING = 4
 
@@ -46,6 +49,7 @@ fun EduRatingDialog(
     onRateOnPlay: () -> Unit,
     onSubmitFeedback: (stars: Int, message: String) -> Unit,
     onDismiss: () -> Unit,
+    copy: RatingDialogCopy = defaultRatingDialogCopy(),
     modifier: Modifier = Modifier,
 ) {
     val colors = EduAiTheme.colors
@@ -58,7 +62,7 @@ fun EduRatingDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                text = if (isLow) "Help us do better" else "Enjoying $appName?",
+                text = if (isLow) copy.titleHelpUs else copy.titleEnjoying(appName),
                 color = colors.text,
                 fontWeight = FontWeight.Bold,
             )
@@ -66,12 +70,7 @@ fun EduRatingDialog(
         text = {
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    text =
-                        if (isLow) {
-                            "Sorry it isn't a 5-star experience yet. Tell us what would make it better — this goes straight to the team."
-                        } else {
-                            "How would you rate your experience so far?"
-                        },
+                    text = if (isLow) copy.bodyFeedback else copy.bodyRate,
                     color = colors.textSecondary,
                     fontSize = 14.sp,
                     lineHeight = 20.sp,
@@ -82,7 +81,7 @@ fun EduRatingDialog(
                         val filled = i <= stars
                         Icon(
                             imageVector = if (filled) Icons.Filled.Star else Icons.Filled.StarBorder,
-                            contentDescription = "$i star",
+                            contentDescription = copy.starContentDescription(i),
                             tint = if (filled) colors.warning else colors.borderStrong,
                             modifier = Modifier
                                 .size(38.dp)
@@ -96,7 +95,7 @@ fun EduRatingDialog(
                     OutlinedTextField(
                         value = feedback,
                         onValueChange = { feedback = it },
-                        placeholder = { Text("What can we improve?") },
+                        placeholder = { Text(copy.feedbackPlaceholder) },
                         modifier = Modifier.fillMaxWidth().height(110.dp),
                     )
                 }
@@ -112,9 +111,9 @@ fun EduRatingDialog(
                 Text(
                     text =
                         when {
-                            stars == 0 -> "Rate"
-                            stars >= HIGH_RATING -> "Rate on Play Store"
-                            else -> "Send feedback"
+                            stars == 0 -> copy.rateLabel
+                            stars >= HIGH_RATING -> copy.rateOnPlayLabel
+                            else -> copy.sendFeedbackLabel
                         },
                     color = if (stars > 0) colors.accent else colors.textMuted,
                     fontWeight = FontWeight.SemiBold,
@@ -123,7 +122,7 @@ fun EduRatingDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Not now", color = colors.textMuted)
+                Text(copy.notNowLabel, color = colors.textMuted)
             }
         },
     )

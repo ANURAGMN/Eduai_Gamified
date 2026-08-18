@@ -2,7 +2,7 @@
 
 **App:** `com.ncert7.aitutorandlab` · **NCERT Class 7 AI Tutor & Labs**  
 **Last updated:** 2026-06-20  
-**Related:** [COMPLIANCE_BLOCKERS.md](store-listing/COMPLIANCE_BLOCKERS.md) · [PLAY_DATA_SAFETY.md](store-listing/PLAY_DATA_SAFETY.md)
+**Related:** [COMPLIANCE_BLOCKERS.md](store-listing/COMPLIANCE_BLOCKERS.md) · [PLAY_DATA_SAFETY.md](store-listing/PLAY_DATA_SAFETY.md) · [P1_PRODUCT_GAPS_DETAILED.md](P1_PRODUCT_GAPS_DETAILED.md) (Aug 2026 — detailed change specs for garden/onboarding/economy sync, analytics, Kannada; supersedes stale #7–16 notes where noted) · [P1_IMPLEMENTATION_REVIEW.md](P1_IMPLEMENTATION_REVIEW.md) (implementation handoff for review)
 
 Consolidated checklist for analytics gaps, Firestore sync, Play Console policy, and release QA. Items are ordered by recommended implementation priority.
 
@@ -34,21 +34,23 @@ Consolidated checklist for analytics gaps, Firestore sync, Play Console policy, 
 
 ## P1 — Analytics (new flows, GA4-only)
 
-**Routing:** All events via `FirebaseAnalyticsHelper` / `GamificationAnalyticsTracker`.  
+**Status (Aug 2026):** **Done in code** — see [P1_PRODUCT_GAPS_DETAILED.md](P1_PRODUCT_GAPS_DETAILED.md) §4. Remaining: DebugView smoke + optional name aliases if dashboards used checklist spellings.
+
+**Routing:** All events via `FirebaseAnalyticsHelper` / `GamificationAnalyticsTracker` / `EngagementAnalyticsTracker`.  
 **Mirror:** `AnalyticsFirestoreMirror.ENABLED = false` is intentional — GA4 is the system of record for high-frequency events.  
 **Compliance:** `allow_ad_personalization_signals=false` is already set in `FirebaseAnalyticsHelper`.
 
-| # | Event(s) | Where to wire |
-|---|----------|---------------|
-| 7 | `ScreenName.ONBOARDING` + screen view | `EduOnboardingScreen` / `LoginNavigator` |
-| 8 | `onboarding_start`, `onboarding_slide_view{index}`, `onboarding_skip`, `subject_selected{subject}`, `chapter_selected{chapter}`, `world_selected{Garden\|Space}`, `onboarding_complete` | Onboarding flow callbacks |
-| 9 | `home_tour_start`, `home_tour_step_view{0..2}`, `home_tour_skip`, `home_tour_complete` | `HomeScreen` intro tour (`showIntroTour` / `onIntroTourFinished`) |
-| 10 | `nav_walkthrough_step_view{plan\|avatar\|leagues\|home}`, `nav_walkthrough_skip`, `nav_walkthrough_complete` | `BottomNavBar` nav walkthrough |
-| 11 | `streak_greeting_shown`, `streak_greeting_continue`, `streak_extended_shown`, `streak_extended_done` | `GamifiedHomeRoute` streak overlays |
-| 12 | `primer_shown{variant, attempt}`, `primer_accepted`, `primer_declined`, `os_permission_result{granted\|denied}` | `NotificationPermissionGate` / dialog / permission callback |
-| 13 | `review_requested{trigger=first_task_return}`, optional `review_throttled` | `GamifiedHomeRoute` when `AppRatingGate.shouldRequestReview` passes |
-| 14 | `place_completed{zone}`, `next_place_offered{candidates}`, `next_place_picked{zone}`, `next_place_surprise` | `PlanTrialViewModel` / `GardenNextPlacePickerOverlay` |
-| 15 | Plan reward banner tap (e.g. `plan_reward_banner_tap`) | `PlanRewardBanner` in `PlanOverviewScreen` |
+| # | Event(s) | Status |
+|---|----------|--------|
+| 7 | `ScreenName.ONBOARDING` + screen view | Done (`LoginNavigator`) |
+| 8 | onboarding funnel + picks | Done (`onboarding_*` / funnel steps) |
+| 9 | home tour | Done (`home_tour_*`) |
+| 10 | nav walkthrough | Done (`nav_walkthrough_*`) |
+| 11 | streak UI celebrations | Done (`streak_greeting_*` / `streak_extended_*`) |
+| 12 | notification primer | Done (`notif_primer_*` / `notif_permission_result`) |
+| 13 | review | Done (`review_requested` / `review_throttled`) |
+| 14 | place picker | Done (`place_completed` / `next_place_*`) |
+| 15 | plan reward banner | Done (`plan_reward_banner_tap`) |
 
 ### Analytics notes
 
@@ -69,8 +71,8 @@ Consolidated checklist for analytics gaps, Firestore sync, Play Console policy, 
 
 | # | Data | Status | Action |
 |---|------|--------|--------|
-| 16 | **Garden** (`GardenStateEntity`, `GrownItemEntity`) | Local Room only | Add Firestore mirror under student doc (keyed by `AppConfig.APP_NAME`, same pattern as progress/streak). Hook `WeeklySyncWorker` + restore on login. **Highest user-visible impact** — lost garden after reinstall is a bad first impression. |
-| 17 | **Onboarding picks** (subject, chapter, world, `first_run_completed`) | SharedPreferences only | Persist to user profile in Firestore; hydrate on sign-in to avoid re-onboarding and wrong world on new device. |
+| 16 | **Garden** (`GardenStateEntity`, `GrownItemEntity`) | Hardened (Aug 2026) | Sync existed; Bug A pristine/`route` mismatch + Bug B race fixed; deferred upload on plant/theme; restore telemetry. See [P1_PRODUCT_GAPS_DETAILED.md](P1_PRODUCT_GAPS_DETAILED.md) §1. |
+| 17 | **Onboarding picks** (subject, chapter, world, `first_run_completed`) | In progress (Aug 2026) | Write/hydrate `users/{id}.onboarding`; clear prefs on logout. See P1 §2. |
 | 18 | **Exam plan + trial state** | Local Room only | Add sync if mid-prep device switch matters for v1. |
 | 19 | **Gamification profile / XP / gems / quests** | Local Room only (`isSynced` fields exist but no upload path) | Add sync post-garden if league/XP loss on reinstall is a concern. |
 

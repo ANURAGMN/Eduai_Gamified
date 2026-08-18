@@ -120,7 +120,7 @@ class PlanTrialMaterializer @Inject constructor(
                                 conceptName = concept.getLocalizedName(languageCode),
                             ),
                         sequenceIndex = sequence++,
-                        requiredCount = 7,
+                        requiredCount = SimulationTrialThresholds.DEFAULT_GOAL,
                     )
             }
 
@@ -395,7 +395,7 @@ class PlanTrialMaterializer @Inject constructor(
                 )
             block.forEach { sim ->
                 val url = resolvedSimulationUrl(sim, languageCode) ?: return@forEach
-                emit(sim, PlanTrialItemKind.SIM_URL, url, requiredCount = 7)
+                emit(sim, PlanTrialItemKind.SIM_URL, url, requiredCount = SimulationTrialThresholds.DEFAULT_GOAL)
             }
             val agentSourceId =
                 if (interleavedKind == PlanTrialItemKind.MATH) {
@@ -418,7 +418,7 @@ class PlanTrialMaterializer @Inject constructor(
             .filter { it.conceptId !in consumedSimIds }
             .forEach { sim ->
                 val url = resolvedSimulationUrl(sim, languageCode) ?: return@forEach
-                emit(sim, PlanTrialItemKind.SIM_URL, url, requiredCount = 7)
+                emit(sim, PlanTrialItemKind.SIM_URL, url, requiredCount = SimulationTrialThresholds.DEFAULT_GOAL)
             }
 
         // Agents with no remaining sim block — after the interleaved section.

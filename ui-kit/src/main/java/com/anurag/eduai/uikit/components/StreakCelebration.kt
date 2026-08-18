@@ -60,9 +60,11 @@ fun StreakCelebrationOverlay(
     name: String = "there",
     doneDays: Int = 0,
     todayIndex: Int = 0,
+    copy: StreakCopy = defaultStreakCopy(),
     onContinue: () -> Unit,
 ) {
     if (!visible) return
+    val displayName = name.ifBlank { copy.fallbackName }
     Box(
         Modifier
             .fillMaxSize()
@@ -80,16 +82,20 @@ fun StreakCelebrationOverlay(
             Flame(Modifier.size(118.dp))
             Spacer(Modifier.height(8.dp))
             Text("$streak", color = Color.White, fontSize = 62.sp, fontWeight = FontWeight.Medium)
-            Text("day streak", color = SoftText, fontSize = 15.sp)
+            Text(copy.dayStreakLabel, color = SoftText, fontSize = 15.sp)
             Spacer(Modifier.height(6.dp))
             Text(
-                "Good to see you, $name — keep it alive today.",
+                copy.greetingLine(displayName),
                 color = SoftText,
                 fontSize = 12.5.sp,
                 textAlign = TextAlign.Center,
             )
             Spacer(Modifier.height(24.dp))
-            WeekRow(doneDays = doneDays, todayIndex = todayIndex)
+            WeekRow(
+                doneDays = doneDays,
+                todayIndex = todayIndex,
+                weekdayLetters = copy.weekdayLetters,
+            )
             Spacer(Modifier.height(32.dp))
             Box(
                 Modifier
@@ -99,7 +105,9 @@ fun StreakCelebrationOverlay(
                     .clickable { onContinue() }
                     .padding(vertical = 14.dp),
                 contentAlignment = Alignment.Center,
-            ) { Text("Let's go", color = Ink, fontSize = 15.sp, fontWeight = FontWeight.Medium) }
+            ) {
+                Text(copy.continueLabel, color = Ink, fontSize = 15.sp, fontWeight = FontWeight.Medium)
+            }
         }
     }
 }
@@ -116,9 +124,11 @@ fun StreakExtendedOverlay(
     name: String = "there",
     doneDays: Int = 0,
     todayIndex: Int = 0,
+    copy: StreakCopy = defaultStreakCopy(),
     onDone: () -> Unit,
 ) {
     if (!visible) return
+    val displayName = name.ifBlank { copy.fallbackName }
     var trigger by remember { mutableIntStateOf(0) }
     LaunchedEffect(Unit) { trigger = 1 }
     Box(
@@ -137,19 +147,23 @@ fun StreakExtendedOverlay(
         ) {
             Flame(Modifier.size(140.dp))
             Spacer(Modifier.height(8.dp))
-            Text("Streak extended!", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Medium)
+            Text(copy.extendedTitle, color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Medium)
             Spacer(Modifier.height(4.dp))
             Text("$streak", color = Color.White, fontSize = 66.sp, fontWeight = FontWeight.Medium)
-            Text("day streak", color = SoftText, fontSize = 15.sp)
+            Text(copy.dayStreakLabel, color = SoftText, fontSize = 15.sp)
             Spacer(Modifier.height(6.dp))
             Text(
-                "+1 day — great work today, $name.",
+                copy.extendedLine(displayName),
                 color = SoftText,
                 fontSize = 12.5.sp,
                 textAlign = TextAlign.Center,
             )
             Spacer(Modifier.height(24.dp))
-            WeekRow(doneDays = doneDays, todayIndex = todayIndex)
+            WeekRow(
+                doneDays = doneDays,
+                todayIndex = todayIndex,
+                weekdayLetters = copy.weekdayLetters,
+            )
             Spacer(Modifier.height(32.dp))
             Box(
                 Modifier
@@ -159,7 +173,9 @@ fun StreakExtendedOverlay(
                     .clickable { onDone() }
                     .padding(vertical = 14.dp),
                 contentAlignment = Alignment.Center,
-            ) { Text("Awesome", color = Ink, fontSize = 15.sp, fontWeight = FontWeight.Medium) }
+            ) {
+                Text(copy.awesomeLabel, color = Ink, fontSize = 15.sp, fontWeight = FontWeight.Medium)
+            }
         }
         ConfettiBurst(trigger = trigger, theme = Theme.GARDEN, count = 44, modifier = Modifier.fillMaxSize())
     }
@@ -193,8 +209,13 @@ private fun Flame(modifier: Modifier) {
 }
 
 @Composable
-private fun WeekRow(doneDays: Int, todayIndex: Int) {
-    val labels = listOf("M", "T", "W", "T", "F", "S", "S")
+private fun WeekRow(
+    doneDays: Int,
+    todayIndex: Int,
+    weekdayLetters: List<String> = listOf("M", "T", "W", "T", "F", "S", "S"),
+) {
+    val labels =
+        if (weekdayLetters.size >= 7) weekdayLetters.take(7) else listOf("M", "T", "W", "T", "F", "S", "S")
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         labels.forEachIndexed { i, d ->
             val done = i < doneDays

@@ -47,8 +47,11 @@ import com.ncert7.aitutorandlab.ui.screens.chapterscreen.ChapterScreen
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.ChatbotScreen
 import com.ncert7.aitutorandlab.ui.screens.conceptscreen.ConceptScreen
 import com.ncert7.aitutorandlab.ui.screens.conceptscreen.components.ConceptSimulationViewer
+import com.ncert7.aitutorandlab.config.ReelsFeatureFlags
 import com.ncert7.aitutorandlab.ui.screens.friends.FriendsScreen
 import com.ncert7.aitutorandlab.ui.screens.garden.AvatarTabNavigation
+import com.ncert7.aitutorandlab.ui.screens.reels.ReelsExploreScreen
+import com.ncert7.aitutorandlab.ui.screens.reels.ReelsPlayerScreen
 import com.ncert7.aitutorandlab.ui.screens.home.GamifiedHomeRoute
 import com.ncert7.aitutorandlab.ui.screens.home.HomeScreen
 import com.ncert7.aitutorandlab.ui.screens.textbook.TextbookWebScreen
@@ -112,6 +115,22 @@ private fun BottomNavBarContent(
 ) {
     val context = LocalContext.current
     val isGamified = GamificationFeatureFlags.isGamifiedHomeEnabled(context)
+    // Reels replaces the Quests tab only when the feature flag is on; otherwise the bar is unchanged
+    // (Quests stays). When on, Quests is reachable from Settings instead.
+    val reelsEnabled = ReelsFeatureFlags.isReelsEnabled()
+    val reelsNavItems =
+        if (reelsEnabled) {
+            listOf(
+                EduBottomNavItem.Home,
+                EduBottomNavItem.Plan,
+                EduBottomNavItem.Reels,
+                EduBottomNavItem.Leagues,
+                EduBottomNavItem.Avatar,
+                EduBottomNavItem.Profile,
+            )
+        } else {
+            EduBottomNavItem.defaultBarItems
+        }
     val legacyItems = listOf(BottomNavItem.Home, BottomNavItem.Progress, BottomNavItem.Setting)
     val navController = rememberNavController()
     val scope = rememberCoroutineScope()
@@ -127,6 +146,8 @@ private fun BottomNavBarContent(
     var navTourDone by rememberSaveable { mutableStateOf(sharedPrefs.hasCompletedNavTour()) }
     var navTourStep by rememberSaveable { mutableIntStateOf(0) }
     var tourViewport by remember { mutableStateOf<Rect?>(null) }
+    // On-screen rect of each bottom-nav tab, for spotlighting a tab (e.g. Reels) in the nav tour.
+    var navTabBounds by remember { mutableStateOf<Map<EduBottomNavItem, Rect>>(emptyMap()) }
 
     val navigateToTrial: (Int) -> Unit = { dayIndex ->
         navController.navigate(PlanTrialNavigation.routeForDay(dayIndex))
@@ -191,10 +212,12 @@ private fun BottomNavBarContent(
                                     leagues = unseenFriendFeed > 0,
                                     profile = false,
                                 ),
+                            items = reelsNavItems,
                             onItemSelected = { item ->
                                 if (currentRoute == item.route) return@EduBottomNavBar
                                 navController.navigateToTab(item.route)
                             },
+                            onItemBounds = { item, rect -> navTabBounds = navTabBounds + (item to rect) },
                         )
                     }
                 } else {
@@ -276,6 +299,9 @@ private fun BottomNavBarContent(
                             navController.navigateToTab(EduBottomNavItem.Avatar.route)
                         },
                         onNavigateToFriends = { navController.navigate("friends") },
+                        onNavigateToReels = {
+                            navController.navigateToTab(EduBottomNavItem.Reels.route)
+                        },
                         onNavigateToRevision = { chapterId ->
                             navController.navigate("revision/$chapterId")
                         },
@@ -436,6 +462,19 @@ private fun BottomNavBarContent(
             composable(EduBottomNavItem.Leagues.route) {
                 LeaguesScreen(showBackNavigation = false)
             }
+            composable(EduBottomNavItem.Reels.route) {
+                ReelsExploreScreen(
+                    onPlay = { video -> navController.navigate("reels_player/${video.videoId}") },
+                    onBack = null,
+                )
+            }
+            composable(
+                route = "reels_player/{videoId}",
+                arguments = listOf(navArgument("videoId") { type = NavType.StringType }),
+            ) { backStackEntry ->
+                val videoId = backStackEntry.arguments?.getString("videoId").orEmpty()
+                ReelsPlayerScreen(videoId = videoId, onBack = { navController.popBackStack() })
+            }
             composable(EduBottomNavItem.Avatar.route) {
                 AvatarStudioRoute(showBackNavigation = false)
             }
@@ -449,6 +488,9 @@ private fun BottomNavBarContent(
                     },
                     onNavigateToProgress = {
                         navController.navigate(BottomNavItem.Progress.route)
+                    },
+                    onNavigateToQuests = {
+                        navController.navigate(EduBottomNavItem.Quests.route)
                     },
                 )
             }
@@ -817,7 +859,13 @@ private fun BottomNavBarContent(
     // returns home and enables the streak celebrations.
     val navTourActive = isGamified && homeRailTourDone && !navTourDone
     val navLanguage = getCurrentLanguageCode()
-    val navWalkthroughSteps = remember(navLanguage) { NavTourCopy.steps(navLanguage) }
+    val navWalkthroughSteps =
+        remember(navLanguage, reelsEnabled) {
+            NavTourCopy.steps(navLanguage).let { steps ->
+                if (reelsEnabled) steps
+                else steps.filterNot { it.route == EduBottomNavItem.Reels.route }
+            }
+        }
     val finishNavTour: (skipped: Boolean) -> Unit = { skipped ->
         if (skipped) {
             EngagementAnalyticsTracker.navWalkthroughSkip(navTourStep)
@@ -851,11 +899,14 @@ private fun BottomNavBarContent(
     if (navTourActive) {
         val stepData = navWalkthroughSteps.getOrNull(navTourStep)
         if (stepData != null) {
+            // Spotlight the Reels tab icon on its step; other steps stay screen-level (no spotlight).
+            val spotlightTarget =
+                if (stepData.route == EduBottomNavItem.Reels.route) navTabBounds[EduBottomNavItem.Reels] else null
             EduAiTheme {
                 EduIntroTourOverlay(
                     step = navTourStep,
                     total = navWalkthroughSteps.size,
-                    target = null, // screen-level walkthrough — describe the whole screen, no spotlight
+                    target = spotlightTarget,
                     viewport = tourViewport,
                     title = stepData.title,
                     body = stepData.body,

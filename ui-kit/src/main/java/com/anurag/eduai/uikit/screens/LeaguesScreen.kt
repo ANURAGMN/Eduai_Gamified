@@ -55,6 +55,7 @@ data class LeagueUiState(
 fun EduLeaguesScreen(
     state: LeagueUiState = LeagueUiState(),
     onParticipantClick: (LeagueParticipant) -> Unit = {},
+    copy: LeaguesCopy = defaultLeaguesCopy(),
     modifier: Modifier = Modifier,
 ) {
     val colors = EduAiTheme.colors
@@ -77,7 +78,7 @@ fun EduLeaguesScreen(
                 .padding(horizontal = 16.dp, vertical = 14.dp)
                 .padding(bottom = 48.dp),
     ) {
-        SectionHeader(title = "Leagues")
+        SectionHeader(title = copy.sectionTitle)
         LeagueHeroBanner(
             leagueName = state.leagueName,
             daysRemaining = state.daysRemaining,
@@ -85,6 +86,14 @@ fun EduLeaguesScreen(
             totalParticipants = total,
             promotionCount = state.promotionCount,
             promotionTargetName = state.promotionTargetName,
+            daysLeftLabel = copy.daysLeft(state.daysRemaining),
+            standingLine =
+                copy.standingLine(
+                    currentRank,
+                    total,
+                    state.promotionCount,
+                    state.promotionTargetName,
+                ),
         )
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -94,10 +103,9 @@ fun EduLeaguesScreen(
             if (zone != lastZone) {
                 val label =
                     when (zone) {
-                        LeagueZone.Promotion ->
-                            "Promotion zone · advances to ${state.promotionTargetName}"
-                        LeagueZone.Safe -> "Safe zone"
-                        LeagueZone.Demotion -> "Demotion zone"
+                        LeagueZone.Promotion -> copy.promotionZone(state.promotionTargetName)
+                        LeagueZone.Safe -> copy.safeZone
+                        LeagueZone.Demotion -> copy.demotionZone
                     }
                 val role =
                     when (zone) {
