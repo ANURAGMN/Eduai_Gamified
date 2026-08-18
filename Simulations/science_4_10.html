@@ -13,23 +13,35 @@
   //
   // IMPORTANT: that same early layout pass can report innerHeight as 0,
   // which would set --vh to 0px and collapse #app to nothing (a solid black
-  // screen) — so we guard against implausible readings and re-check a few
-  // times as the WebView finishes settling, rather than trusting the very
-  // first call.
+  // screen) — so we never write implausible readings, seed a sane fallback
+  // from screen metrics first, and re-check as the WebView settles.
+  function readViewportH(){
+    var vv = window.visualViewport && window.visualViewport.height;
+    var ih = window.innerHeight;
+    var ch = document.documentElement && document.documentElement.clientHeight;
+    var sh = (window.screen && (window.screen.availHeight || window.screen.height)) || 0;
+    return Math.max(vv || 0, ih || 0, ch || 0, sh > 200 ? sh : 0);
+  }
   function setRealVh(){
-    var h = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
-    if(h && h > 100){
+    var h = readViewportH();
+    // Prefer a live reading; otherwise keep / seed from screen so --vh is never 0.
+    if(!(h && h > 100)){
+      h = (window.screen && (window.screen.availHeight || window.screen.height)) || 640;
+    }
+    if(h > 100){
       document.documentElement.style.setProperty('--vh', (h * 0.01) + 'px');
     }
   }
   setRealVh();
   window.addEventListener('load', setRealVh);
   window.addEventListener('resize', setRealVh);
-  window.addEventListener('orientationchange', setRealVh);
+  window.addEventListener('orientationchange', function(){ setTimeout(setRealVh, 50); setTimeout(setRealVh, 300); });
   if(window.visualViewport){ window.visualViewport.addEventListener('resize', setRealVh); }
+  setTimeout(setRealVh, 50);
   setTimeout(setRealVh, 100);
   setTimeout(setRealVh, 400);
   setTimeout(setRealVh, 1000);
+  setTimeout(setRealVh, 2000);
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -50,9 +62,11 @@
     --disp:'Space Grotesk',sans-serif; --body:'Source Sans 3',sans-serif; --mono:'JetBrains Mono',monospace;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
-  html,body{height:100%; overflow-x:hidden;}
-  body{margin:0; font-family:var(--body); background:var(--ink); color:var(--ink); -webkit-font-smoothing:antialiased; overflow:hidden;}
-  #app{max-width:480px; width:100%; margin:0 auto; height:100vh; height:100dvh; height:calc(var(--vh, 1vh) * 100); min-height:320px; background:var(--paper); display:flex; flex-direction:column; position:relative; overflow:hidden;}
+  html,body{height:100%; min-height:100%; overflow-x:hidden;}
+  /* Paper body (not --ink): if #app ever collapses during WebView settle, we show light UI
+     chrome instead of a solid black screen. Letterboxing uses the same paper tone. */
+  body{margin:0; font-family:var(--body); background:var(--paper); color:var(--ink); -webkit-font-smoothing:antialiased; overflow:hidden;}
+  #app{max-width:480px; width:100%; margin:0 auto; height:100vh; height:100dvh; height:-webkit-fill-available; height:calc(var(--vh, 1vh) * 100); min-height:320px; min-height:-webkit-fill-available; background:var(--paper); display:flex; flex-direction:column; position:relative; overflow:hidden;}
 
   header{flex:0 0 auto; display:flex; align-items:center; gap:12px; padding:14px 16px 10px;}
   #closeBtn{border:none; background:none; font-size:20px; color:var(--ink-soft); cursor:pointer; line-height:1; padding:4px;}
