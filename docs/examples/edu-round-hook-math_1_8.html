@@ -1,0 +1,72 @@
+<!--
+  WORKED EXAMPLE — window.__eduRound hook for math_1_8 (Number System Compare Pitstop).
+
+  Paste this <script> block into the sim's HTML, just before </body>.
+  It publishes window.__eduRound for the V4 coach: glow the correct sign, and once the learner
+  picks a sign, glow the "Check Sign" button. Nothing else to wire.
+
+  Verified live against the real sim on 2026-08-08:
+    round "30 thousand vs 3 lakh"  ->  { line:'Tap "<"', glow:'button[data-v="<"]' }
+    after picking "<"              ->  submit = the "Check Sign" button (glows green)
+
+  Two ways to fill window.__eduRound:
+    (A) SIMPLEST — if your sim already has the correct answer in a variable, just set it in your
+        round-render function (see the 5-line version at the bottom). Preferred.
+    (B) SELF-CONTAINED — if you can't easily reach the sim's internals, the block below reads the two
+        displayed values and computes the sign itself. Drop-in, no other changes.
+-->
+
+<!-- (B) SELF-CONTAINED DROP-IN ------------------------------------------------------------------ -->
+<script>
+(function () {
+  var U = { thousand:1e3, lakh:1e5, lakhs:1e5, crore:1e7, crores:1e7, million:1e6, billion:1e9 };
+  function val(t) {
+    var m = (t || '').trim().match(/([\d.]+)\s*(thousand|lakhs?|crores?|million|billion)?/i);
+    if (!m) return NaN;
+    var u = (m[2] || '').toLowerCase();
+    return parseFloat(m[1]) * (u ? (U[u] || U[u.replace(/s$/, '')] || 1) : 1);
+  }
+  function publishCoach() {
+    var nums = document.querySelectorAll('.mission .num');
+    if (nums.length < 2) { window.__eduRound = null; return; }
+    var a = val(nums[0].innerText), b = val(nums[1].innerText);
+    var sign = a < b ? '<' : a > b ? '>' : '=';
+    var picked = !!document.querySelector('.choice.sel, .choice.selected, .choice.active');
+    var checkBtn = [].slice.call(document.querySelectorAll('button'))
+      .filter(function (x) { return /check|confirm/i.test(x.innerText || ''); })[0];
+    window.__eduRound = {
+      line:  sign === '=' ? 'They are equal — tap "="' : 'Tap "' + sign + '"',
+      voice: sign === '=' ? 'Equal' : 'Tap ' + sign,
+      glow:  'button[data-v="' + sign + '"]',           // amber: the sign to tap
+      submit: (picked && checkBtn) ? checkBtn : null,   // green: only after a sign is picked
+      key:   nums[0].innerText + '|' + nums[1].innerText // stable per round -> voice speaks once
+    };
+  }
+  // Re-publish on any interaction and on a light poll (covers round changes).
+  document.addEventListener('click', function () { setTimeout(publishCoach, 60); }, true);
+  setInterval(publishCoach, 400);
+  publishCoach();
+})();
+</script>
+
+<!--
+  (A) SIMPLEST VERSION — if your sim code already knows the answer.
+  Wherever you load/advance a round, you presumably compute the correct sign. Just add:
+
+      window.__eduRound = {
+        line:  'Tap "' + correctSign + '"',   // correctSign is your own variable: '<', '=', or '>'
+        voice: 'Tap ' + correctSign,
+        glow:  'button[data-v="' + correctSign + '"]',
+        submit: hasPicked ? '#checkSignBtn' : null,   // use your Check button's selector
+        key:   roundId                                // any value that changes once per round
+      };
+
+  And when you show the result, e.g.:
+
+      window.__eduRound = { line: isCorrect ? 'Correct!' : 'Not quite — it was "' + correctSign + '"',
+                            key: 'result-' + roundId };
+
+  That's the whole integration. The coach (V4) reads window.__eduRound on its own tick and renders
+  glow + on-screen line + voice from it, in sync. If window.__eduRound is absent, the coach falls back
+  to DOM scraping, so adopting this is safe and incremental.
+-->

@@ -1,0 +1,447 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maths Coach Simulator</title>
+<style>
+  :root{--brand:#5b6cff;--brand-d:#3f4fd6;--ink:#1c2333;--sub:#6b7385;--hint:#c9cede;
+    --card:#fff;--bg:#eef1f8;--ok:#2e9e6b;--wrong:#e2574c;--stuck:#e0972e;--line:#e6e9f2;--shadow:0 8px 26px rgba(30,40,90,.12);}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+  .wrap{max-width:1160px;margin:0 auto;padding:16px;display:grid;grid-template-columns:330px 1fr;gap:16px}
+  h1{font-size:18px;margin:2px 0 10px}
+  .muted{color:var(--sub);font-size:12.5px;line-height:1.5}
+  .panel{background:var(--card);border-radius:16px;box-shadow:var(--shadow);padding:16px}
+  .panel h2{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--sub);margin:0 0 10px}
+  .row{display:flex;gap:8px;flex-wrap:wrap}
+  .chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 12px;font-size:12.5px;cursor:pointer;font-weight:600;color:#3a4256}
+  .chip:hover{border-color:var(--brand)} .chip.on{background:var(--brand);border-color:var(--brand);color:#fff}
+  .seg{display:inline-flex;background:#eef1fb;border-radius:12px;padding:3px}
+  .seg button{border:0;background:transparent;padding:7px 13px;border-radius:10px;font-weight:700;font-size:12.5px;color:#5b6480;cursor:pointer}
+  .seg button.on{background:#fff;color:var(--brand-d);box-shadow:0 1px 4px rgba(0,0,0,.1)}
+  label.blk{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--sub);margin:14px 0 7px}
+  .device{background:var(--card);border-radius:22px;box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column;min-height:660px}
+  .dhead{background:linear-gradient(120deg,var(--brand),#7b6cff);color:#fff;padding:12px 14px;display:flex;align-items:center;gap:10px}
+  .dhead .t{font-weight:800;font-size:15px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .vpill{display:inline-flex;background:rgba(255,255,255,.18);border-radius:999px;padding:3px}
+  .vpill span{font-size:11px;font-weight:800;padding:4px 9px;border-radius:999px;cursor:pointer;color:#fff}
+  .vpill span.on{background:#fff;color:var(--brand-d)}
+  .stage{flex:1;background:#fbfcff;padding:16px;position:relative;overflow:auto}
+  .missionbar{font-size:12.5px;color:var(--sub);margin-bottom:12px} .missionbar b{color:var(--ink)}
+  .prompt{font-size:26px;font-weight:800;letter-spacing:.01em;margin:6px 0 14px}
+  .prompt small{font-size:14px;color:var(--sub);font-weight:600;display:block;margin-top:4px}
+  .grid{display:flex;flex-wrap:wrap;gap:10px}
+  .ctl{border:2px solid var(--line);background:#fff;border-radius:14px;padding:12px 14px;font-size:15px;font-weight:700;cursor:pointer;min-width:56px;text-align:center;transition:transform .08s}
+  .ctl:active{transform:scale(.95)} .ctl.wide{min-width:118px}
+  .ctl.act{background:var(--brand);color:#fff;border-color:var(--brand)}
+  .ctl.sel{outline:3px solid #ffd36b;outline-offset:2px}
+  .ctl.hl{border-color:var(--wrong);box-shadow:0 0 0 4px rgba(226,87,76,.18);animation:pulse 1.1s infinite}
+  .ctl.ok{border-color:var(--ok);box-shadow:0 0 0 4px rgba(46,158,107,.18)}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 4px rgba(226,87,76,.14)}50%{box-shadow:0 0 0 9px rgba(226,87,76,.05)}}
+  .boxes{display:flex;gap:8px;margin:2px 0 14px}
+  .box{width:52px;height:60px;border:2px dashed #c7cde0;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;background:#fff}
+  .box.f{border-style:solid;border-color:var(--brand)}
+  .readout{margin:12px 0 4px;font-size:15px;min-height:22px}
+  .cur{font-weight:800;color:var(--brand-d)}
+  .coach{border-top:1px solid var(--line);background:#fff;padding:12px 12px 14px}
+  .cbar{display:flex;gap:10px;align-items:flex-start;background:#f6f8ff;border-radius:16px;padding:12px}
+  .ava{width:44px;height:44px;border-radius:50%;flex:0 0 auto;background:radial-gradient(circle at 50% 38%,#ffe0b8,#ffcf9b);position:relative}
+  .ava:before{content:"";position:absolute;left:12px;top:16px;width:6px;height:6px;border-radius:50%;background:#3a2b1c;box-shadow:14px 0 0 #3a2b1c}
+  .ava .mouth{position:absolute;left:15px;bottom:11px;width:14px;height:3px;border-radius:0 0 8px 8px;background:#7a4a2c;transition:.09s}
+  .ava.talk .mouth{height:9px}
+  .cmsg{flex:1} .cmsg .mi{font-size:11px;color:var(--sub);font-weight:700;margin-bottom:2px} .cmsg .tx{font-size:14px;font-weight:600;line-height:1.45}
+  .tone-correct .tx{color:var(--ok)} .tone-wrong .tx{color:var(--wrong)} .tone-stuck .tx{color:var(--stuck)}
+  .cx{width:26px;height:26px;border-radius:50%;border:0;background:#eceffb;color:#8a90a4;cursor:pointer;font-size:15px}
+  .cactions{display:flex;align-items:center;gap:8px;margin-top:11px}
+  .btn{border:0;border-radius:999px;font-weight:800;font-size:12.5px;padding:8px 14px;cursor:pointer}
+  .btn.ghost{background:rgba(91,108,255,.12);color:var(--brand-d)} .btn.solid{background:var(--brand);color:#fff}
+  .spacer{flex:1} .prog{font-size:11.5px;color:var(--sub);font-weight:700}
+  .doneCard{position:absolute;inset:12px;background:rgba(255,255,255,.96);border-radius:16px;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;box-shadow:var(--shadow)}
+  .doneCard.show{display:flex} .doneCard h3{margin:0 0 6px}
+  .log{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;background:#0e1020;color:#c8d0ee;border-radius:12px;padding:10px;height:160px;overflow:auto;white-space:pre-wrap;line-height:1.5}
+  @media(max-width:900px){.wrap{grid-template-columns:1fr}}
+</style>
+
+<div class="wrap">
+  <div>
+    <h1>➗ Maths Coach Simulator</h1>
+    <p class="muted">The real Maths archetypes with working solvers, so the coach can <b>highlight the right move</b> and give <b>number-specific worked feedback</b>. Pick a use-case + persona, then <b>Auto-play</b>. Timers 3× faster.</p>
+    <div class="panel" style="margin-top:12px">
+      <h2>Use case</h2><div class="row" id="simPick"></div>
+      <label class="blk">Persona</label><div class="row" id="personaPick"></div>
+      <label class="blk">Coaching style</label>
+      <div class="seg" id="modePick">
+        <button data-m="SCRIPTED">V1</button><button data-m="ADAPTIVE">V2</button><button data-m="GUIDED" class="on">V3</button>
+      </div>
+      <label class="blk">Run</label>
+      <div class="row"><button class="chip on" id="autoBtn">▶ Auto-play</button><button class="chip" id="resetBtn">↺ Restart</button></div>
+      <p class="muted" id="personaNote" style="margin-top:12px"></p>
+    </div>
+    <div class="panel" style="margin-top:12px"><h2>Coach event log</h2><div class="log" id="log"></div></div>
+  </div>
+
+  <div class="device">
+    <div class="dhead"><span style="font-size:18px">‹</span><div class="t" id="simTitle">Maths</div>
+      <div class="vpill" id="vpill"><span data-m="SCRIPTED">V1</span><span data-m="ADAPTIVE">V2</span><span data-m="GUIDED" class="on">V3</span></div></div>
+    <div class="stage" id="stage">
+      <div class="missionbar" id="missionbar"></div>
+      <div id="simBody"></div>
+      <div class="doneCard" id="doneCard"><div style="font-size:40px">🎉</div><h3 id="doneTitle">Rounds complete!</h3>
+        <p class="muted" id="doneSub"></p><button class="btn solid" id="nextTopic" style="margin-top:10px">Next topic ›</button></div>
+    </div>
+    <div class="coach" id="coachWrap">
+      <div class="cbar" id="cbar"><div class="ava" id="ava"><div class="mouth"></div></div>
+        <div class="cmsg"><div class="mi" id="cmi"></div><div class="tx" id="ctx">Getting ready…</div></div>
+        <button class="cx" id="cclose" title="Close guide">✕</button></div>
+      <div class="cactions" id="cactions"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SPEED=3, NUDGE_MS=9000;   // ~real 10s idle before a gentle "ready?" nudge
+const DONE={
+  arrange:"You can build the largest or smallest number from any set of digits now! 🎯",
+  build:"You can build any large number with the fewest taps now! 🏗️",
+  round:"You can round to any place quickly and correctly now! 🎯",
+  compare:"You can compare large numbers with confidence now! ⚖️",
+};
+const rint=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+const shuffle=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[a[i],a[j]]=[a[j],a[i]];}return a;};
+const IN=n=>n.toLocaleString('en-IN');
+const placeName=p=>({1000:"thousand",100:"hundred",10:"ten"}[p]||p);
+
+/* ============================ MATHS USE CASES ============================
+   Each sim = a real playable game + solver. Hooks:
+     newRound(S)         set up a fresh problem
+     render(S)           HTML for the sim body
+     apply(S,id)->bool?  mutate state; return true/false if a VERDICT happened
+     nextMove(S)         control id to highlight while solving (or null)
+     explain(S,ok)       number-specific worked feedback
+========================================================================= */
+const SIMS={
+  /* 1_1 / 1_3 — arrange given digits to make the largest/smallest number */
+  arrange:{ title:"Largest / Smallest Builder", rounds:3, emoji:"🔢",
+    mission:S=>`Arrange the digits to make the <b>${S.goal==='max'?'LARGEST':'SMALLEST'}</b> number.`,
+    intro:"Place value decides a number's size: the leftmost box is worth the most.",
+    method:S=>`For the ${S.goal==='max'?'largest':'smallest'} number, put the ${S.goal==='max'?'biggest':'smallest'} digit in the leftmost box, then work across.`,
+    newRound(S){ S.pool=shuffle(Array.from({length:4},()=>rint(1,9))); S.goal=Math.random()<.5?'max':'min'; S.placed=[]; S.used=[]; },
+    solved(S){ return [...S.pool].sort((a,b)=>S.goal==='max'?b-a:a-b); },
+    prompt:S=>`Digits: ${S.pool.join('  ')}`,
+    render(S){
+      let h=`<div class="prompt">Digits: ${S.pool.map((d,i)=>`<span style="opacity:${S.used.includes(i)?.28:1}">${d}</span>`).join('&nbsp;&nbsp;')}<small>${S.goal==='max'?'Make the LARGEST':'Make the SMALLEST'} 4-digit number</small></div>`;
+      h+=`<div class="boxes">`+[0,1,2,3].map(i=>`<div class="box ${S.placed[i]!=null?'f':''}">${S.placed[i]!=null?S.placed[i]:''}</div>`).join('')+`</div>`;
+      const nxt=this.nextMove(S);
+      h+=`<div class="grid" style="margin-bottom:12px">`+S.pool.map((d,i)=>ctl('p'+i,String(d),(S.used.includes(i)?'':'')+(S.hl==='p'+i?'hl':''))).join('')+`</div>`;
+      h+=`<div class="grid">`+ctl('back','Backspace')+ctl('reset','Reset')+ctl('check','Check','act'+(S.hl==='check'?' hl':''))+`</div>`;
+      return h;
+    },
+    nextMove(S){ if(S.placed.length>=4) return 'check';
+      const want=this.solved(S)[S.placed.length];
+      let idx=S.pool.findIndex((d,i)=>d===want&&!S.used.includes(i)); return idx>=0?'p'+idx:'check'; },
+    apply(S,id){
+      if(id==='reset'){S.placed=[];S.used=[];return null;}
+      if(id==='back'){S.placed.pop();S.used.pop();return null;}
+      if(id==='check'){ if(S.placed.length<4){S._short=true;return null;} S.ans=this.solved(S).join(''); return S.placed.join('')===S.ans; }
+      if(/^p\d$/.test(id)){ const i=+id.slice(1); if(!S.used.includes(i)&&S.placed.length<4){S.placed.push(S.pool[i]);S.used.push(i);} return null; }
+      return null;
+    },
+    explain(S,ok){ const ans=this.solved(S).join('');
+      return ok ? `${S.placed.join('')} is the ${S.goal==='max'?'largest':'smallest'} — ${S.goal==='max'?'biggest':'smallest'} digits in the highest places.`
+                : `Not the ${S.goal==='max'?'largest':'smallest'} yet. From ${S.pool.join(',')} the ${S.goal==='max'?'largest':'smallest'} arrangement is ${ans} — ${S.goal==='max'?'biggest':'smallest'} digit on the left.`; },
+  },
+
+  /* 1_4 / 1_11 — build a target with place-value buttons (deterministic → we CAN highlight) */
+  build:{ title:"Build to Target", rounds:3, emoji:"🏗️",
+    btns:[100000,10000,1000],
+    mission:S=>`Build <b>${IN(S.target)}</b> using the place-value buttons — fewest taps.`,
+    intro:"Match each place value of the target with its button.",
+    method:S=>`Pick the biggest button that still fits, then work down.`,
+    newRound(S){ S.target=rint(1,9)*100000+rint(0,9)*10000+rint(0,9)*1000; S.cur=0; },
+    prompt:S=>`Target ${IN(S.target)}`,
+    render(S){
+      let h=`<div class="prompt">Target: ${IN(S.target)}<small>Current: <span class="cur">${IN(S.cur)}</span></small></div>`;
+      h+=`<div class="grid" style="margin-bottom:12px">`+this.btns.map(v=>ctl('b'+v,'+'+IN(v),(S.hl==='b'+v?'hl':''))).join('')+`</div>`;
+      h+=`<div class="grid">`+ctl('reset','Reset')+ctl('lock','Lock Build','act'+(S.hl==='lock'?' hl':''))+`</div>`;
+      return h;
+    },
+    nextMove(S){ if(S.cur===S.target) return 'lock'; const fit=this.btns.find(v=>S.cur+v<=S.target); return fit?'b'+fit:'reset'; },
+    onMove(S){ if(S.cur>S.target && !S._over){ S._over=true; return `That's over ${IN(S.target)} (you're at ${IN(S.cur)}). Tap Reset and use smaller buttons.`; } if(S.cur<=S.target) S._over=false; return null; },
+    apply(S,id){
+      if(id==='reset'){S.cur=0;S._over=false;return null;}
+      if(id==='lock'){ return S.cur===S.target; }
+      if(/^b\d+$/.test(id)){ S.cur+=+id.slice(1); return null; }
+      return null;
+    },
+    explain(S,ok){ return ok?`Built ${IN(S.target)} — biggest buttons first means fewest taps.`
+      : (S.cur>S.target?`You're over (${IN(S.cur)} > ${IN(S.target)}). Tap Reset and pick the biggest button that still fits.`
+                       :`You're at ${IN(S.cur)}, target ${IN(S.target)}. Add the biggest button that still fits (${IN(this.btns.find(v=>S.cur+v<=S.target)||0)}).`); },
+  },
+
+  /* 1_6 / 1_12 — round to nearest place (MCQ), worked feedback */
+  round:{ title:"Rounding Range", rounds:3, emoji:"🎯", mcq:true,
+    mission:S=>`Round <b>${IN(S.N)}</b> to the nearest <b>${placeName(S.place)}</b>.`,
+    intro:"Look at the digit just after the rounding place: 5 or more rounds up, less rounds down.",
+    method:S=>`Find the ${placeName(S.place)}s place, check the digit right after it, then round.`,
+    newRound(S){ S.place=[1000,100,10][rint(0,2)]; S.N=rint(12,987)*S.place+rint(1,S.place-1);
+      const ans=Math.round(S.N/S.place)*S.place;
+      S.opts=shuffle([ans, ans+S.place, ans-S.place, Math.floor(S.N/S.place)*S.place].filter((v,i,a)=>a.indexOf(v)===i&&v>0).slice(0,4)); S.chosen=null; S.ans=ans; },
+    prompt:S=>`Round ${IN(S.N)} to nearest ${placeName(S.place)}`,
+    render(S){
+      let h=`<div class="prompt">${IN(S.N)}<small>Round to the nearest ${placeName(S.place)}</small></div>`;
+      h+=`<div class="grid" style="margin-bottom:12px">`+S.opts.map(o=>ctl('o'+o,IN(o),'wide '+(S.chosen===o?'sel ':'')+(S.hl==='o'+o?'ok':''))).join('')+`</div>`;
+      h+=`<div class="grid">`+ctl('check','Check','act'+(S.hl==='check'?' hl':''))+`</div>`;
+      return h;
+    },
+    nextMove(S){ return null; },                 // MCQ: don't give the answer away by default
+    hintMove(S){ return 'o'+S.ans; },            // used only as a reteach after a wrong try
+    apply(S,id){ if(/^o/.test(id)){S.chosen=+id.slice(1);return null;} if(id==='check'){ if(S.chosen==null){S._short=true;return null;} return S.chosen===S.ans; } return null; },
+    explain(S,ok){ const after=Math.floor(S.N/(S.place/10))%10;
+      return ok?`Right — the digit after the ${placeName(S.place)}s place is ${after}, so ${IN(S.N)} rounds ${after>=5?'up':'down'} to ${IN(S.ans)}.`
+               :`Check the digit after the ${placeName(S.place)}s place: it's ${after}. ${after>=5?'5 or more rounds up':'Less than 5 rounds down'} — so ${IN(S.N)} rounds to ${IN(S.ans)}.`; },
+  },
+
+  /* 1_8 — compare two large numbers */
+  compare:{ title:"Compare Pitstop", rounds:3, emoji:"⚖️", mcq:true,
+    mission:S=>`Pick the sign that makes it true.`,
+    intro:"More digits means a bigger number. If the digit counts match, compare from the left.",
+    method:S=>`Count the digits first; more digits is bigger. Tie? Compare leftmost digits.`,
+    newRound(S){ const da=rint(4,6); S.A=rint(10**(da-1),10**da-1); const db=Math.random()<.4?da:rint(4,6);
+      S.B=rint(10**(db-1),10**db-1); if(S.A===S.B)S.B++; S.sign=null; S.truth=S.A<S.B?'<':S.A>S.B?'>':'='; },
+    prompt:S=>`Compare ${IN(S.A)} and ${IN(S.B)}`,
+    render(S){
+      let h=`<div class="prompt">${IN(S.A)} <span style="color:var(--brand)">${S.sign||'?'}</span> ${IN(S.B)}<small>Which sign is true?</small></div>`;
+      h+=`<div class="grid" style="margin-bottom:12px">`+['<','=','>'].map(s=>ctl('s'+s,s,(S.sign===s?'sel ':'')+(S.hl==='s'+s?'ok':''))).join('')+`</div>`;
+      h+=`<div class="grid">`+ctl('check','Check Sign','act'+(S.hl==='check'?' hl':''))+`</div>`;
+      return h;
+    },
+    nextMove(S){ return null; }, hintMove(S){ return 's'+S.truth; },
+    apply(S,id){ if(/^s/.test(id)){S.sign=id.slice(1);return null;} if(id==='check'){ if(!S.sign){S._short=true;return null;} return S.sign===S.truth; } return null; },
+    explain(S,ok){ const da=String(S.A).length, db=String(S.B).length;
+      return ok?`Correct — ${IN(S.A)} ${S.truth} ${IN(S.B)}. ${da!==db?'More digits means bigger':'Same digit count, so the leftmost digits decide it'}.`
+               :`Look again: ${IN(S.A)} has ${da} digits, ${IN(S.B)} has ${db}. ${da!==db?'More digits = bigger':'Same length — compare from the leftmost digit'}, so it's ${IN(S.A)} ${S.truth} ${IN(S.B)}.`; },
+  },
+};
+
+const PERSONAS={
+  eager:{name:"⚡ Eager Ellie",note:"Follows the highlighted move — the happy path."},
+  hesitant:{name:"🐢 Hesitant Hari",note:"Pauses, so you'll see the 10s ‘ready?’ nudges."},
+  struggler:{name:"😵 Struggling Sam",note:"Gets it wrong first — triggers the number-specific ‘why’."},
+};
+
+/* ============================ COACH ENGINE ============================ */
+let cur={sim:"arrange",persona:"eager",mode:"GUIDED"};
+let S={}, timers=[];
+function after(ms,fn){const t=setTimeout(fn,ms);timers.push(t);return t;}
+function clearTimers(){timers.forEach(clearTimeout);timers=[];}
+
+function reset(){
+  const sim=SIMS[cur.sim];
+  S={sim,mode:cur.mode,phase:"TEACH",teachIdx:0,pRound:0,observing:false,
+     msg:"",tone:"neutral",speaking:false,closed:false,done:false,hl:null,tries:0};
+  sim.newRound(S);
+  clearTimers();
+  logLine(`▶ ${sim.title} — ${cur.mode} — ${cur.persona}`);
+  renderAll(); startPhase();
+}
+
+/* teach steps: mission → method → "try it" (V1 also drills, V2 short, V3 full then practice) */
+function teachSteps(){
+  const sim=S.sim;
+  const full=[
+    {text:"Your mission: "+stripTags(sim.mission(S))},
+    {text:sim.intro+" "+sim.method(S)},
+  ];
+  if(S.mode==="ADAPTIVE") return full.slice(0,1);   // V2: briefest intro, then straight to practice
+  return full;
+}
+function startPhase(){ S.nudged=false;
+  if(S.phase==="TEACH") teachStep();
+  else if(S.phase==="PRACTICE") practiceStep();
+}
+function teachStep(){
+  const st=teachSteps()[S.teachIdx];
+  if(!st){ endTeach(); return; }
+  S.hl=null;
+  say(st.text,"neutral");
+  armNudge("Ready to move on? Tap Next to continue.");
+  renderAll();
+}
+function endTeach(){
+  if(S.mode==="SCRIPTED"){ conclude(); return; }
+  // Reuse the problem set up in reset() as Round 1, so the lesson and the first round match.
+  S.phase="PRACTICE"; S.pRound=0; startPhase();
+}
+function teachNext(){ S.teachIdx++; S.phase="TEACH"; startPhase(); }
+function teachBack(){ if(S.teachIdx>0){S.teachIdx--;S.phase="TEACH";startPhase();} }
+
+function practiceStep(){
+  S.tries=0; S._over=false; S.hl=S.sim.nextMove(S);
+  say(`Round ${S.pRound+1}: ${stripTags(S.sim.mission(S))} ${S.sim.mcq?"Read it, tap your answer, then Check.":"I'll highlight each move — build it, then tap Check."}`,"neutral");
+  armNudge(S.sim.nextMove(S) ? "Stuck? The glowing button is your next move." : "Take your time — tap your answer, then Check.");
+  renderAll();
+}
+
+/* a control was tapped in the sim — only meaningful during PRACTICE (teach is listen-only) */
+function controlTap(id){
+  if(S.closed||S.done||S.observing||S.phase!=="PRACTICE") return;   // block re-taps during feedback + during the lesson
+  disarmNudge(); S.nudged=false;
+  const verdict=S.sim.apply(S,id);
+  if(S._short){ S._short=false; say(S.sim.mcq?"Pick an answer first, then tap Check.":"Fill in all the boxes first, then tap Check.","stuck"); renderAll(); return; }
+  logLine(`👆 ${id}${verdict==null?'':' → '+(verdict?'CORRECT':'WRONG')}`);
+  if(verdict==null){
+    S.hl=S.sim.nextMove(S);
+    const note=S.sim.onMove&&S.sim.onMove(S); if(note) say(note,"stuck");   // e.g. instant overshoot warning
+    renderAll(); return;
+  }
+  onVerdict(verdict);
+}
+
+function onVerdict(ok){
+  const sim=S.sim; S.lastOk=ok;
+  if(ok){
+    S.pRound++;
+    say(sim.explain(S,true),"correct");
+    S.observing=true; S.hl=null; renderAll();
+    if(S.pRound>=sim.rounds) after(2600,()=>{ if(S.observing){S.observing=false;conclude();} });
+  } else {
+    say(sim.explain(S,false)+" Tap Continue to try this one again.","wrong");
+    S.hl = sim.hintMove ? sim.hintMove(S) : null;   // MCQ: briefly point at the right answer as a reteach
+    S.observing=true; renderAll();
+  }
+}
+function verdictContinue(){
+  S.observing=false; S.hl=null;
+  if(S.done){ renderAll(); return; }
+  if(S.lastOk){ S.sim.newRound(S); S._triedWrong=false; }   // correct → fresh problem next round
+  else { clearAttempt(); }                                   // wrong → retry the SAME problem
+  practiceStep(); renderAll();
+}
+function clearAttempt(){
+  if(S.sim.mcq){ S.chosen=null; S.sign=null; }
+  else if(cur.sim==='build'){ S.cur=0; }
+  else { S.placed=[]; S.used=[]; }
+}
+
+function conclude(){
+  S.done=true; disarmNudge();
+  say(DONE[cur.sim]||"Rounds complete — nicely done!","correct");
+  logLine("🏁 concluded");
+  document.getElementById('doneSub').textContent=`${S.pRound} rounds mastered.`;
+  document.getElementById('doneCard').classList.add('show'); renderAll();
+}
+
+/* speech + nudges */
+function say(t,tone="neutral"){ if(S.closed)return; S.msg=t;S.tone=tone;S.speaking=true;renderCoach();
+  logLine(`🗣 [${tone}] ${t}`); clearTimeout(S._talk); S._talk=setTimeout(()=>{S.speaking=false;renderCoach();},Math.min(4200,600+t.length*30)); }
+function armNudge(text){ disarmNudge(); if(!text)return; S._n=after(NUDGE_MS,()=>{ if(!S.done&&!S.closed) say(text,"stuck"); }); }
+function disarmNudge(){ clearTimeout(S._n); }
+
+/* ============================ RENDER ============================ */
+function renderAll(){ renderSim(); renderCoach(); renderActions(); }
+function renderSim(){
+  const sim=S.sim;
+  document.getElementById('simTitle').textContent=sim.title;
+  document.getElementById('missionbar').innerHTML=`🎯 <b>Mission:</b> ${sim.mission(S)}`;
+  const body=document.getElementById('simBody');
+  body.innerHTML=sim.render(S);
+  body.querySelectorAll('[data-ctl]').forEach(el=>el.onclick=()=>controlTap(el.dataset.ctl));
+}
+function renderCoach(){
+  document.getElementById('vpill').querySelectorAll('span').forEach(s=>s.classList.toggle('on',s.dataset.m===S.mode));
+  document.getElementById('cbar').className="cbar tone-"+S.tone;
+  document.getElementById('ava').classList.toggle('talk',S.speaking);
+  document.getElementById('cmi').textContent=missionLine();
+  document.getElementById('ctx').textContent=S.msg;
+  document.getElementById('coachWrap').style.opacity=S.closed?.35:1;
+}
+function missionLine(){
+  if(S.phase==="PRACTICE") return `Practice — round ${Math.min(S.pRound+(S.observing?0:1),S.sim.rounds)} of ${S.sim.rounds}`;
+  if(S.phase==="TEACH") return `Lesson — step ${S.teachIdx+1} of ${teachSteps().length}`;
+  return "";
+}
+function renderActions(){
+  const a=document.getElementById('cactions'); a.innerHTML="";
+  if(S.closed){ a.innerHTML=`<span class="prog">Guide closed — voice stopped.</span><span class="spacer"></span>`+B("Reopen","ghost","reopen"); wire(a); return; }
+  if(S.done){ a.innerHTML=`<span class="prog">Lesson complete ✓</span>`; return; }
+  const back=(S.phase==="TEACH"&&S.teachIdx>0);
+  let left=(back?B("‹ Back","ghost","back"):"")+B("↻ Replay","ghost","replay");
+  let right="";
+  if(S.phase==="TEACH"){
+    right = B(S.teachIdx>=teachSteps().length-1?"Start ›":"Next ›","solid","next");
+  } else if(S.phase==="PRACTICE"){
+    right = S.observing ? B("Continue ›","solid","cont")
+                        : `<span class="prog">👆 Solve it, then tap ${S.sim.mcq?'Check':'Check/Lock'}</span>`;
+  }
+  a.innerHTML=left+`<span class="spacer"></span>`+right; wire(a);
+}
+function B(l,k,act){return `<button class="btn ${k}" data-act="${act}">${l}</button>`;}
+function wire(sc){sc.querySelectorAll('[data-act]').forEach(el=>el.onclick=()=>action(el.dataset.act));}
+function action(a){
+  if(a==="back")teachBack(); else if(a==="replay")say(S.msg,S.tone);
+  else if(a==="next")teachNext(); else if(a==="cont")verdictContinue();
+  else if(a==="reopen"){S.closed=false;renderAll();}
+  renderActions();
+}
+function ctl(id,label,cls=""){return `<button class="ctl ${cls}" data-ctl="${id}">${label}</button>`;}
+document.getElementById('cclose').onclick=()=>{S.closed=true;disarmNudge();clearTimeout(S._talk);S.speaking=false;logLine("✕ guide cancelled — voice stopped");renderAll();};
+document.getElementById('nextTopic').onclick=()=>{logLine("➡ next topic");document.getElementById('doneCard').classList.remove('show');nextSim();};
+
+/* ============================ PERSONA AUTO-PLAY ============================ */
+let auto=false,aT=null;
+function toggleAuto(on){auto=on;const b=document.getElementById('autoBtn');b.classList.toggle('on',on);b.textContent=on?"⏸ Pause":"▶ Auto-play";clearTimeout(aT);if(on)loop();}
+function loop(){ if(!auto||S.done||S.closed)return; aT=setTimeout(()=>{act();loop();}, cur.persona==="hesitant"?2600:cur.persona==="eager"?800:1200); }
+function act(){
+  if(S.done||S.closed)return;
+  if(S.observing){ action("cont"); return; }
+  if(S.phase==="TEACH"){ action("next"); return; }
+  if(S.phase==="PRACTICE"){ return solveAuto(); }
+}
+function solveAuto(){
+  const sim=S.sim, p=cur.persona;
+  // struggler makes ONE wrong attempt per round first
+  const wrong = p==="struggler" && S.tries===0 && !S._triedWrong;
+  if(wrong){ S._triedWrong=true; return wrongAttempt(); }
+  S._triedWrong=false;
+  const mv=sim.nextMove(S);
+  if(mv==='check'||mv==='lock'){ controlTap(mv); return; }
+  if(mv){ controlTap(mv); return; }
+  // MCQ: pick the correct option then check
+  if(sim.mcq){ const good=sim.hintMove(S); controlTap(good); after(300,()=>controlTap('check')); }
+}
+function wrongAttempt(){
+  const sim=S.sim;
+  if(sim.mcq){ const opts=[...document.querySelectorAll('[data-ctl]')].map(e=>e.dataset.ctl).filter(x=>/^o|^s/.test(x));
+    const good=sim.hintMove(S); const bad=opts.find(o=>o!==good)||good; controlTap(bad); after(300,()=>controlTap('check')); return; }
+  if(cur.sim==='build'){ controlTap('reset'); controlTap('b1000'); controlTap('lock'); return; }
+  // arrange: place in wrong (reverse) order then check
+  controlTap('reset'); const order=[...S.pool].map((d,i)=>i).sort((a,b)=>S.goal==='max'?S.pool[a]-S.pool[b]:S.pool[b]-S.pool[a]);
+  order.forEach(i=>controlTap('p'+i)); controlTap('check');
+}
+
+/* ============================ SHELL ============================ */
+function buildPickers(){
+  const sp=document.getElementById('simPick');
+  sp.innerHTML=Object.entries(SIMS).map(([k,v])=>`<button class="chip ${k===cur.sim?'on':''}" data-sim="${k}">${v.emoji} ${v.title}</button>`).join('');
+  sp.querySelectorAll('[data-sim]').forEach(b=>b.onclick=()=>{cur.sim=b.dataset.sim;sync();reset();if(auto)loop();});
+  const pp=document.getElementById('personaPick');
+  pp.innerHTML=Object.entries(PERSONAS).map(([k,v])=>`<button class="chip ${k===cur.persona?'on':''}" data-p="${k}">${v.name}</button>`).join('');
+  pp.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{cur.persona=b.dataset.p;sync();note();});
+  const setM=m=>{cur.mode=m;sync();reset();if(auto)loop();};
+  document.querySelectorAll('#modePick button').forEach(b=>b.onclick=()=>setM(b.dataset.m));
+  document.getElementById('vpill').querySelectorAll('span').forEach(s=>s.onclick=()=>setM(s.dataset.m));
+}
+function sync(){
+  document.querySelectorAll('#simPick [data-sim]').forEach(b=>b.classList.toggle('on',b.dataset.sim===cur.sim));
+  document.querySelectorAll('#personaPick [data-p]').forEach(b=>b.classList.toggle('on',b.dataset.p===cur.persona));
+  document.querySelectorAll('#modePick button').forEach(b=>b.classList.toggle('on',b.dataset.m===cur.mode));
+}
+function note(){document.getElementById('personaNote').innerHTML=`<b>${PERSONAS[cur.persona].name}</b> — ${PERSONAS[cur.persona].note}`;}
+function nextSim(){const ks=Object.keys(SIMS);cur.sim=ks[(ks.indexOf(cur.sim)+1)%ks.length];sync();reset();if(auto)loop();}
+document.getElementById('autoBtn').onclick=()=>toggleAuto(!auto);
+document.getElementById('resetBtn').onclick=()=>{reset();if(auto)loop();};
+
+function stripTags(s){return s.replace(/<[^>]+>/g,'');}
+function logLine(t){const el=document.getElementById('log');el.textContent+=`[${new Date().toLocaleTimeString('en-GB')}] ${t}\n`;el.scrollTop=el.scrollHeight;}
+
+buildPickers();note();reset();
+</script>
