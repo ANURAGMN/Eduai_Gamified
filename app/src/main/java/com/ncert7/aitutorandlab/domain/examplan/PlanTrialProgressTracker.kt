@@ -1,7 +1,10 @@
 package com.ncert7.aitutorandlab.domain.examplan
 
 import com.ncert7.aitutorandlab.data.local.dao.PlanTrialItemDao
+import com.ncert7.aitutorandlab.data.local.entities.PlanTrialItemEntity
+import com.ncert7.aitutorandlab.data.local.entities.PlanTrialItemKind
 import com.ncert7.aitutorandlab.data.local.entities.PlanTrialItemStatus
+import com.ncert7.aitutorandlab.domain.progress.ProgressEventTracker
 import com.ncert7.aitutorandlab.repository.GardenRepository
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -10,6 +13,7 @@ import javax.inject.Singleton
 class PlanTrialProgressTracker @Inject constructor(
     private val planTrialItemDao: PlanTrialItemDao,
     private val gardenRepository: GardenRepository,
+    private val progressEventTracker: ProgressEventTracker,
 ) {
     /** Whether the trial item is currently DONE (used to decide if a soft-proceed should skip celebration). */
     suspend fun isDone(trialItemId: Long): Boolean =
@@ -125,5 +129,42 @@ class PlanTrialProgressTracker @Inject constructor(
             chapterId = item.chapterId,
             kind = item.kind,
         )
+        // Garden grows from the trial row; chapter/home % come from the progress table.
+        // Trial SIM_URL used to skip that write, so the chapter list stayed at 0 tasks.
+        creditConceptProgress(item)
+    }
+
+    /** Idempotent: write progress for trial rows already DONE (e.g. before this credit path existed). */
+    suspend fun creditAlreadyDoneItems(studentId: String) {
+        if (studentId.isBlank()) return
+        planTrialItemDao.getDoneItems(studentId).forEach { creditConceptProgress(it) }
+    }
+
+    private suspend fun creditConceptProgress(item: PlanTrialItemEntity) {
+        val conceptId = item.conceptId.takeIf { it.isNotBlank() } ?: return
+        val studentId = item.studentId.takeIf { it.isNotBlank() } ?: return
+        try {
+            when (item.kind) {
+                PlanTrialItemKind.SIM_URL ->
+                    progressEventTracker.markSimulationUrlCompleted(studentId, conceptId)
+                PlanTrialItemKind.SIM_AGENT ->
+                    progressEventTracker.markSimulationAgentCompleted(studentId, conceptId)
+                PlanTrialItemKind.STUDY ->
+                    progressEventTracker.markStudyCompleted(studentId, conceptId)
+                PlanTrialItemKind.MATH ->
+                    progressEventTracker.markMathAgentCompleted(studentId, conceptId)
+                PlanTrialItemKind.REVISION ->
+                    progressEventTracker.markRevisionCompleted(studentId, conceptId)
+            }
+            android.util.Log.i(
+                "TrialProgress",
+                "credited kind=${item.kind} concept=$conceptId chapter=${item.chapterId}",
+            )
+        } catch (e: Exception) {
+            android.util.Log.e(
+                "TrialProgress",
+                "credit failed kind=${item.kind} concept=$conceptId: ${e.message}",
+            )
+        }
     }
 }

@@ -263,7 +263,35 @@ ORDER BY ch.orderIndex ASC
         appName: String,
         completedStatus: String = "COMPLETED",
     ): List<SubjectChapterCount>
+
+    /**
+     * Sum of each chapter's overallPercentage per subject. Home rings use
+     * sum / (chapterCount * 100) so partial chapter progress moves the %.
+     */
+    @Query(
+        """
+        SELECT ch.subjectId AS subjectId,
+               CAST(COALESCE(SUM(cap.overallPercentage), 0) AS INTEGER) AS progressSum
+        FROM chapter_agent_progress cap
+        INNER JOIN chapters ch ON cap.chapterId = ch.chapterId
+        WHERE cap.studentId = :studentId
+          AND cap.language = :language
+          AND cap.appName = :appName
+        GROUP BY ch.subjectId
+        """
+    )
+    fun getChapterProgressSumsBySubjectFlow(
+        studentId: String,
+        language: String,
+        appName: String,
+    ): Flow<List<SubjectChapterProgressSum>>
 }
+
+/** Room projection: SUM(chapter overallPercentage) for a subject. */
+data class SubjectChapterProgressSum(
+    val subjectId: String,
+    val progressSum: Int,
+)
 
 /**
  * DTO for chapter progress summary display

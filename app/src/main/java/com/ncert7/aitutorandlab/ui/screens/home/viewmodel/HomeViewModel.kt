@@ -24,6 +24,7 @@ import com.ncert7.aitutorandlab.repository.ExamPlanRepository
 import com.ncert7.aitutorandlab.repository.FriendRepository
 import com.ncert7.aitutorandlab.repository.GamificationRepository
 import com.ncert7.aitutorandlab.repository.LeagueRepository
+import com.ncert7.aitutorandlab.domain.examplan.PlanTrialProgressTracker
 import com.ncert7.aitutorandlab.repository.PlanTrialRepository
 import com.ncert7.aitutorandlab.repository.QuestRepository
 import com.ncert7.aitutorandlab.repository.StreakRepository
@@ -86,6 +87,7 @@ class HomeViewModel @Inject constructor(
     private val friendFeedService: FriendFeedService,
     private val examPlanRepository: ExamPlanRepository,
     private val planTrialRepository: PlanTrialRepository,
+    private val planTrialProgressTracker: PlanTrialProgressTracker,
     private val questRepository: QuestRepository,
     private val questGemRewardService: QuestGemRewardService,
     private val sharedPrefs: SharedPreferenceUtils,
@@ -156,9 +158,9 @@ class HomeViewModel @Inject constructor(
     private val _chapterCounts = MutableStateFlow<Map<String, Int>>(emptyMap())
     val chapterCounts: StateFlow<Map<String, Int>> = _chapterCounts
 
-    /** Completed-chapter count per subjectId, for the Home subject-row progress ring. */
-    private val _completedChapterCounts = MutableStateFlow<Map<String, Int>>(emptyMap())
-    val completedChapterCounts: StateFlow<Map<String, Int>> = _completedChapterCounts
+    /** Sum of chapter overallPercentage per subjectId, for the Home subject-row progress ring. */
+    private val _chapterProgressSums = MutableStateFlow<Map<String, Int>>(emptyMap())
+    val chapterProgressSums: StateFlow<Map<String, Int>> = _chapterProgressSums
 
     private val _gamificationProfile = MutableStateFlow<GamificationProfileEntity?>(null)
     val gamificationProfile: StateFlow<GamificationProfileEntity?> = _gamificationProfile
@@ -283,7 +285,6 @@ class HomeViewModel @Inject constructor(
             val classLevel = _student.value?.classLevel ?: 7
             _availableSubjects.value =
                 subjectRepository.getSubjectsForClass(classLevel).sortedBy { it.orderIndex }
-            refreshCompletedChapterCounts()
         }
     }
 
@@ -293,7 +294,6 @@ class HomeViewModel @Inject constructor(
                 .collectLatest { classLevel ->
                     _availableSubjects.value =
                         subjectRepository.getSubjectsForClass(classLevel).sortedBy { it.orderIndex }
-                    refreshCompletedChapterCounts()
                 }
         }
     }
@@ -306,25 +306,36 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             chapterDao.getChapterCountsBySubjectFlow().collectLatest { rows ->
                 _chapterCounts.value = rows.associate { it.subjectId to it.chapterCount }
-                // Chapters just changed — refresh completed counts so the ring stays in sync.
-                refreshCompletedChapterCounts()
             }
         }
     }
 
-    /** Completed-chapter count per subject for the progress ring. Best-effort one-shot. */
-    private suspend fun refreshCompletedChapterCounts() {
-        val id = userId.takeIf { it.isNotBlank() } ?: return
-        runCatching {
-            chapterAgentProgressDao.getCompletedChapterCountsBySubject(
-                studentId = id,
-                language = _currentLanguage.value,
-                appName = AppConfig.APP_NAME,
-            )
+    /**
+     * Live chapter overall-% sums per subject. Re-emits when a trial/study completion
+     * writes chapter_agent_progress, so the Home ring moves without a restart.
+     */
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    private fun observeChapterProgressSums() {
+        viewModelScope.launch {
+            combine(_student, _currentLanguage) { student, lang ->
+                val id = student?.studentId?.takeIf { it.isNotBlank() } ?: userId
+                id to lang
+            }.distinctUntilChanged()
+                .flatMapLatest { (id, lang) ->
+                    if (id.isBlank()) {
+                        flowOf(emptyList())
+                    } else {
+                        chapterAgentProgressDao.getChapterProgressSumsBySubjectFlow(
+                            studentId = id,
+                            language = lang,
+                            appName = AppConfig.APP_NAME,
+                        )
+                    }
+                }
+                .collectLatest { rows ->
+                    _chapterProgressSums.value = rows.associate { it.subjectId to it.progressSum }
+                }
         }
-            .getOrNull()
-            ?.associate { it.subjectId to it.chapterCount }
-            ?.let { _completedChapterCounts.value = it }
     }
 
     val startOfDay = LocalDate.now()
@@ -350,10 +361,12 @@ class HomeViewModel @Inject constructor(
         observeSelectedSubjectName()
         observeAvailableSubjects()
         observeChapterCounts()
+        observeChapterProgressSums()
         observeGamificationProfile()
         observeLeagueRank()
         observeExamPlan()
         observeTodayTrialItems()
+        backfillTrialChapterProgress()
         observeDailyQuests()
         observeFriendFeed()
         loadYoutubeVideos()
@@ -758,6 +771,13 @@ class HomeViewModel @Inject constructor(
             val result = questGemRewardService.claimWithRewardedAd(activity, userId, claimType)
             refreshRewardedAdState()
             onResult(result)
+        }
+    }
+
+    private fun backfillTrialChapterProgress() {
+        viewModelScope.launch {
+            val id = userId.takeIf { it.isNotBlank() } ?: return@launch
+            planTrialProgressTracker.creditAlreadyDoneItems(id)
         }
     }
 

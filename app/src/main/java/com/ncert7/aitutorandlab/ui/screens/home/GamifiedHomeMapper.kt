@@ -96,7 +96,7 @@ object GamifiedHomeMapper {
         friendCount: Int = 0,
         availableSubjects: List<SubjectEntity> = emptyList(),
         chapterCountsBySubject: Map<String, Int> = emptyMap(),
-        completedChapterCountsBySubject: Map<String, Int> = emptyMap(),
+        chapterProgressSumsBySubject: Map<String, Int> = emptyMap(),
         gardenEnabled: Boolean = false,
         gardenProgress: GardenProgress? = null,
         gardenHighlightNewPlant: Boolean = false,
@@ -197,7 +197,7 @@ object GamifiedHomeMapper {
                 bookmarks = mapBookmarks(progressConcepts, progressSimulations, languageCode),
                 revision = mapRevision(progressConcepts, languageCode),
                 subjectsSectionTitle = HomeCopy.subjectsSectionTitle(languageCode),
-                subjects = mapSubjectTiles(availableSubjects, chapterCountsBySubject, completedChapterCountsBySubject, languageCode, selectedSubjectName, selectedSubjectId),
+                subjects = mapSubjectTiles(availableSubjects, chapterCountsBySubject, chapterProgressSumsBySubject, languageCode, selectedSubjectName, selectedSubjectId),
                 tutorTitle = HomeCopy.tutorTitle(languageCode),
                 tutorMessage = HomeCopy.tutorMessage(languageCode),
                 garden = gardenRail,
@@ -829,7 +829,7 @@ object GamifiedHomeMapper {
     private fun mapSubjectTiles(
         availableSubjects: List<SubjectEntity>,
         chapterCountsBySubject: Map<String, Int>,
-        completedChapterCountsBySubject: Map<String, Int>,
+        chapterProgressSumsBySubject: Map<String, Int>,
         languageCode: String,
         selectedSubjectName: String,
         selectedSubjectId: String,
@@ -843,11 +843,11 @@ object GamifiedHomeMapper {
                     subjectId = subject.subjectId,
                     iconUrl = resolveSubjectIconUrl(subject.subjectId, name, subject.iconUrl),
                     subtitle = subjectSubtitle(subject.subjectId, chapterCountsBySubject, languageCode),
-                    progress = subjectProgress(subject.subjectId, chapterCountsBySubject, completedChapterCountsBySubject),
+                    progress = subjectProgress(subject.subjectId, chapterCountsBySubject, chapterProgressSumsBySubject),
                 )
             }
         }
-        return defaultSubjectTiles(languageCode, chapterCountsBySubject, completedChapterCountsBySubject)
+        return defaultSubjectTiles(languageCode, chapterCountsBySubject, chapterProgressSumsBySubject)
     }
 
     /** "N chapters" for a subject, or null when the count is unknown/zero. */
@@ -859,22 +859,22 @@ object GamifiedHomeMapper {
         chapterCountsBySubject[subjectId]?.takeIf { it > 0 }
             ?.let { HomeCopy.chapterCount(languageCode, it) }
 
-    /** Completed chapters / total (0f..1f), or null when the subject has no chapters yet. */
+    /** Average chapter overall % (0f..1f), or null when the subject has no chapters yet. */
     private fun subjectProgress(
         subjectId: String,
         chapterCountsBySubject: Map<String, Int>,
-        completedChapterCountsBySubject: Map<String, Int>,
+        chapterProgressSumsBySubject: Map<String, Int>,
     ): Float? {
         val total = chapterCountsBySubject[subjectId] ?: 0
         if (total <= 0) return null
-        val completed = completedChapterCountsBySubject[subjectId] ?: 0
-        return (completed.toFloat() / total).coerceIn(0f, 1f)
+        val sum = chapterProgressSumsBySubject[subjectId] ?: 0
+        return (sum.toFloat() / (total * 100f)).coerceIn(0f, 1f)
     }
 
     private fun defaultSubjectTiles(
         languageCode: String,
         chapterCountsBySubject: Map<String, Int> = emptyMap(),
-        completedChapterCountsBySubject: Map<String, Int> = emptyMap(),
+        chapterProgressSumsBySubject: Map<String, Int> = emptyMap(),
     ): List<SubjectTile> {
         val kannada = isKannadaLanguage(languageCode)
         return listOf(
@@ -884,7 +884,7 @@ object GamifiedHomeMapper {
                 subjectId = SubjectIds.MATH,
                 iconUrl = SubjectIconUrls.MATH,
                 subtitle = subjectSubtitle(SubjectIds.MATH, chapterCountsBySubject, languageCode),
-                progress = subjectProgress(SubjectIds.MATH, chapterCountsBySubject, completedChapterCountsBySubject),
+                progress = subjectProgress(SubjectIds.MATH, chapterCountsBySubject, chapterProgressSumsBySubject),
             ),
             SubjectTile(
                 name = if (kannada) "ವಿಜ್ಞಾನ" else "Science",
@@ -892,7 +892,7 @@ object GamifiedHomeMapper {
                 subjectId = SubjectIds.SCIENCE,
                 iconUrl = SubjectIconUrls.SCIENCE,
                 subtitle = subjectSubtitle(SubjectIds.SCIENCE, chapterCountsBySubject, languageCode),
-                progress = subjectProgress(SubjectIds.SCIENCE, chapterCountsBySubject, completedChapterCountsBySubject),
+                progress = subjectProgress(SubjectIds.SCIENCE, chapterCountsBySubject, chapterProgressSumsBySubject),
             ),
         )
     }

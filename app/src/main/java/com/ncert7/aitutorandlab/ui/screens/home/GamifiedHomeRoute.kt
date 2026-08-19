@@ -148,7 +148,7 @@ fun GamifiedHomeRoute(
     val selectedSubjectName by viewModel.selectedSubjectName.collectAsState()
     val availableSubjects by viewModel.availableSubjects.collectAsState()
     val chapterCounts by viewModel.chapterCounts.collectAsState()
-    val completedChapterCounts by viewModel.completedChapterCounts.collectAsState()
+    val chapterProgressSums by viewModel.chapterProgressSums.collectAsState()
     val gamificationProfile by viewModel.gamificationProfile.collectAsState()
     val leagueRank by viewModel.leagueRank.collectAsState()
     val planDays by viewModel.planDays.collectAsState()
@@ -294,7 +294,7 @@ fun GamifiedHomeRoute(
             friendCount,
             availableSubjects,
             chapterCounts,
-            completedChapterCounts,
+            chapterProgressSums,
             gardenEnabled,
             gardenProgress,
             gardenPlantedItems,
@@ -324,7 +324,7 @@ fun GamifiedHomeRoute(
                 friendCount = friendCount,
                 availableSubjects = availableSubjects,
                 chapterCountsBySubject = chapterCounts,
-                completedChapterCountsBySubject = completedChapterCounts,
+                chapterProgressSumsBySubject = chapterProgressSums,
                 gardenEnabled = gardenEnabled,
                 gardenProgress = gardenProgress,
                 gardenHighlightNewPlant = gardenHighlightNewPlant,

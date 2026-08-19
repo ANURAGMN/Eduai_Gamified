@@ -37,8 +37,10 @@ object TrialItemTitleParser {
         selectedSubjectName: String,
     ): String {
         if (item == null) {
-            return todayPlanLabel.ifBlank {
-                fallbackConceptName.ifBlank { selectedSubjectName.ifBlank { "Today's plan" } }
+            // Prefer the freshly-localized concept name over the stored plan label, which was
+            // materialized in the login language and goes stale after a KN<->EN switch.
+            return fallbackConceptName.ifBlank {
+                todayPlanLabel.ifBlank { selectedSubjectName.ifBlank { "Today's plan" } }
             }
         }
         val parts = parse(item.title)

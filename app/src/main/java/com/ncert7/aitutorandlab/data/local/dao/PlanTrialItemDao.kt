@@ -87,6 +87,14 @@ interface PlanTrialItemDao {
     @Query(
         """
         SELECT * FROM plan_trial_item
+        WHERE studentId = :studentId AND status = 'DONE'
+        """,
+    )
+    suspend fun getDoneItems(studentId: String): List<PlanTrialItemEntity>
+
+    @Query(
+        """
+        SELECT * FROM plan_trial_item
         WHERE studentId = :studentId AND dayIndex = :dayIndex
           AND status = 'DONE' AND celebrated = 0
         ORDER BY sequenceIndex DESC
