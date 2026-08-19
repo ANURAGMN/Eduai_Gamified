@@ -381,6 +381,9 @@ class LanguageConsistencyTest {
         override suspend fun getChapterCountsBySubject(): List<com.ncert7.aitutorandlab.data.local.dao.SubjectChapterCount> =
             emptyList()
 
+        override fun getChapterCountsBySubjectFlow(): Flow<List<com.ncert7.aitutorandlab.data.local.dao.SubjectChapterCount>> =
+            flowOf(emptyList())
+
         override fun getChapterFlow(chapterId: String): Flow<ChapterEntity?> = flowOf(chapter)
 
         override suspend fun getChapterById(chapterId: String): ChapterEntity? = getChapter(chapterId)

@@ -54,4 +54,4 @@ Two gaps found and fixed:
 - **Video coach** (primer + checkpoint questions) — spec only.
 
 ## Heads-up
-`ReelsGridSelector.REQUIRE_MADE_FOR_KIDS_DEFAULT` is **false** (UI testing) — **flip to true before the Families release** so only Made-for-kids videos surface.
+`ReelsGridSelector.REQUIRE_MADE_FOR_KIDS_DEFAULT` is **true** (Families / v1.0.11) so only Made-for-kids videos surface.

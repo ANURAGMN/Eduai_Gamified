@@ -24,8 +24,8 @@ import kotlinx.coroutines.launch
  * Orchestrates the reels explore screen from [YoutubeVideoRepository] using the pure, unit-tested
  * [ReelsGridSelector] and [ReelsSearch].
  *
- * Made-for-kids gating is off by default ([ReelsGridSelector.REQUIRE_MADE_FOR_KIDS_DEFAULT]) so we
- * can validate grid/player looks against the live catalog; re-enable before Families release.
+ * Made-for-kids gating is on by default ([ReelsGridSelector.REQUIRE_MADE_FOR_KIDS_DEFAULT]) so only
+ * kids-safe videos surface in the explore grid and player.
  */
 @HiltViewModel
 class ReelsViewModel @Inject constructor(

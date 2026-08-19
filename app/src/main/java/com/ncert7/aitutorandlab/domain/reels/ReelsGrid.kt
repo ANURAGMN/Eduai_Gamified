@@ -17,14 +17,14 @@ data class ReelsGrid(
  *  - rows 3–4 = top [sectionSize] most-watched (by viewCount desc) **excluding** the newest set.
  *
  * When [requireMadeForKids] is true, only [YoutubeVideo.madeForKids] items are considered (release /
- * Families path). Default is **false** while we validate UI looks against the live catalog.
+ * Families path). Default is **true** so the live catalog cannot surface non-kids videos.
  * Each video appears at most once across both sections. Ordering is deterministic (id tie-breaker).
  */
 object ReelsGridSelector {
     const val SECTION_SIZE = 6
 
-    /** TEMP default false for UI testing — flip to true before Play Families release. */
-    const val REQUIRE_MADE_FOR_KIDS_DEFAULT = false
+    /** Production default: only Made-for-kids videos surface. */
+    const val REQUIRE_MADE_FOR_KIDS_DEFAULT = true
 
     fun select(
         videos: List<YoutubeVideo>,
