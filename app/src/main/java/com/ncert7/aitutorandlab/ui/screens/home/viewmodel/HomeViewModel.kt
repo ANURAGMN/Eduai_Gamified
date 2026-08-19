@@ -306,10 +306,6 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             chapterDao.getChapterCountsBySubjectFlow().collectLatest { rows ->
                 _chapterCounts.value = rows.associate { it.subjectId to it.chapterCount }
-                DebugLogger.debugLog(
-                    "SubjectRowDBG",
-                    "total chapters by subject = ${_chapterCounts.value}",
-                )
                 // Chapters just changed — refresh completed counts so the ring stays in sync.
                 refreshCompletedChapterCounts()
             }
@@ -318,10 +314,7 @@ class HomeViewModel @Inject constructor(
 
     /** Completed-chapter count per subject for the progress ring. Best-effort one-shot. */
     private suspend fun refreshCompletedChapterCounts() {
-        val id = userId.takeIf { it.isNotBlank() } ?: run {
-            DebugLogger.debugLog("SubjectRowDBG", "completed skipped — blank userId")
-            return
-        }
+        val id = userId.takeIf { it.isNotBlank() } ?: return
         runCatching {
             chapterAgentProgressDao.getCompletedChapterCountsBySubject(
                 studentId = id,
@@ -331,13 +324,7 @@ class HomeViewModel @Inject constructor(
         }
             .getOrNull()
             ?.associate { it.subjectId to it.chapterCount }
-            ?.let {
-                _completedChapterCounts.value = it
-                DebugLogger.debugLog(
-                    "SubjectRowDBG",
-                    "completed chapters by subject = $it (lang=${_currentLanguage.value})",
-                )
-            }
+            ?.let { _completedChapterCounts.value = it }
     }
 
     val startOfDay = LocalDate.now()

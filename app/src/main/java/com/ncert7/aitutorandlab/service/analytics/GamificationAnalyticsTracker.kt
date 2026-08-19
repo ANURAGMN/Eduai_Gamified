@@ -345,4 +345,16 @@ object GamificationAnalyticsTracker {
             params = mapOf("type" to typeId),
         )
     }
+
+    /** User tapped a local notification (or its primary action) and the app opened. */
+    fun notificationOpened(typeId: String, route: String? = null) {
+        FirebaseAnalyticsHelper.logEvent(
+            eventName = "notification_opened",
+            params =
+                buildMap {
+                    put("type", typeId)
+                    if (!route.isNullOrBlank()) put("route", route)
+                },
+        )
+    }
 }

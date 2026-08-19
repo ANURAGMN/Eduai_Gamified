@@ -9,14 +9,25 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
+import com.anurag.eduai.uikit.theme.EduThemeMode
+import com.anurag.eduai.uikit.theme.ThemeModeStore
 
 private val DarkColorScheme = darkColorScheme()
 
 private val LightColorScheme = lightColorScheme()
 
+/** Resolves the user's saved Light/Dark choice, falling back to the device setting. */
+@Composable
+private fun resolveDarkTheme(): Boolean =
+    when (ThemeModeStore.mode.value) {
+        EduThemeMode.Dark -> true
+        EduThemeMode.Light -> false
+        EduThemeMode.System -> isSystemInDarkTheme()
+    }
+
 @Composable
 fun AppTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    darkTheme: Boolean = resolveDarkTheme(),
     // Dynamic color is available on Android 12+
     dynamicColor: Boolean = true,
     content: @Composable () -> Unit) {

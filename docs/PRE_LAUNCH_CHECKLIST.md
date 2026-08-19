@@ -48,6 +48,8 @@ Consolidated checklist for analytics gaps, Firestore sync, Play Console policy, 
 | 10 | nav walkthrough | Done (`nav_walkthrough_*`) |
 | 11 | streak UI celebrations | Done (`streak_greeting_*` / `streak_extended_*`) |
 | 12 | notification primer | Done (`notif_primer_*` / `notif_permission_result`) |
+| 12b | notification shown → opened (by type) | Done (`notification_shown` / `notification_opened` with `type`) |
+| 12c | settings theme / language / taps | Done (`theme_selected`, `language_selected`, `settings_tap`, `edit_profile_saved`, `contact_channel`, `logout`, `notif_pref_*`) |
 | 13 | review | Done (`review_requested` / `review_throttled`) |
 | 14 | place picker | Done (`place_completed` / `next_place_*`) |
 | 15 | plan reward banner | Done (`plan_reward_banner_tap`) |
@@ -55,6 +57,7 @@ Consolidated checklist for analytics gaps, Firestore sync, Play Console policy, 
 ### Analytics notes
 
 - **Distinct streak events:** Keep existing DB-level `streak_extended` (logged when streak count increments in `StreakRepository`) separate from UI celebration events (`streak_extended_shown` / `streak_extended_done`).
+- **Notification return funnel:** primer (`notif_primer_*`) is permission; local sends use `notification_shown{type}` then `notification_opened{type,route}` on tap. Join those two in GA4 to see which types drive returns. Open is stripped from the intent after the first log so rotation is not a second open.
 - **In-app review:** `AppReviewManager` + throttle in `AppRatingGate` exist; logging the request (and throttle hits) is still missing.
 - **Background flush:** GA4 batches internally. Explicit flush on `ON_STOP` is optional, not blocking.
 

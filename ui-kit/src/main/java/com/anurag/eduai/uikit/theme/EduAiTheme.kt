@@ -18,7 +18,10 @@ val LocalEduAiColors = staticCompositionLocalOf { LightEduAiColors }
 
 @Composable
 fun EduAiTheme(
-    themeMode: EduThemeMode = EduThemeMode.System,
+    // Defaults to the user's saved choice (ThemeModeStore); reading the state here makes every
+    // EduAiTheme surface recompose when the Settings toggle changes. Callers can still override
+    // (e.g. AvatarShareCapture forces Light).
+    themeMode: EduThemeMode = ThemeModeStore.mode.value,
     content: @Composable () -> Unit,
 ) {
     val darkTheme =

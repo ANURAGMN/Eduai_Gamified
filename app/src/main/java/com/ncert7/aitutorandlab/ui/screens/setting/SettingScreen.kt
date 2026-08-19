@@ -63,7 +63,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.anurag.eduai.uikit.components.EduScreenTopBar
+import androidx.compose.foundation.isSystemInDarkTheme
 import com.anurag.eduai.uikit.theme.EduAiTheme
+import com.anurag.eduai.uikit.theme.EduThemeMode
+import com.anurag.eduai.uikit.theme.ThemeModeStore
+import com.ncert7.aitutorandlab.service.analytics.EngagementAnalyticsTracker
 import com.ncert7.aitutorandlab.BuildConfig
 import com.ncert7.aitutorandlab.R
 import com.ncert7.aitutorandlab.config.ReelsFeatureFlags
@@ -214,13 +218,56 @@ fun SettingScreen(
                         LanguageButton(
                             text = stringResource(R.string.language_english),
                             isSelected = selectedLanguage == "en",
-                            onClick = { viewModel.setLanguage("en") },
+                            onClick = {
+                                viewModel.setLanguage("en")
+                                EngagementAnalyticsTracker.languageSelected("en")
+                            },
                             modifier = Modifier.weight(1f)
                         )
                         LanguageButton(
                             text = stringResource(R.string.language_kannada),
                             isSelected = selectedLanguage == "kn",
-                            onClick = { viewModel.setLanguage("kn") },
+                            onClick = {
+                                viewModel.setLanguage("kn")
+                                EngagementAnalyticsTracker.languageSelected("kn")
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+
+                // Appearance (Light / Dark). Reflects the resolved theme; tapping stores an
+                // explicit choice via ThemeModeStore, which recomposes every EduAiTheme surface.
+                SettingsSection(title = stringResource(R.string.settings_theme)) {
+                    val isDark =
+                        when (ThemeModeStore.mode.value) {
+                            EduThemeMode.Dark -> true
+                            EduThemeMode.Light -> false
+                            EduThemeMode.System -> isSystemInDarkTheme()
+                        }
+                    Row(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = dimens.spaceSmall),
+                        horizontalArrangement = Arrangement.spacedBy(dimens.spaceSmall)
+                    ) {
+                        LanguageButton(
+                            text = stringResource(R.string.theme_light),
+                            isSelected = !isDark,
+                            onClick = {
+                                ThemeModeStore.set(context, EduThemeMode.Light)
+                                EngagementAnalyticsTracker.themeSelected("light")
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                        LanguageButton(
+                            text = stringResource(R.string.theme_dark),
+                            isSelected = isDark,
+                            onClick = {
+                                ThemeModeStore.set(context, EduThemeMode.Dark)
+                                EngagementAnalyticsTracker.themeSelected("dark")
+                            },
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -255,7 +302,10 @@ fun SettingScreen(
                         icon = Icons.Default.Person,
                         iconTint = AccentBlue,
                         title = stringResource(R.string.edit_profile),
-                        onClick = { activeScreen = PopupScreen.EditProfile }
+                        onClick = {
+                            EngagementAnalyticsTracker.settingsItemTap("edit_profile")
+                            activeScreen = PopupScreen.EditProfile
+                        }
                     )
                     SettingsItem(
                         icon = Icons.Default.Notifications,
@@ -263,8 +313,10 @@ fun SettingScreen(
                         title = stringResource(R.string.notifications),
                         onClick = {
                             if (gamifiedHomeEnabled) {
+                                EngagementAnalyticsTracker.settingsItemTap("notifications", dest = "in_app")
                                 showNotificationSettings = true
                             } else {
+                                EngagementAnalyticsTracker.settingsItemTap("notifications", dest = "os")
                                 val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
                                     putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
                                 }
@@ -280,7 +332,10 @@ fun SettingScreen(
                         icon = Icons.Default.Email,
                         iconTint = AccentBlue,
                         title = stringResource(R.string.contact_us),
-                        onClick = { activeScreen = PopupScreen.ContactUs }
+                        onClick = {
+                            EngagementAnalyticsTracker.settingsItemTap("contact_us")
+                            activeScreen = PopupScreen.ContactUs
+                        }
                     )
                 }
 
@@ -290,6 +345,7 @@ fun SettingScreen(
                         iconTint = AccentBlue,
                         title = stringResource(R.string.privacy_policy_label),
                         onClick = {
+                            EngagementAnalyticsTracker.settingsItemTap("privacy")
                             context.startActivity(
                                 Intent(
                                     Intent.ACTION_VIEW,
@@ -303,6 +359,7 @@ fun SettingScreen(
                         iconTint = AccentBlue,
                         title = stringResource(R.string.terms_of_service_label),
                         onClick = {
+                            EngagementAnalyticsTracker.settingsItemTap("terms")
                             context.startActivity(
                                 Intent(
                                     Intent.ACTION_VIEW,
@@ -319,7 +376,10 @@ fun SettingScreen(
                             icon = Icons.AutoMirrored.Filled.ShowChart,
                             iconTint = BrandPrimary,
                             title = "Progress & skills",
-                            onClick = onNavigateToProgress,
+                            onClick = {
+                                EngagementAnalyticsTracker.settingsItemTap("progress")
+                                onNavigateToProgress()
+                            },
                         )
                         // Quests move here when the Reels tab takes their bottom-bar slot.
                         if (ReelsFeatureFlags.isReelsEnabled()) {
@@ -327,7 +387,10 @@ fun SettingScreen(
                                 icon = Icons.Outlined.TrackChanges,
                                 iconTint = BrandPrimary,
                                 title = "Today's quest",
-                                onClick = onNavigateToQuests,
+                                onClick = {
+                                    EngagementAnalyticsTracker.settingsItemTap("quests")
+                                    onNavigateToQuests()
+                                },
                             )
                         }
                     }
@@ -336,7 +399,10 @@ fun SettingScreen(
                             icon = Icons.Default.Group,
                             iconTint = BrandPrimary,
                             title = "Friends · $friendCount",
-                            onClick = onNavigateToFriends,
+                            onClick = {
+                                EngagementAnalyticsTracker.settingsItemTap("friends")
+                                onNavigateToFriends()
+                            },
                         )
                     }
                 }
@@ -606,7 +672,10 @@ fun SettingScreen(
 
                 // Logout Button
                 Button(
-                    onClick = { viewModel.logout() },
+                    onClick = {
+                        EngagementAnalyticsTracker.logoutTapped()
+                        viewModel.logout()
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(dimens.buttonHeightLarge),

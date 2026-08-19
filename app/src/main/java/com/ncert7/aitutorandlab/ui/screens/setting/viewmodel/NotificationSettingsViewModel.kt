@@ -7,6 +7,7 @@ import com.ncert7.aitutorandlab.notification.NotificationCategory
 import com.ncert7.aitutorandlab.notification.NotificationPermissionHelper
 import com.ncert7.aitutorandlab.notification.NotificationReminderMode
 import com.ncert7.aitutorandlab.notification.NotificationSettingsStore
+import com.ncert7.aitutorandlab.service.analytics.EngagementAnalyticsTracker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -64,21 +65,25 @@ class NotificationSettingsViewModel @Inject constructor(
     fun onMasterToggle(enabled: Boolean) {
         settingsStore.setMasterEnabled(enabled)
         _uiState.update { it.copy(masterEnabled = enabled) }
+        EngagementAnalyticsTracker.notifPrefMaster(enabled)
     }
 
     fun onReminderTimeChanged(hour: Int, minute: Int) {
         settingsStore.setReminderTime(hour, minute)
         _uiState.update { it.copy(reminderHour = hour, reminderMinute = minute) }
+        EngagementAnalyticsTracker.notifPrefReminderTime(hour, minute)
     }
 
     fun onReminderModeChanged(mode: NotificationReminderMode) {
         settingsStore.setReminderMode(mode)
         _uiState.update { it.copy(reminderMode = mode) }
+        EngagementAnalyticsTracker.notifPrefMode(mode.name.lowercase())
     }
 
     fun onQuietHoursChanged(startHour: Int, endHour: Int) {
         settingsStore.setQuietHours(startHour, endHour)
         _uiState.update { it.copy(quietHoursStart = startHour, quietHoursEnd = endHour) }
+        EngagementAnalyticsTracker.notifPrefQuietHours(startHour, endHour)
     }
 
     fun onCategoryToggle(category: NotificationCategory, enabled: Boolean) {
@@ -86,11 +91,13 @@ class NotificationSettingsViewModel @Inject constructor(
         _uiState.update { state ->
             state.copy(categoryEnabled = state.categoryEnabled + (category to enabled))
         }
+        EngagementAnalyticsTracker.notifPrefCategory(category.channelId, enabled)
     }
 
     fun onPermissionGranted() {
         sharedPref.setAskedNotificationPermission(true)
         settingsStore.setMasterEnabled(true)
+        EngagementAnalyticsTracker.notifPrefMaster(true)
         refreshFromStorage()
     }
 }

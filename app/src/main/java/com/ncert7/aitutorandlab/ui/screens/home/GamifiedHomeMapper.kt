@@ -17,7 +17,6 @@ import com.ncert7.aitutorandlab.data.local.entities.PlanTrialItemEntity
 import com.ncert7.aitutorandlab.data.local.entities.ProgressEntity
 import com.ncert7.aitutorandlab.data.local.entities.QuestDailyEntity
 import com.ncert7.aitutorandlab.data.local.entities.SubjectEntity
-import com.ncert7.aitutorandlab.debug.DebugLogger
 import com.anurag.eduai.uikit.garden.quest.GardenPlantedRow
 import com.anurag.eduai.uikit.garden.quest.SLOTS_PER_ZONE
 import com.anurag.eduai.uikit.garden.quest.starterSlot
@@ -835,28 +834,20 @@ object GamifiedHomeMapper {
         selectedSubjectName: String,
         selectedSubjectId: String,
     ): List<SubjectTile> {
-        val tiles =
-            if (availableSubjects.isNotEmpty()) {
-                availableSubjects.map { subject ->
-                    val name = subject.getLocalizedName(languageCode)
-                    SubjectTile(
-                        name = name,
-                        role = chipRoleForSubject(subject, languageCode),
-                        subjectId = subject.subjectId,
-                        iconUrl = resolveSubjectIconUrl(subject.subjectId, name, subject.iconUrl),
-                        subtitle = subjectSubtitle(subject.subjectId, chapterCountsBySubject, languageCode),
-                        progress = subjectProgress(subject.subjectId, chapterCountsBySubject, completedChapterCountsBySubject),
-                    )
-                }
-            } else {
-                defaultSubjectTiles(languageCode, chapterCountsBySubject, completedChapterCountsBySubject)
+        if (availableSubjects.isNotEmpty()) {
+            return availableSubjects.map { subject ->
+                val name = subject.getLocalizedName(languageCode)
+                SubjectTile(
+                    name = name,
+                    role = chipRoleForSubject(subject, languageCode),
+                    subjectId = subject.subjectId,
+                    iconUrl = resolveSubjectIconUrl(subject.subjectId, name, subject.iconUrl),
+                    subtitle = subjectSubtitle(subject.subjectId, chapterCountsBySubject, languageCode),
+                    progress = subjectProgress(subject.subjectId, chapterCountsBySubject, completedChapterCountsBySubject),
+                )
             }
-        DebugLogger.debugLog(
-            "SubjectRowDBG",
-            "tiles(source=${if (availableSubjects.isNotEmpty()) "available" else "default"}) = " +
-                tiles.joinToString { "${it.name}[sub=${it.subtitle}, prog=${it.progress}]" },
-        )
-        return tiles
+        }
+        return defaultSubjectTiles(languageCode, chapterCountsBySubject, completedChapterCountsBySubject)
     }
 
     /** "N chapters" for a subject, or null when the count is unknown/zero. */

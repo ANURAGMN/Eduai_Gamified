@@ -93,6 +93,63 @@ object EngagementAnalyticsTracker {
     fun planRewardBannerTap(dayCount: Int) =
         log("plan_reward_banner_tap", ScreenName.PLAN, mapOf("day_count" to dayCount))
 
+    // ---- Settings ----
+
+    /** User picked a Light/Dark appearance in Settings ([mode] = "light" | "dark"). */
+    fun themeSelected(mode: String) =
+        log("theme_selected", ScreenName.SETTINGS, mapOf("mode" to mode))
+
+    /** User picked a UI language in Settings ([language] = "en" | "kn"). */
+    fun languageSelected(language: String) =
+        log("language_selected", ScreenName.SETTINGS, mapOf("language" to language))
+
+    fun settingsItemTap(item: String, dest: String? = null) =
+        log(
+            "settings_tap",
+            ScreenName.SETTINGS,
+            buildMap {
+                put("item", item)
+                if (!dest.isNullOrBlank()) put("dest", dest)
+            },
+        )
+
+    fun editProfileSaved() = log("edit_profile_saved", ScreenName.SETTINGS)
+
+    fun contactChannel(channel: String) =
+        log("contact_channel", ScreenName.SETTINGS, mapOf("channel" to channel))
+
+    fun logoutTapped() = log("logout", ScreenName.SETTINGS)
+
+    fun notifPrefMaster(enabled: Boolean) =
+        log("notif_pref_master", ScreenName.SETTINGS, mapOf("enabled" to enabled))
+
+    fun notifPrefMode(mode: String) =
+        log("notif_pref_mode", ScreenName.SETTINGS, mapOf("mode" to mode))
+
+    fun notifPrefCategory(category: String, enabled: Boolean) =
+        log(
+            "notif_pref_category",
+            ScreenName.SETTINGS,
+            mapOf("category" to category, "enabled" to enabled),
+        )
+
+    fun notifPrefReminderTime(hour: Int, minute: Int) =
+        log(
+            "notif_pref_reminder_time",
+            ScreenName.SETTINGS,
+            mapOf("hour" to hour, "minute" to minute),
+        )
+
+    fun notifPrefQuietHours(startHour: Int, endHour: Int) =
+        log(
+            "notif_pref_quiet_hours",
+            ScreenName.SETTINGS,
+            mapOf("start_hour" to startHour, "end_hour" to endHour),
+        )
+
+    fun notifPrefOpenSystem(dest: String) =
+        log("notif_pref_open_system", ScreenName.SETTINGS, mapOf("dest" to dest))
+
     // ---- Garden/space scene-unlock picker ----
 
     fun placeCompleted(zone: Int) =

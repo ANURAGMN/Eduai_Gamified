@@ -35,6 +35,7 @@ class NotificationHelper @Inject constructor(
                 putExtra(EXTRA_ROUTE, content.deepLinkRoute)
                 putExtra(EXTRA_PARAMS, paramsString)
                 putExtra(EXTRA_NOTIF_ID, notifId)
+                putExtra(EXTRA_TYPE, content.type.id)
             }
         val primaryPendingIntent =
             PendingIntent.getActivity(
@@ -120,6 +121,7 @@ class NotificationHelper @Inject constructor(
         const val EXTRA_ROUTE = "eduai_notification_route"
         const val EXTRA_PARAMS = "eduai_notification_params"
         const val EXTRA_NOTIF_ID = "eduai_notification_id"
+        const val EXTRA_TYPE = "eduai_notification_type"
         const val ACTION_CANCEL = "com.ncert7.aitutorandlab.notification.ACTION_CANCEL"
         private const val CANCEL_REQUEST_CODE_OFFSET = 10_000
 

@@ -112,6 +112,9 @@
     <!--    Settings tab-->
     <string name="select_language">ಭಾಷೆ ಆಯ್ಕೆಮಾಡಿ</string>
     <string name="language">ಭಾಷೆ</string>
+    <string name="settings_theme">ಸ್ವರೂಪ</string>
+    <string name="theme_light">ಬೆಳಕು</string>
+    <string name="theme_dark">ಗಾಢ</string>
     <string name="option_english">ಇಂಗ್ಲಿಷ್</string>
     <string name="option_kannada">ಕನ್ನಡ</string>
     <string name="avatar">ಅವತಾರ</string>

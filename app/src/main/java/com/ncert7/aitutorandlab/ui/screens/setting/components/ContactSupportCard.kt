@@ -40,6 +40,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.ncert7.aitutorandlab.R
+import com.ncert7.aitutorandlab.service.analytics.EngagementAnalyticsTracker
 import com.ncert7.aitutorandlab.ui.theme.AccentBlue
 import com.ncert7.aitutorandlab.ui.theme.AccentGreen
 import com.ncert7.aitutorandlab.ui.theme.AiMessageBackground
@@ -142,7 +143,10 @@ fun ContactSupportCard(
                 )
 
                 Button(
-                    onClick = { openEmail(context, emailAddress) },
+                    onClick = {
+                        EngagementAnalyticsTracker.contactChannel("email")
+                        openEmail(context, emailAddress)
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(dimens.buttonHeightLarge),
@@ -200,6 +204,7 @@ fun ContactSupportCard(
                 title = "WhatsApp Support",
                 subtitle = whatsappNumber,
                 onClick = {
+                    EngagementAnalyticsTracker.contactChannel("whatsapp")
                     val digits = whatsappNumber.replace("+", "").replace(" ", "")
                     openUri(
                         context,
@@ -215,6 +220,7 @@ fun ContactSupportCard(
                 title = "Website",
                 subtitle = normalizedWebsite,
                 onClick = {
+                    EngagementAnalyticsTracker.contactChannel("web")
                     openUri(
                         context,
                         Uri.parse(normalizedWebsite),

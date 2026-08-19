@@ -51,6 +51,7 @@ import androidx.compose.ui.unit.dp
 import com.ncert7.aitutorandlab.R
 import com.ncert7.aitutorandlab.data.local.entities.StudentEntity
 import com.ncert7.aitutorandlab.debug.DebugLogger
+import com.ncert7.aitutorandlab.service.analytics.EngagementAnalyticsTracker
 import com.ncert7.aitutorandlab.ui.components.DropDownMenu
 import com.ncert7.aitutorandlab.ui.theme.AccentBlue
 import com.ncert7.aitutorandlab.ui.theme.BackgroundPrimary
@@ -142,6 +143,7 @@ fun EditProfileScreen(
         when (updateState) {
             UpdateProfileState.Success -> {
                 DebugLogger.debugLog("EditProfilePopUp", "Update success")
+                EngagementAnalyticsTracker.editProfileSaved()
                 saveError = null
                 onClose()
                 userViewModel.resetState()

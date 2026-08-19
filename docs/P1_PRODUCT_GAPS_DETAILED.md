@@ -344,6 +344,7 @@ GA4 funnels for onboarding, tours, streak UI, primer, review, place picker were 
 | 10 | Nav walkthrough | Done (name diffs) | `nav_walkthrough_step` (not `*_step_view`), skip/complete | `BottomNavBar.kt` |
 | 11 | Streak UI | Done | `streak_greeting_shown/continue`, `streak_extended_shown/done` | `GamifiedHomeRoute.kt` |
 | 12 | Notif primer | Done (name diffs) | `notif_primer_shown/accepted/declined`, `notif_permission_result` | `NotificationPermissionGate.kt`, `NotificationPermissionHost.kt` |
+| 12b | Notif shown → opened | Done | `notification_shown{type}`, `notification_opened{type,route}` | `NotificationOrchestrator.kt`, `MainActivity.kt` |
 | 13 | In-app review | Done | `review_requested{trigger}`, `review_throttled{reason}` | `GamifiedHomeRoute.kt` |
 | 14 | Place picker | Done | `place_completed`, `next_place_offered/picked/surprise` | `PlanTrialViewModel.kt` |
 | 15 | Plan reward banner | Done | `plan_reward_banner_tap{day_count}` | `PlanOverviewScreen.kt` |

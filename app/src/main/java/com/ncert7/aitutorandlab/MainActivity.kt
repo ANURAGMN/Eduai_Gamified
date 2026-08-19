@@ -11,7 +11,9 @@ import androidx.compose.ui.Modifier
 import androidx.core.view.WindowCompat
 import com.ncert7.aitutorandlab.notification.NotificationDeepLinkStore
 import com.ncert7.aitutorandlab.notification.NotificationHelper
+import com.ncert7.aitutorandlab.service.analytics.GamificationAnalyticsTracker
 import com.ncert7.aitutorandlab.service.ads.MobileAdsInitializer
+import com.anurag.eduai.uikit.theme.ThemeModeStore
 import com.ncert7.aitutorandlab.data.local.SharedPreferenceUtils
 import com.ncert7.aitutorandlab.debug.DebugLogger
 import com.ncert7.aitutorandlab.service.logging.CrashlyticsLogger
@@ -55,6 +57,9 @@ class MainActivity : AppCompatActivity() {
             CrashlyticsLogger.setUserId(it)
         }
 
+        // Apply the saved Light/Dark choice before first composition so there's no theme flash.
+        ThemeModeStore.load(this)
+
          setContent {
             AdaptiveTheme {
                 AppTheme {
@@ -80,9 +85,17 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun captureNotificationDeepLink(intent: android.content.Intent?) {
+        if (intent == null) return
+        val route = intent.getStringExtra(NotificationHelper.EXTRA_ROUTE)
         NotificationDeepLinkStore.setFromIntent(
-            route = intent?.getStringExtra(NotificationHelper.EXTRA_ROUTE),
-            paramsRaw = intent?.getStringExtra(NotificationHelper.EXTRA_PARAMS),
+            route = route,
+            paramsRaw = intent.getStringExtra(NotificationHelper.EXTRA_PARAMS),
         )
+        val typeId = intent.getStringExtra(NotificationHelper.EXTRA_TYPE)?.takeIf { it.isNotBlank() }
+        if (typeId != null) {
+            GamificationAnalyticsTracker.notificationOpened(typeId, route)
+            // Strip so a configuration change does not count as a second open.
+            intent.removeExtra(NotificationHelper.EXTRA_TYPE)
+        }
     }
 }

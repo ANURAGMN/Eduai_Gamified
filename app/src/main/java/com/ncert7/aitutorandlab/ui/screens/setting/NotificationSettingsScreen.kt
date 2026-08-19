@@ -50,6 +50,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.ncert7.aitutorandlab.notification.NotificationPermissionHelper
 import com.ncert7.aitutorandlab.notification.NotificationReminderMode
+import com.ncert7.aitutorandlab.service.analytics.EngagementAnalyticsTracker
 import com.ncert7.aitutorandlab.ui.screens.setting.viewmodel.NotificationSettingsViewModel
 import com.ncert7.aitutorandlab.ui.theme.AccentBlue
 import com.ncert7.aitutorandlab.ui.theme.BackgroundSecondary
@@ -144,7 +145,10 @@ fun NotificationSettingsScreen(
                         modifier = Modifier.padding(bottom = dimens.spaceSmall),
                     )
                     Button(
-                        onClick = { NotificationPermissionHelper.openAppNotificationSettings(context) },
+                        onClick = {
+                            EngagementAnalyticsTracker.notifPrefOpenSystem("app")
+                            NotificationPermissionHelper.openAppNotificationSettings(context)
+                        },
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         Text(NotificationSettingsCopy.enableInSystemSettings(language))
@@ -222,6 +226,7 @@ fun NotificationSettingsScreen(
                         trailingContent = {
                             IconButton(
                                 onClick = {
+                                    EngagementAnalyticsTracker.notifPrefOpenSystem(category.channelId)
                                     NotificationPermissionHelper.openChannelNotificationSettings(
                                         context,
                                         category.channelId,
