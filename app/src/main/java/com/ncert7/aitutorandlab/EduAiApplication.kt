@@ -9,6 +9,7 @@ import androidx.work.WorkManager
 import com.ncert7.aitutorandlab.data.local.SharedPreferenceUtils
 import com.ncert7.aitutorandlab.data.local.database.EduAiDatabase
 import com.ncert7.aitutorandlab.debug.DebugLogger
+import com.ncert7.aitutorandlab.domain.onboarding.OnboardingGate
 import com.ncert7.aitutorandlab.service.analytics.ContentClickAnalyticsTracker
 import com.ncert7.aitutorandlab.service.analytics.AdAnalyticsTracker
 import com.ncert7.aitutorandlab.service.analytics.FunnelAnalyticsTracker
@@ -55,6 +56,8 @@ class EduAiApplication : Application(), Configuration.Provider {
 
         // Initialize language preference from SharedPreferences
         initializeLanguage()
+
+        OnboardingGate.ensureUpgradeReplay(SharedPreferenceUtils(this))
 
         // Initialize DataSyncService for real-time and offline sync
         DataSyncService.initialize(this)

@@ -84,6 +84,7 @@ class SharedPreferenceUtils(context: Context) : AppMigrationVersionStore {
         private const val KEY_NAV_TOUR_COMPLETED = "nav_tour_completed"
         private const val KEY_STREAK_GREETING_DAY = "streak_greeting_day"
         private const val KEY_ONBOARDING_PICKS_APPLIED = "onboarding_picks_applied"
+        private const val KEY_ONBOARDING_UI_VERSION = "onboarding_ui_version"
     }
 
     fun setIdToken(idToken: String) {
@@ -327,13 +328,15 @@ class SharedPreferenceUtils(context: Context) : AppMigrationVersionStore {
             remove(KEY_SIM_OPEN_COUNT)
             remove(KEY_SIM_OPEN_DATE)
             remove(KEY_EXAM_PLAN_USER_CONFIGURED)
-            // Clear onboarding so the next account hydrates from Firestore (P1 §2).
+            // Clear onboarding so the next sign-in replays the full intro + tours.
             putBoolean(KEY_FIRST_RUN_COMPLETED, false)
             putBoolean(KEY_ONBOARDING_PICKS_APPLIED, false)
             remove(KEY_ONBOARDING_SUBJECT)
             remove(KEY_ONBOARDING_CHAPTER)
             remove(KEY_ONBOARDING_WORLD)
             remove(KEY_ONBOARDING_AVATAR)
+            putBoolean(KEY_HOME_TOUR_COMPLETED, false)
+            putBoolean(KEY_NAV_TOUR_COMPLETED, false)
         }
     }
 
@@ -433,8 +436,8 @@ class SharedPreferenceUtils(context: Context) : AppMigrationVersionStore {
         prefs.edit { putBoolean(KEY_FORCE_ONBOARDING_DEBUG, enabled) }
     }
 
-    /** Clears first-run onboarding so the intro flow can be replayed (debug only). */
-    fun resetOnboardingForDebugReplay() {
+    /** Clears first-run onboarding so the intro flow can be replayed. */
+    fun resetOnboardingForReplay() {
         prefs.edit {
             putBoolean(KEY_FIRST_RUN_COMPLETED, false)
             putBoolean(KEY_ONBOARDING_PICKS_APPLIED, false)
@@ -445,6 +448,16 @@ class SharedPreferenceUtils(context: Context) : AppMigrationVersionStore {
             putBoolean(KEY_HOME_TOUR_COMPLETED, false)
             putBoolean(KEY_NAV_TOUR_COMPLETED, false)
         }
+    }
+
+    /** @see resetOnboardingForReplay */
+    fun resetOnboardingForDebugReplay() = resetOnboardingForReplay()
+
+    fun getOnboardingUiVersion(): Int =
+        prefs.getInt(KEY_ONBOARDING_UI_VERSION, 0)
+
+    fun setOnboardingUiVersion(versionCode: Int) {
+        prefs.edit { putInt(KEY_ONBOARDING_UI_VERSION, versionCode) }
     }
 
     /** Debug-only: keep quest progress at 3/3 + 1/1 until claims are tested (survives refreshTodayQuest). */

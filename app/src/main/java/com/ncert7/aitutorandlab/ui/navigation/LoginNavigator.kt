@@ -18,6 +18,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.ncert7.aitutorandlab.data.local.SharedPreferenceUtils
+import com.ncert7.aitutorandlab.domain.onboarding.OnboardingGate
 import com.ncert7.aitutorandlab.ui.screens.login.LoginScreen
 import com.ncert7.aitutorandlab.ui.screens.login.UserDetailEntryScreen
 import com.ncert7.aitutorandlab.ui.screens.login.viewmodel.UserViewModel
@@ -91,7 +92,9 @@ fun LoginNavigator() {
         composable("main") {
             // First-run gate at the destination itself, so every path into "main" (fresh login and
             // restored session alike) shows the intro + subject/chapter/world picks exactly once.
-            var onboarded by remember { mutableStateOf(sharedPreferenceUtils.hasCompletedFirstRun()) }
+            var onboarded by remember {
+                mutableStateOf(!OnboardingGate.shouldShowOnboarding(sharedPreferenceUtils))
+            }
             if (!onboarded) {
                 TrackScreenEvent(screenName = ScreenName.ONBOARDING)
                 val onboardingViewModel: OnboardingViewModel = hiltViewModel()
@@ -137,6 +140,7 @@ fun LoginNavigator() {
                             chapter = result.chapter,
                             world = result.world,
                         )
+                        OnboardingGate.markOnboardingCompleted(sharedPreferenceUtils)
                         // Persist the chosen tutor look (free onboarding pick) so it renders everywhere
                         // (Home mascot, top bar, moments) and shows as unlocked in Avatar studio.
                         // Must go through TutorConfigRepository — store-only saves get overwritten by

@@ -376,8 +376,6 @@ class UserViewModel @Inject constructor(
                     DebugLogger.warnLog("UserViewModel", "Cloud sync failed: ${e.message}")
                 }
 
-                hydrateOnboardingFromCloud(currentUser.id, sharedPreference)
-
                 DataSyncService.onUserAuthenticated(currentUser.id)
                 DebugLogger.debugLog(
                     "UserViewModel",
@@ -464,9 +462,6 @@ class UserViewModel @Inject constructor(
 
                     tutorConfigRepository.ensureLoaded(appContext, currentUser.id)
 
-                    hydrateOnboardingFromCloud(currentUser.id, sharedPreference)
-
-                    // Initialize DataSyncService and sync pre-login funnel events
                     DataSyncService.onUserAuthenticated(currentUser.id)
                     DebugLogger.debugLog("UserViewModel", "DataSyncService initialized with studentId: ${currentUser.id}")
 
@@ -478,33 +473,6 @@ class UserViewModel @Inject constructor(
                 _userSaveState.value = UserSaveState.Error(e)
                 DebugLogger.debugLog("UserViewModel", "Error submitting user: ${e.message}")
             }
-        }
-    }
-
-    /**
-     * Hydrate first-run prefs from `users/{id}.onboarding` before LoginNavigator reads
-     * [SharedPreferenceUtils.hasCompletedFirstRun] (P1 §2).
-     */
-    private suspend fun hydrateOnboardingFromCloud(
-        userId: String,
-        prefs: SharedPreferenceUtils,
-    ) {
-        if (userId.isBlank() || prefs.hasCompletedFirstRun()) return
-        try {
-            val picks = withContext(Dispatchers.IO) { repo.getOnboardingPicks(userId) } ?: return
-            prefs.setFirstRunResult(
-                subject = picks.subject,
-                chapter = picks.chapter,
-                world = picks.world,
-            )
-            // Do not set picksApplied locally — Home must still materialize subject/plan
-            // (and theme if no remote garden) once on this device.
-            DebugLogger.debugLog(
-                "UserViewModel",
-                "Hydrated onboarding from cloud: subject=${picks.subject} world=${picks.world}",
-            )
-        } catch (e: Exception) {
-            DebugLogger.warnLog("UserViewModel", "Onboarding hydrate skipped: ${e.message}")
         }
     }
 
