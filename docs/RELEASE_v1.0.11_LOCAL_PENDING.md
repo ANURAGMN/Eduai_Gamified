@@ -2,7 +2,7 @@
 
 **Updated:** 2026-08-19  
 **Branch:** `main` → tracks `gamified/main` (`https://github.com/ANURAGMN/Eduai_Gamified.git`)  
-**Tip (committed):** *(set on commit — was `cca2cb0`)*  
+**Tip (committed):** `f7de743`  
 **Remote:** **6 commits ahead, not pushed** (after this commit)  
 **Working tree:** **clean** (Settings GA4, theme toggle, SubjectRowDBG cleanup committed)
 
