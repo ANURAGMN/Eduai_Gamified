@@ -75,6 +75,15 @@
 -keep class com.ncert7.aitutorandlab.data.model.** { *; }
 -keep class com.ncert7.aitutorandlab.data.firebase.** { *; }
 
+# ========== ROOM / LOCAL DATA ==========
+# Room entities, DAOs, and @Query projection POJOs (e.g. SubjectChapterCount,
+# ChapterProgressSummaryDto). Room's generated cursor->object mapping and Firestore
+# restore rely on these member names; obfuscation makes release queries silently
+# return empty (progress/chapter counts show 0). Keep the whole local data layer.
+-keep class com.ncert7.aitutorandlab.data.local.** { *; }
+-keepclassmembers class com.ncert7.aitutorandlab.data.local.** { *; }
+# (RoomDatabase / @Entity / room.paging keeps live in the ROOM section below.)
+
 # ========== KOTLINX SERIALIZATION ==========
 # Keep serializers for kotlinx.serialization (used for other purposes, not Retrofit)
 -keepattributes InnerClasses

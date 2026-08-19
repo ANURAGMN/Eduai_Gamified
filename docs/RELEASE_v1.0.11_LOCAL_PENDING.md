@@ -125,15 +125,18 @@ Files: `ThemeModeStore.kt`, `EduAiTheme.kt`, `Theme.kt`, `SettingScreen.kt`, `va
 
 Confirm Play does not already have vc13 (else bump 14). Signing: `../../Edu/Keys/android_sign_keys.jks`.
 
-Unit tests (with SubjectRowDBG removed): reels/analytics **45/45**; full suite **215/225** (10 pre-existing):
+Unit tests: reels/analytics **45/45**; full suite **217/225** (8 pre-existing, non-blocking):
 
 | Class | Failures | Cause |
 |-------|----------|--------|
 | `SimulationIntroTtsSanitizerTest` | 7 | JVM Unicode regex / class init |
-| `LanguageConsistencyTest` | 2 | Hero concept name not switching on locale change (`ComparisonFailure`) |
 | `ResourceDecisionUseCaseTest` | 1 | Unmocked `Log` |
 
-SubjectRowDBG removal fixed the third `LanguageConsistencyTest` failure (unmocked `Log` via `DebugLogger`); the two locale-switch assertions above remain.
+Progress to green:
+- **SubjectRowDBG removal** fixed one `LanguageConsistencyTest` failure (unmocked `Log` via `DebugLogger`).
+- **Hero locale-switch fix** (`TrialItemTitleParser.heroTitle`, `item == null` branch now prefers the freshly-localized `fallbackConceptName` over the stored `todayPlanLabel`) fixed the remaining two `LanguageConsistencyTest` `ComparisonFailure`s — the home hero concept name now re-localizes on a KN↔EN switch instead of showing the login-language label. Pre-existing bug, unrelated to the theme/analytics/subject work (it was masked by the `Log` crash).
+
+The 8 remaining failures are pre-existing and do **not** block `bundleRelease`.
 
 ---
 
@@ -152,7 +155,8 @@ Play/Console after AAB: ColorOS smoke, Data Safety, 512 icon, release notes. Fir
 ## F. Stack picture
 
 ```
-f7de743  Settings GA4 + notif opened + Light/Dark + SubjectRowDBG removal + this doc
+eb21044  release doc tip hash
+f7de743  Settings GA4 + notif opened + Light/Dark + SubjectRowDBG removal + release doc
 cca2cb0  Made-for-kids reels gating
 2f80805  coach-sim + edu-round example
 db9935f  .gitattributes / untrack .idea .kotlin

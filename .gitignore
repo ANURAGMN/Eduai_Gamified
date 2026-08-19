@@ -33,6 +33,7 @@ node-v24.17.0-win-x64.zip
 /reports/
 /.cursor/
 /.kotlin/errors/
+/logs/
 /_ad_test_shots/
 /_device_test_shots/
 /_funnel_test_shots/
