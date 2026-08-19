@@ -2,8 +2,8 @@
 
 **Updated:** 2026-08-19  
 **Branch:** `main` → tracks `gamified/main` (`https://github.com/ANURAGMN/Eduai_Gamified.git`)  
-**Tip (committed):** `f7de743`  
-**Remote:** **6 commits ahead, not pushed** (after this commit)  
+**Tip (committed):** `eb21044` (ship commit `f7de743`)  
+**Remote:** **7 commits ahead, not pushed**  
 **Working tree:** **clean** (Settings GA4, theme toggle, SubjectRowDBG cleanup committed)
 
 `origin` is the simulations repo (`EduAI_app`). App ship set goes to **`gamified`**.
@@ -152,7 +152,7 @@ Play/Console after AAB: ColorOS smoke, Data Safety, 512 icon, release notes. Fir
 ## F. Stack picture
 
 ```
-<tip>   Settings GA4 + notif opened + Light/Dark + SubjectRowDBG removal + this doc
+f7de743  Settings GA4 + notif opened + Light/Dark + SubjectRowDBG removal + this doc
 cca2cb0  Made-for-kids reels gating
 2f80805  coach-sim + edu-round example
 db9935f  .gitattributes / untrack .idea .kotlin
