@@ -1,0 +1,36 @@
+{
+  "simId": "science_7_4",
+  "lang": "en",
+  "title": "Convection",
+  "steps": [
+    {
+      "text": "Convection is how heat moves through liquids and gases — the fluid itself carries the heat. Let's watch it."
+    },
+    {
+      "text": "Turn on the heat under the water and watch the particles.",
+      "target": "Heat"
+    },
+    {
+      "text": "Hot water is lighter, so it rises; cooler water is heavier, so it sinks. This sets up a loop called a convection current."
+    },
+    {
+      "text": "Hot rises, cold sinks, round and round. That's convection — the same reason warm air rises in a room."
+    }
+  ],
+  "coach": {
+    "mission": "Heat the water and follow the convection current.",
+    "whenStuck": [
+      "Turn on the heat and turn on the arrows to see the flow.",
+      "Watch where the hot water goes and where the cold water goes."
+    ],
+    "whenWrong": [
+      "Hot fluid rises and cold fluid sinks — that loop is a convection current.",
+      "In convection the fluid itself moves and carries the heat."
+    ],
+    "whenCorrect": [
+      "Right — hot water rises and cold water sinks, making a current.",
+      "Good — that circulating loop is convection."
+    ],
+    "done": "You've seen a convection current form. Explore more, or move on when you're ready."
+  }
+}

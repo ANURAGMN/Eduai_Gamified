@@ -1,0 +1,36 @@
+{
+  "simId": "science_3_6",
+  "lang": "en",
+  "title": "Lamp Types – Incandescent vs LED",
+  "steps": [
+    {
+      "text": "Not all bulbs are the same. Let's compare an old incandescent bulb with a modern LED."
+    },
+    {
+      "text": "Pick a lamp and switch it on — try the LED.",
+      "target": "LED"
+    },
+    {
+      "text": "The incandescent bulb heats a thin wire until it glows — it gives light but wastes a lot as heat. The LED makes light directly, staying cool."
+    },
+    {
+      "text": "LEDs use far less electricity and last much longer than incandescent bulbs. That's why we've switched to LEDs to save energy."
+    }
+  ],
+  "coach": {
+    "mission": "Compare an incandescent bulb with an LED.",
+    "whenStuck": [
+      "Switch on each lamp and compare brightness and heat.",
+      "Ask which one wastes energy as heat."
+    ],
+    "whenWrong": [
+      "Incandescent bulbs waste energy as heat; LEDs are efficient and stay cool.",
+      "LEDs use less electricity and last longer."
+    ],
+    "whenCorrect": [
+      "Right — the LED is far more efficient than the incandescent bulb.",
+      "Good — that's why LEDs save energy."
+    ],
+    "done": "You've compared lamp types. Explore more, or move on when you're ready."
+  }
+}

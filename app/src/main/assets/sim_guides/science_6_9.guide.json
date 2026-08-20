@@ -1,0 +1,36 @@
+{
+  "simId": "science_6_9",
+  "lang": "en",
+  "title": "Healthy Habits for Adolescents",
+  "steps": [
+    {
+      "text": "Good habits during adolescence set you up for a healthy life. Let's pick some."
+    },
+    {
+      "text": "Tap each healthy habit to see why it helps.",
+      "target": "healthy habits"
+    },
+    {
+      "text": "Key habits: enough sleep, regular exercise or play, drinking water, eating well, and screen-time in balance."
+    },
+    {
+      "text": "These habits give you energy, help you grow, and keep your mind fresh. Small daily choices add up to big results."
+    }
+  ],
+  "coach": {
+    "mission": "Choose healthy daily habits for adolescence.",
+    "whenStuck": [
+      "Tap each habit to see how it helps your body and mind.",
+      "Think about sleep, exercise, water, and food."
+    ],
+    "whenWrong": [
+      "Healthy habits include enough sleep, exercise, water, and good food.",
+      "Balance matters — including limiting screen time."
+    ],
+    "whenCorrect": [
+      "Right — that's a habit that keeps you healthy.",
+      "Good — small daily habits add up over time."
+    ],
+    "done": "You've chosen healthy habits for adolescence. Explore more, or move on when you're ready."
+  }
+}

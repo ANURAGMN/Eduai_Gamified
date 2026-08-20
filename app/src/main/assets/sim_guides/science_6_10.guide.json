@@ -1,0 +1,36 @@
+{
+  "simId": "science_6_10",
+  "lang": "en",
+  "title": "Say No to Harmful Substances",
+  "steps": [
+    {
+      "text": "Growing up means making smart choices. Some substances — tobacco, alcohol, and drugs — harm the body and are never worth it. Let's practise saying no."
+    },
+    {
+      "text": "Read each situation and choose the healthy response, then move to the next one.",
+      "target": "Next Scenario"
+    },
+    {
+      "text": "Friends may pressure you to try harmful things. A firm, polite “No thanks” is a strong, smart choice — real friends respect it."
+    },
+    {
+      "text": "If you ever feel pressured or unsafe, tell a trusted adult — a parent, teacher, or elder. Saying no protects your health and your future."
+    }
+  ],
+  "coach": {
+    "mission": "Practise saying no to harmful substances.",
+    "whenStuck": [
+      "Read the situation and pick the healthy response, then tap “Next Scenario”.",
+      "The safe choice is always to refuse harmful substances."
+    ],
+    "whenWrong": [
+      "Tobacco, alcohol, and drugs harm the body — the healthy answer is to say no.",
+      "If you feel pressured, telling a trusted adult is a strong move."
+    ],
+    "whenCorrect": [
+      "Right — saying no is the smart, healthy choice.",
+      "Good — real friends respect a firm “No thanks”."
+    ],
+    "done": "You've practised making healthy choices and saying no to harmful substances. Move on when you're ready."
+  }
+}

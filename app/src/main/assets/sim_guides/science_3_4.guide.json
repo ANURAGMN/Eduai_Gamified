@@ -1,0 +1,36 @@
+{
+  "simId": "science_3_4",
+  "lang": "en",
+  "title": "Electric Cell – Structure & Terminals",
+  "steps": [
+    {
+      "text": "An electric cell is a small source of electricity with two ends called terminals. Let's find them."
+    },
+    {
+      "text": "Tap the “Positive (+)” terminal to highlight it.",
+      "target": "Positive"
+    },
+    {
+      "text": "Every cell has a positive terminal (the metal cap, marked +) and a negative terminal (the flat base, marked −)."
+    },
+    {
+      "text": "Current flows out of the + terminal and back into the − terminal. Getting the terminals right is how you connect a cell into a circuit."
+    }
+  ],
+  "coach": {
+    "mission": "Identify the positive and negative terminals of a cell.",
+    "whenStuck": [
+      "The metal cap is the + terminal; the flat base is the − terminal.",
+      "Tap a terminal to highlight and check it."
+    ],
+    "whenWrong": [
+      "The raised metal cap is positive (+); the flat end is negative (−).",
+      "Look for the + and − marks on the cell."
+    ],
+    "whenCorrect": [
+      "Right — that's the correct terminal.",
+      "Good — + is the cap, − is the base."
+    ],
+    "done": "You've identified a cell's terminals. Explore more, or move on when you're ready."
+  }
+}

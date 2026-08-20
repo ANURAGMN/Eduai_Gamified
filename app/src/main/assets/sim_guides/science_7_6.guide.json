@@ -1,0 +1,36 @@
+{
+  "simId": "science_7_6",
+  "lang": "en",
+  "title": "Radiation",
+  "steps": [
+    {
+      "text": "Radiation is heat that travels as rays — no material needed. That's how the Sun's heat reaches us across empty space. Let's test it."
+    },
+    {
+      "text": "Turn on a heat source, then choose a colour to absorb its rays — try “Black Shirt”.",
+      "target": "Black Shirt"
+    },
+    {
+      "text": "Dark colours absorb radiation and heat up fast. Now try a light colour — it reflects the rays and stays cooler."
+    },
+    {
+      "text": "Radiation needs no medium (unlike conduction and convection). Dark absorbs, light reflects — that's why we wear light colours in summer."
+    }
+  ],
+  "coach": {
+    "mission": "See how radiation heats dark and light colours differently.",
+    "whenStuck": [
+      "Set a heat source, then pick a colour to test.",
+      "Compare a dark colour with a light one."
+    ],
+    "whenWrong": [
+      "Dark colours absorb radiation (hotter); light colours reflect it (cooler).",
+      "Radiation travels as rays and needs no material to pass through."
+    ],
+    "whenCorrect": [
+      "Right — the dark colour absorbed more heat.",
+      "Good — light colours reflect the rays and stay cooler."
+    ],
+    "done": "You've seen how radiation transfers heat. Explore more, or move on when you're ready."
+  }
+}

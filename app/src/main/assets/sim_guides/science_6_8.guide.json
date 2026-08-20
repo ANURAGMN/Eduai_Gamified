@@ -1,0 +1,36 @@
+{
+  "simId": "science_6_8",
+  "lang": "en",
+  "title": "Personal Hygiene During Adolescence",
+  "steps": [
+    {
+      "text": "During adolescence the body sweats more, so personal hygiene matters more than ever. Let's build a daily routine."
+    },
+    {
+      "text": "Tap the healthy habits to add them — start with “Daily Bath/Shower”.",
+      "target": "Daily Bath/Shower"
+    },
+    {
+      "text": "Add the rest: wash hands frequently, wash your face, and wear clean clothes daily. These keep you fresh and prevent infections."
+    },
+    {
+      "text": "Simple daily habits — bathing, clean clothes, and washing hands — keep you healthy and confident. Stay clean, stay healthy!"
+    }
+  ],
+  "coach": {
+    "mission": "Build a daily personal-hygiene routine for adolescence.",
+    "whenStuck": [
+      "Tap each good habit to add it to your routine.",
+      "Think about what keeps the body clean every day."
+    ],
+    "whenWrong": [
+      "More sweating means daily bathing, clean clothes, and hand-washing matter.",
+      "Good hygiene prevents body odour and infections."
+    ],
+    "whenCorrect": [
+      "Right — that's a healthy daily hygiene habit.",
+      "Good — small daily habits keep you clean and healthy."
+    ],
+    "done": "You've built a healthy hygiene routine. Explore more, or move on when you're ready."
+  }
+}

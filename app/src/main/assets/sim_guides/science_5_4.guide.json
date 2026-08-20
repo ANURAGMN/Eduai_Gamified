@@ -1,0 +1,35 @@
+{
+  "simId": "science_5_4",
+  "lang": "en",
+  "title": "States of Matter – Water Transitions",
+  "steps": [
+    {
+      "text": "Water can be a solid, a liquid, or a gas — but it's always H₂O. Let's move it between states."
+    },
+    {
+      "text": "Heat the ice to melt it into liquid water (melting), then heat it more to boil it into steam (boiling)."
+    },
+    {
+      "text": "Cool the steam and it condenses back to water; cool the water and it freezes back to ice."
+    },
+    {
+      "text": "Solid, liquid, gas — all three are the same substance, H₂O. Adding or removing heat just changes its state."
+    }
+  ],
+  "coach": {
+    "mission": "Move water between solid, liquid, and gas.",
+    "whenStuck": [
+      "Add heat to go solid → liquid → gas; remove heat to go back.",
+      "Watch the labels change: melting, boiling, condensing, freezing."
+    ],
+    "whenWrong": [
+      "Heating melts then boils; cooling condenses then freezes.",
+      "It's the same water throughout — only the state changes."
+    ],
+    "whenCorrect": [
+      "Right — heat changed the state of the water.",
+      "Good — all three states are still H₂O."
+    ],
+    "done": "You've moved water through all three states. Explore more, or move on when you're ready."
+  }
+}

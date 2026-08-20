@@ -1,0 +1,40 @@
+{
+  "simId": "science_4_2",
+  "lang": "en",
+  "title": "Ductility – Drawing Wires",
+  "steps": [
+    {
+      "text": "Ductility means a material can be stretched into thin wires. Let's see which materials are ductile."
+    },
+    {
+      "text": "Pick a metal first — tap Copper.",
+      "target": "Copper"
+    },
+    {
+      "text": "Now tap “Draw Wire” and try to stretch it.",
+      "target": "Draw Wire"
+    },
+    {
+      "text": "The metal stretches into a long thin wire — metals like copper, gold and aluminium are ductile. That's why wires are made of metal."
+    },
+    {
+      "text": "Now try a non-metal like Sulfur and draw it — it snaps instead of stretching. Metals are ductile, non-metals are not."
+    }
+  ],
+  "coach": {
+    "mission": "Try to draw a metal and a non-metal into a wire.",
+    "whenStuck": [
+      "Tap a material first, then tap “Draw Wire”.",
+      "Try a metal like Copper, then a non-metal, and compare."
+    ],
+    "whenWrong": [
+      "Metals stretch into wires (ductile); non-metals snap.",
+      "If it broke instead of stretching, that was a non-metal."
+    ],
+    "whenCorrect": [
+      "Right — the metal drew into a long wire, so it's ductile.",
+      "Good — the non-metal snapped because it isn't ductile."
+    ],
+    "done": "You've seen that metals are ductile and non-metals are not. Try more materials, or move on when you're ready."
+  }
+}

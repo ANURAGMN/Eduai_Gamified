@@ -1,0 +1,35 @@
+{
+  "simId": "science_3_1",
+  "lang": "en",
+  "title": "Uses of Electricity",
+  "steps": [
+    {
+      "text": "Electricity does many jobs in our homes. Let's sort appliances by what electricity does in each."
+    },
+    {
+      "text": "Look at each appliance and decide what electricity gives it — heat, light, sound, or movement."
+    },
+    {
+      "text": "A heater and iron make heat; a bulb makes light; a fan and mixer make movement; a radio makes sound."
+    },
+    {
+      "text": "Electricity is useful because it easily turns into heat, light, sound, and motion — that's why it powers almost everything."
+    }
+  ],
+  "coach": {
+    "mission": "Sort appliances by what electricity does in each.",
+    "whenStuck": [
+      "Ask: does this appliance make heat, light, sound, or movement?",
+      "A fan moves; a bulb lights; a heater warms."
+    ],
+    "whenWrong": [
+      "Match the appliance to its effect — a heater makes heat, a fan makes movement.",
+      "Electricity can become heat, light, sound, or motion."
+    ],
+    "whenCorrect": [
+      "Right — that's what electricity does in that appliance.",
+      "Good — electricity changes into many useful forms."
+    ],
+    "done": "You've sorted the uses of electricity. Explore more, or move on when you're ready."
+  }
+}

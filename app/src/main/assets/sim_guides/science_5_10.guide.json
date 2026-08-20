@@ -1,0 +1,36 @@
+{
+  "simId": "science_5_10",
+  "lang": "en",
+  "title": "Weathering & Erosion – Slow Natural Changes",
+  "steps": [
+    {
+      "text": "Some changes are so slow we don't notice them — weathering and erosion reshape the land over a very long time."
+    },
+    {
+      "text": "Pick a place to explore — tap “Mountain”.",
+      "target": "Mountain"
+    },
+    {
+      "text": "Weathering breaks rock into smaller pieces (by water, wind, and temperature); erosion then carries those pieces away."
+    },
+    {
+      "text": "River rocks get smooth and round, sea cliffs get carved back, mountains slowly wear down — all slow natural changes over thousands of years."
+    }
+  ],
+  "coach": {
+    "mission": "Explore how weathering and erosion slowly change the land.",
+    "whenStuck": [
+      "Tap a place like “Mountain” or “River Rocks” to see the change.",
+      "Look for how rock is broken down and then carried away."
+    ],
+    "whenWrong": [
+      "Weathering breaks rock down; erosion moves the pieces away.",
+      "These changes are real but very slow — over many years."
+    ],
+    "whenCorrect": [
+      "Right — that's weathering and erosion shaping the land.",
+      "Good — slow natural changes add up over a very long time."
+    ],
+    "done": "You've seen how slow natural changes reshape the land. Explore more, or move on when you're ready."
+  }
+}

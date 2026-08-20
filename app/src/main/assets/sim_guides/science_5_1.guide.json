@@ -1,0 +1,36 @@
+{
+  "simId": "science_5_1",
+  "lang": "en",
+  "title": "Physical Changes – No New Substance",
+  "steps": [
+    {
+      "text": "In a physical change, no new substance is formed — the material only changes its shape or state. Let's see one."
+    },
+    {
+      "text": "Pick an example — tap “Melt Ice”.",
+      "target": "Melt Ice"
+    },
+    {
+      "text": "The ice melts into water, but it's still H₂O — same substance, just a different form. And you can freeze it back."
+    },
+    {
+      "text": "Folding paper, melting ice, dissolving sugar — all physical changes: same substance, different form, and usually reversible."
+    }
+  ],
+  "coach": {
+    "mission": "Try a change and check that no new substance is formed.",
+    "whenStuck": [
+      "Tap an example like “Melt Ice”, then watch what happens.",
+      "Ask yourself: is it still the same substance afterwards?"
+    ],
+    "whenWrong": [
+      "In a physical change the substance stays the same — only its form changes.",
+      "Melted ice is still water (H₂O), so no new substance formed."
+    ],
+    "whenCorrect": [
+      "Right — same substance, just a new form. That's a physical change.",
+      "Good — and it can usually be reversed."
+    ],
+    "done": "You've seen a physical change makes no new substance. Try another example, or move on when you're ready."
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "simId": "science_8_4",
+  "lang": "en",
+  "title": "Pendulum Time Period Experiment",
+  "steps": [
+    {
+      "text": "What decides how fast a pendulum swings? Let's experiment with different pendulum lengths."
+    },
+    {
+      "text": "Pick a pendulum length, then tap “Start Experiment” to measure its time period.",
+      "target": "Start Experiment"
+    },
+    {
+      "text": "Now try a longer one. Notice: the longer the pendulum, the longer each swing takes — a bigger time period."
+    },
+    {
+      "text": "Length is what changes the time period — a long pendulum swings slowly, a short one swings quickly. That's how pendulum clocks are tuned."
+    }
+  ],
+  "coach": {
+    "mission": "Find out how pendulum length changes the time period.",
+    "whenStuck": [
+      "Pick a length, tap “Start Experiment”, and note the time period.",
+      "Then try a different length and compare."
+    ],
+    "whenWrong": [
+      "A longer pendulum takes longer per swing (bigger time period); a shorter one is quicker.",
+      "Change the length to change the time period."
+    ],
+    "whenCorrect": [
+      "Right — the longer pendulum has a longer time period.",
+      "Good — length controls how fast a pendulum swings."
+    ],
+    "done": "You've discovered that length sets a pendulum's time period. Try more lengths, or move on when you're ready."
+  }
+}

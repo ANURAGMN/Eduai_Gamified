@@ -1,0 +1,36 @@
+{
+  "simId": "science_7_2",
+  "lang": "en",
+  "title": "Conduction of Heat",
+  "steps": [
+    {
+      "text": "Conduction is how heat travels through a solid — from the hot end to the cold end. Let's watch it happen."
+    },
+    {
+      "text": "Tap “Start” to heat one end of the rod. Pins are stuck along it with wax.",
+      "target": "Start"
+    },
+    {
+      "text": "The pins drop one by one — the one nearest the flame first, then the next. That order shows heat moving along the rod."
+    },
+    {
+      "text": "Heat always flows from hot to cold through the material. That's conduction, and it works best in metals."
+    }
+  ],
+  "coach": {
+    "mission": "Watch heat conduct along a rod and drop the pins in order.",
+    "whenStuck": [
+      "Tap “Start” to heat the rod and watch the pins.",
+      "Notice which pin falls first."
+    ],
+    "whenWrong": [
+      "Heat moves from the hot end to the cold end, so the nearest pin drops first.",
+      "The order of the pins shows the direction heat travels."
+    ],
+    "whenCorrect": [
+      "Right — the pins fall in order as heat conducts along the rod.",
+      "Good — heat flows from hot to cold through the metal."
+    ],
+    "done": "You've seen heat conduct through a solid. Reset and try again, or move on when you're ready."
+  }
+}

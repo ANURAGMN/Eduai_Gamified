@@ -1,0 +1,36 @@
+{
+  "simId": "science_5_3",
+  "lang": "en",
+  "title": "Reversible vs Irreversible Changes",
+  "steps": [
+    {
+      "text": "Some changes can be undone (reversible), others can't (irreversible). Let's sort a few."
+    },
+    {
+      "text": "Look at each change and decide: can it be reversed? Melting ice can — freeze it back. Then check your answer.",
+      "target": "Melting Ice"
+    },
+    {
+      "text": "Burning paper cannot be reversed — the ash can't become paper again. That's irreversible."
+    },
+    {
+      "text": "Rule of thumb: physical changes are usually reversible; chemical changes are usually irreversible."
+    }
+  ],
+  "coach": {
+    "mission": "Sort each change into reversible or irreversible.",
+    "whenStuck": [
+      "Ask: can I get the original substance back?",
+      "If yes, it's reversible; if not, it's irreversible."
+    ],
+    "whenWrong": [
+      "Melting and freezing can be undone — reversible. Burning cannot — irreversible.",
+      "New substance formed usually means irreversible."
+    ],
+    "whenCorrect": [
+      "Right — you can undo that one, so it's reversible.",
+      "Right — that change can't be undone, so it's irreversible."
+    ],
+    "done": "You've sorted reversible and irreversible changes. Try more, or move on when you're ready."
+  }
+}

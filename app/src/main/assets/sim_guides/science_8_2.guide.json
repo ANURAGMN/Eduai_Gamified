@@ -1,0 +1,35 @@
+{
+  "simId": "science_8_2",
+  "lang": "en",
+  "title": "Interactive Sundial",
+  "steps": [
+    {
+      "text": "A sundial tells time using the Sun's shadow. Let's see how it works."
+    },
+    {
+      "text": "Move the Sun across the sky and watch the shadow of the pointer move."
+    },
+    {
+      "text": "As the Sun moves from east to west through the day, the shadow swings around — and its position shows the time."
+    },
+    {
+      "text": "In the morning the shadow points one way, at noon it's shortest, and by evening it points the other way. That's how a sundial marks the hours."
+    }
+  ],
+  "coach": {
+    "mission": "Use the Sun's shadow to read time on a sundial.",
+    "whenStuck": [
+      "Move the Sun and watch how the shadow shifts.",
+      "Notice where the shadow falls at morning, noon, and evening."
+    ],
+    "whenWrong": [
+      "The shadow moves as the Sun moves — its position tells the time.",
+      "At noon the Sun is highest, so the shadow is shortest."
+    ],
+    "whenCorrect": [
+      "Right — the shadow's position marks the time of day.",
+      "Good — the shadow is shortest at noon."
+    ],
+    "done": "You've seen how a sundial tells time by shadow. Explore more, or move on when you're ready."
+  }
+}

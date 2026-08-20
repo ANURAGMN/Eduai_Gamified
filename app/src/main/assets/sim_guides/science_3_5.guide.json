@@ -1,0 +1,36 @@
+{
+  "simId": "science_3_5",
+  "lang": "en",
+  "title": "Battery – Connecting Cells Together",
+  "steps": [
+    {
+      "text": "A battery is two or more cells joined together. Let's build one and see what changes."
+    },
+    {
+      "text": "Add more cells and connect them so the + of one meets the − of the next.",
+      "target": "cells"
+    },
+    {
+      "text": "Joined + to −, the cells add up, so the battery pushes more strongly and the bulb glows brighter."
+    },
+    {
+      "text": "That's why torches and toys use two or three cells — connecting cells the right way (+ to −) makes a stronger battery."
+    }
+  ],
+  "coach": {
+    "mission": "Connect cells into a battery and see the effect.",
+    "whenStuck": [
+      "Add cells and line them up + to −.",
+      "Watch how the brightness changes as you add cells."
+    ],
+    "whenWrong": [
+      "Cells add up only when joined + to − in a line.",
+      "More cells connected correctly means more power and a brighter bulb."
+    ],
+    "whenCorrect": [
+      "Right — cells joined + to − add up into a battery.",
+      "Good — more cells, brighter bulb."
+    ],
+    "done": "You've built a battery from cells. Explore more, or move on when you're ready."
+  }
+}

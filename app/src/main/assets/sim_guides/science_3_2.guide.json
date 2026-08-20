@@ -1,0 +1,36 @@
+{
+  "simId": "science_3_2",
+  "lang": "en",
+  "title": "Sources of Electricity",
+  "steps": [
+    {
+      "text": "The electricity in our homes is generated in power stations from different sources. Let's explore them."
+    },
+    {
+      "text": "Tap a source to see how it makes electricity — start with a hydro (water) source.",
+      "target": "Hydro"
+    },
+    {
+      "text": "Some sources are renewable — water, sunlight, and wind never run out. Others burn coal or gas, which are limited and cause pollution."
+    },
+    {
+      "text": "Solar, wind, and hydro are cleaner, renewable choices for making electricity. Cells and batteries are small portable sources too."
+    }
+  ],
+  "coach": {
+    "mission": "Explore the different sources that generate electricity.",
+    "whenStuck": [
+      "Tap each source to see how it produces electricity.",
+      "Notice which sources are renewable."
+    ],
+    "whenWrong": [
+      "Renewable sources (sun, wind, water) don't run out; coal and gas do.",
+      "Different sources make electricity in different ways."
+    ],
+    "whenCorrect": [
+      "Right — that's how that source generates electricity.",
+      "Good — renewable sources are cleaner and never run out."
+    ],
+    "done": "You've explored the sources of electricity. Explore more, or move on when you're ready."
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "simId": "science_6_1",
+  "lang": "en",
+  "title": "Stages of Human Life",
+  "steps": [
+    {
+      "text": "Every person grows through stages from birth to old age. Let's walk through them."
+    },
+    {
+      "text": "Tap a stage to explore it — start with “Adolescence”.",
+      "target": "Adolescence"
+    },
+    {
+      "text": "The order is: Infancy → Childhood → Adolescence (about 10–19 years) → Adulthood → Old age."
+    },
+    {
+      "text": "Adolescence is the stage between childhood and adulthood, when the body grows and changes the most. That's this chapter's focus."
+    }
+  ],
+  "coach": {
+    "mission": "Explore the stages of human life from infancy to old age.",
+    "whenStuck": [
+      "Tap each stage to see what happens in it.",
+      "Try to put them in order from birth onward."
+    ],
+    "whenWrong": [
+      "The order is infancy, childhood, adolescence, adulthood, then old age.",
+      "Adolescence comes between childhood and adulthood."
+    ],
+    "whenCorrect": [
+      "Right — that's where that stage fits in the journey of growth.",
+      "Good — adolescence is the big-change stage between childhood and adulthood."
+    ],
+    "done": "You've seen the stages of human life. Explore more, or move on when you're ready."
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "simId": "science_5_7",
+  "lang": "en",
+  "title": "Burning Candle – Physical & Chemical Changes",
+  "steps": [
+    {
+      "text": "A burning candle shows two kinds of change at once. Let's look at each."
+    },
+    {
+      "text": "Tap “Physical” to see the wax melting.",
+      "target": "Physical"
+    },
+    {
+      "text": "The solid wax melts to liquid wax — same substance, and it sets solid again when cooled. That's a physical change."
+    },
+    {
+      "text": "Now tap “Chemical” to see the wax burning.",
+      "target": "Chemical"
+    },
+    {
+      "text": "The burning wax makes new substances — heat, light, and gases — that can't turn back into wax. That's a chemical change."
+    }
+  ],
+  "coach": {
+    "mission": "Find the physical change and the chemical change in a burning candle.",
+    "whenStuck": [
+      "Tap “Physical” for the melting wax, then “Chemical” for the burning.",
+      "Ask: is a new substance formed, or just a new form?"
+    ],
+    "whenWrong": [
+      "Melting wax = physical (same substance). Burning wax = chemical (new substances).",
+      "If it can be cooled back to wax, that part was physical."
+    ],
+    "whenCorrect": [
+      "Right — melting is physical; it can set back to wax.",
+      "Right — burning is chemical; new substances form and can't reverse."
+    ],
+    "done": "You've seen a candle do both a physical and a chemical change. Move on when you're ready."
+  }
+}

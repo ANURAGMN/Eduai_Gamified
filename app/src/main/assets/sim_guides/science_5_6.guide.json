@@ -1,0 +1,37 @@
+{
+  "simId": "science_5_6",
+  "lang": "en",
+  "title": "Oxygen & Combustion – Candle Experiment",
+  "steps": [
+    {
+      "text": "A flame needs oxygen to keep burning. Let's prove it with a candle and a jar."
+    },
+    {
+      "text": "Tap “Light Candle” to start the flame.",
+      "target": "Light Candle"
+    },
+    {
+      "text": "Now tap “Cover with Jar” to trap the candle under glass.",
+      "target": "Cover with Jar"
+    },
+    {
+      "text": "The flame uses up the oxygen inside and goes out. No oxygen means no combustion — the same reason a jar smothers a fire."
+    }
+  ],
+  "coach": {
+    "mission": "Light the candle, then cover it and watch what happens.",
+    "whenStuck": [
+      "Tap “Light Candle”, then “Cover with Jar”.",
+      "Watch how long the flame lasts once it's covered."
+    ],
+    "whenWrong": [
+      "The flame goes out because the trapped air runs out of oxygen.",
+      "No oxygen, no fire — that's why covering it works."
+    ],
+    "whenCorrect": [
+      "Right — the flame died once the oxygen ran out.",
+      "Good — cutting off oxygen stops combustion."
+    ],
+    "done": "You've shown a flame needs oxygen to burn. Reset and try again, or move on when you're ready."
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "simId": "science_7_9",
+  "lang": "en",
+  "title": "Infiltration",
+  "steps": [
+    {
+      "text": "Infiltration is rainwater soaking into the ground. Different soils let water through at different speeds. Let's race them."
+    },
+    {
+      "text": "Tap “Make it Rain” and watch the water soak into each soil.",
+      "target": "Make it Rain"
+    },
+    {
+      "text": "Sandy soil has big gaps, so water rushes through fastest. Clay soil is packed tight, so water soaks in slowly."
+    },
+    {
+      "text": "Faster infiltration means more water reaches the groundwater below. Soil type decides how quickly rain soaks in."
+    }
+  ],
+  "coach": {
+    "mission": "Race the soils to see which lets water infiltrate fastest.",
+    "whenStuck": [
+      "Tap “Make it Rain” and watch the water levels in each soil.",
+      "Compare sandy soil with clay soil."
+    ],
+    "whenWrong": [
+      "Sandy soil soaks water fastest; clay soil is slowest.",
+      "Bigger gaps between particles let water through more quickly."
+    ],
+    "whenCorrect": [
+      "Right — sandy soil let the water through fastest.",
+      "Good — packed clay slows infiltration down."
+    ],
+    "done": "You've seen how soil type affects infiltration. Explore more, or move on when you're ready."
+  }
+}

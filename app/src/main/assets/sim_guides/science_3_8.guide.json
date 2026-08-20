@@ -1,0 +1,36 @@
+{
+  "simId": "science_3_8",
+  "lang": "en",
+  "title": "Electric Switch – Circuit Controller",
+  "steps": [
+    {
+      "text": "A switch is what lets us turn a circuit on and off. Let's see how it controls the current."
+    },
+    {
+      "text": "Toggle the switch on and off and watch the bulb.",
+      "target": "Switch"
+    },
+    {
+      "text": "Switch ON closes the circuit — a complete loop — so current flows and the bulb glows. Switch OFF opens a gap, so the current stops."
+    },
+    {
+      "text": "A switch simply makes or breaks the loop. That's how every light and appliance in your home is turned on and off."
+    }
+  ],
+  "coach": {
+    "mission": "Use the switch to turn the circuit on and off.",
+    "whenStuck": [
+      "Toggle the switch and watch the bulb react.",
+      "ON closes the loop; OFF opens it."
+    ],
+    "whenWrong": [
+      "Switch ON completes the loop (bulb glows); OFF breaks it (bulb off).",
+      "A switch makes or breaks the circuit."
+    ],
+    "whenCorrect": [
+      "Right — closing the switch let current flow and lit the bulb.",
+      "Good — opening it broke the circuit."
+    ],
+    "done": "You've seen how a switch controls a circuit. Explore more, or move on when you're ready."
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "simId": "science_7_10",
+  "lang": "en",
+  "title": "Water Conservation",
+  "steps": [
+    {
+      "text": "Clean water is precious and limited, so we must use it wisely. Let's explore ways to save water."
+    },
+    {
+      "text": "Tap a method to learn how it helps — start with “Rainwater harvesting”.",
+      "target": "Rainwater harvesting"
+    },
+    {
+      "text": "Rainwater harvesting collects rain to use later and refills groundwater. Other ways: fix leaks, turn off taps, and reuse water where you can."
+    },
+    {
+      "text": "Every drop counts. Simple habits at home plus methods like rainwater harvesting protect our water for the future."
+    }
+  ],
+  "coach": {
+    "mission": "Explore ways to conserve water.",
+    "whenStuck": [
+      "Tap each method to see how it saves water.",
+      "Think about how to use less and store more."
+    ],
+    "whenWrong": [
+      "Rainwater harvesting stores rain and refills groundwater.",
+      "Saving water also means fixing leaks and not wasting it."
+    ],
+    "whenCorrect": [
+      "Right — that method helps conserve water.",
+      "Good — small habits add up to a lot of saved water."
+    ],
+    "done": "You've explored ways to conserve water. Every drop counts. Move on when you're ready."
+  }
+}

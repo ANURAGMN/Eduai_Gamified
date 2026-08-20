@@ -1,0 +1,36 @@
+{
+  "simId": "science_4_3",
+  "lang": "en",
+  "title": "Sonority – Sound Test",
+  "steps": [
+    {
+      "text": "Sonority means a material makes a clear ringing sound when struck. Let's test which materials are sonorous."
+    },
+    {
+      "text": "Tap a metal object to strike it.",
+      "target": "Metal"
+    },
+    {
+      "text": "Hear that? A clear ringing sound that sustains — metals are sonorous. That's why bells and gongs are made of metal."
+    },
+    {
+      "text": "Now strike a non-metal object — it makes a dull thud with no ring. Metals are sonorous, non-metals are not."
+    }
+  ],
+  "coach": {
+    "mission": "Strike a metal and a non-metal and listen to the difference.",
+    "whenStuck": [
+      "Tap an object to strike it and listen.",
+      "Strike a metal, then a non-metal, and compare the sound."
+    ],
+    "whenWrong": [
+      "Metals ring (sonorous); non-metals make a dull thud.",
+      "A dull sound means it's a non-metal — not sonorous."
+    ],
+    "whenCorrect": [
+      "Right — the metal rang clearly, so it's sonorous.",
+      "Good — the non-metal only thudded because it isn't sonorous."
+    ],
+    "done": "You've heard that metals are sonorous and non-metals are not. Test more objects, or move on when you're ready."
+  }
+}

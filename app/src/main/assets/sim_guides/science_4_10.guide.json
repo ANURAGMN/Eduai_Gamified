@@ -1,0 +1,36 @@
+{
+  "simId": "science_4_10",
+  "lang": "en",
+  "title": "Real-World Applications – Metals & Non-metals",
+  "steps": [
+    {
+      "text": "Every property of metals and non-metals is used in real life. Let's match materials to the right job."
+    },
+    {
+      "text": "Tap “Start” to begin the challenge.",
+      "target": "Start"
+    },
+    {
+      "text": "For each use, pick the material whose property fits — copper wires (conducts electricity), iron girders (strong), a bell (sonorous metal), a pencil lead of graphite (non-metal)."
+    },
+    {
+      "text": "Choosing a material means matching its property to the need. That's why we pick metals for wires, tools and bells, and non-metals where those properties would be wrong."
+    }
+  ],
+  "coach": {
+    "mission": "Match each real-world use to the right material.",
+    "whenStuck": [
+      "Tap “Start”, then think about which property each job needs.",
+      "Ask: does this use need conducting, bending, ringing, or none of those?"
+    ],
+    "whenWrong": [
+      "Match the property to the need — wires need a conductor, so a metal.",
+      "If the job needs a poor conductor or something brittle, that's a non-metal."
+    ],
+    "whenCorrect": [
+      "Right — that material's property is exactly what the job needs.",
+      "Good — you matched the property to the real-world use."
+    ],
+    "done": "You've connected metal and non-metal properties to everyday uses. Explore more, or move on when you're ready."
+  }
+}

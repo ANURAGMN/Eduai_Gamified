@@ -1,0 +1,41 @@
+{
+  "simId": "science_4_7",
+  "lang": "en",
+  "title": "Metal + Oxygen – Basic Oxide",
+  "steps": [
+    {
+      "text": "When a metal burns in oxygen it forms a metal oxide. Let's find out whether that oxide is acidic or basic."
+    },
+    {
+      "text": "Tap “Burn Mg” to burn magnesium in air.",
+      "target": "Burn Mg"
+    },
+    {
+      "text": "It forms white magnesium oxide. Now tap “Dissolve” to mix it into water.",
+      "target": "Dissolve"
+    },
+    {
+      "text": "Tap “Test pH” to check the solution with litmus.",
+      "target": "Test pH"
+    },
+    {
+      "text": "The pH is above 7 and red litmus turns blue — the solution is basic. Metal oxides are basic (they form bases in water)."
+    }
+  ],
+  "coach": {
+    "mission": "Burn magnesium, dissolve the oxide, and test whether it's acidic or basic.",
+    "whenStuck": [
+      "Follow the order: Burn Mg → Dissolve → Test pH.",
+      "Use litmus to check if the solution is acidic or basic."
+    ],
+    "whenWrong": [
+      "A metal oxide is basic — pH above 7, red litmus turns blue.",
+      "If red litmus turned blue, the oxide is basic, not acidic."
+    ],
+    "whenCorrect": [
+      "Right — the metal oxide is basic (pH above 7).",
+      "Good — red litmus turned blue, confirming a basic oxide."
+    ],
+    "done": "You've shown that metal oxides are basic. Compare it with a non-metal oxide next, or move on when you're ready."
+  }
+}

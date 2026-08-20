@@ -1,0 +1,35 @@
+{
+  "simId": "science_8_5",
+  "lang": "en",
+  "title": "Time Units Converter",
+  "steps": [
+    {
+      "text": "Time comes in different units — seconds, minutes, hours. Let's convert between them."
+    },
+    {
+      "text": "Enter a value and convert it. Remember: 1 minute = 60 seconds, and 1 hour = 60 minutes."
+    },
+    {
+      "text": "To go to a smaller unit, multiply (hours → minutes → seconds: ×60 each step). To go to a bigger unit, divide (÷60 each step)."
+    },
+    {
+      "text": "So 2 hours = 120 minutes = 7,200 seconds. Getting the units right is the first step in any speed or time problem."
+    }
+  ],
+  "coach": {
+    "mission": "Convert a time between seconds, minutes, and hours.",
+    "whenStuck": [
+      "Use 1 minute = 60 seconds and 1 hour = 60 minutes.",
+      "Smaller unit → multiply by 60; bigger unit → divide by 60."
+    ],
+    "whenWrong": [
+      "Going to a smaller unit multiplies by 60; going to a bigger unit divides by 60.",
+      "1 hour = 60 minutes = 3,600 seconds."
+    ],
+    "whenCorrect": [
+      "Right — the conversion factor is 60 at each step.",
+      "Good — units line up correctly now."
+    ],
+    "done": "You've converted between time units. Try more values, or move on when you're ready."
+  }
+}

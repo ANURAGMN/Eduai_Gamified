@@ -1,0 +1,35 @@
+{
+  "simId": "science_4_6",
+  "lang": "en",
+  "title": "Rusting of Iron – Conditions",
+  "steps": [
+    {
+      "text": "Iron rusts, but only under certain conditions. Let's find out exactly what iron needs to rust."
+    },
+    {
+      "text": "Watch the three test tubes: one with both air and water, one with water but no air, and one with dry air but no water."
+    },
+    {
+      "text": "Only the tube with BOTH air and water shows rust. Water alone or air alone isn't enough."
+    },
+    {
+      "text": "So iron rusts only when air (oxygen) AND water are both present. That's why oiling or painting iron — which keeps out air and water — prevents rusting."
+    }
+  ],
+  "coach": {
+    "mission": "Find out which condition makes iron rust.",
+    "whenStuck": [
+      "Compare the three tubes and see which one rusts.",
+      "Look for the tube that has both air and water."
+    ],
+    "whenWrong": [
+      "Air alone doesn't rust iron, and water alone doesn't either — it needs both.",
+      "Only the tube with both air and water shows rust."
+    ],
+    "whenCorrect": [
+      "Right — iron needs both air and water to rust.",
+      "Exactly — remove either air or water and the iron stays shiny."
+    ],
+    "done": "You've discovered iron rusts only with both air and water. Explore more, or move on when you're ready."
+  }
+}

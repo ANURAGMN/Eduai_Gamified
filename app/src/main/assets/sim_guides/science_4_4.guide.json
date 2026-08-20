@@ -1,0 +1,36 @@
+{
+  "simId": "science_4_4",
+  "lang": "en",
+  "title": "Heat Conduction – Metals vs Non-metals",
+  "steps": [
+    {
+      "text": "Conduction is the transfer of heat through a material. Let's compare how well a metal and a non-metal carry heat."
+    },
+    {
+      "text": "Tap “Start” to heat both materials at once.",
+      "target": "Start"
+    },
+    {
+      "text": "Watch the temperatures — the metal heats up quickly (good conductor), while the wood stays cool (poor conductor, an insulator)."
+    },
+    {
+      "text": "Metals are good conductors of heat; non-metals like wood are insulators. That's why pans are metal but their handles are not."
+    }
+  ],
+  "coach": {
+    "mission": "Heat a metal and a non-metal and compare how fast each warms up.",
+    "whenStuck": [
+      "Tap “Start” to run the heating experiment.",
+      "Compare the two temperatures as they rise."
+    ],
+    "whenWrong": [
+      "The metal heats up fast (good conductor); the non-metal stays cool (insulator).",
+      "If it stayed cool, that material is a poor conductor of heat."
+    ],
+    "whenCorrect": [
+      "Right — the metal conducted heat quickly.",
+      "Good — the non-metal stayed cool because it's an insulator."
+    ],
+    "done": "You've seen that metals conduct heat well and non-metals insulate. Run it again, or move on when you're ready."
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "simId": "science_8_8",
+  "lang": "en",
+  "title": "Uniform Linear Motion",
+  "steps": [
+    {
+      "text": "Uniform motion means moving at a constant speed in a straight line. Let's watch what that looks like."
+    },
+    {
+      "text": "Tap “Start” to move the object.",
+      "target": "Start"
+    },
+    {
+      "text": "See how it covers equal distances in equal times — the same gap every second. That's the sign of uniform motion."
+    },
+    {
+      "text": "Because the speed never changes, the distance-time graph is a straight line. Steady speed, straight line, equal steps."
+    }
+  ],
+  "coach": {
+    "mission": "Watch an object move at a constant speed.",
+    "whenStuck": [
+      "Tap “Start” and watch the object move.",
+      "Check the distance it covers in each second."
+    ],
+    "whenWrong": [
+      "Uniform motion covers equal distances in equal times — the speed stays constant.",
+      "A constant speed gives a straight distance-time graph."
+    ],
+    "whenCorrect": [
+      "Right — equal distances in equal times means uniform motion.",
+      "Good — constant speed, straight-line graph."
+    ],
+    "done": "You've seen uniform linear motion. Explore non-uniform motion next, or move on when you're ready."
+  }
+}

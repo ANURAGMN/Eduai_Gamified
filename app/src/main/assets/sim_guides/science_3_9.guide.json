@@ -1,0 +1,36 @@
+{
+  "simId": "science_3_9",
+  "lang": "en",
+  "title": "Circuit Symbols – Reading Circuit Diagrams",
+  "steps": [
+    {
+      "text": "Instead of drawing real components, scientists use simple symbols in circuit diagrams. Let's learn to read them."
+    },
+    {
+      "text": "Tap each symbol to see what it stands for — the cell, the bulb, the switch, and the wires.",
+      "target": "Cell"
+    },
+    {
+      "text": "Now read a diagram and answer: with the parts connected in a closed loop and the switch on, what happens? The bulb glows."
+    },
+    {
+      "text": "A circuit diagram is just a neat map of a real circuit. Once you know the symbols, you can read or draw any simple circuit."
+    }
+  ],
+  "coach": {
+    "mission": "Learn the circuit symbols and read a diagram.",
+    "whenStuck": [
+      "Tap each symbol to match it to its real component.",
+      "Then trace the diagram as a loop and see if it's complete."
+    ],
+    "whenWrong": [
+      "Match each symbol to its part, then check if the loop is closed.",
+      "A closed loop with the switch on makes the bulb glow."
+    ],
+    "whenCorrect": [
+      "Right — you read the symbol correctly.",
+      "Good — you can trace the diagram as a real circuit."
+    ],
+    "done": "You've learned to read circuit diagrams. Explore more, or move on when you're ready."
+  }
+}

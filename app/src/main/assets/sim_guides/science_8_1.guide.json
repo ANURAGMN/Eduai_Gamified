@@ -1,0 +1,36 @@
+{
+  "simId": "science_8_1",
+  "lang": "en",
+  "title": "History of Timekeeping",
+  "steps": [
+    {
+      "text": "Long before clocks, people measured time in clever ways. Let's travel through the history of timekeeping."
+    },
+    {
+      "text": "Tap a device to explore it — try the sundial, then the water clock.",
+      "target": "Animate"
+    },
+    {
+      "text": "Sundials used the Sun's shadow; water clocks and sand timers used steady flow; later came pendulum clocks, and today, quartz and digital clocks."
+    },
+    {
+      "text": "Each new device measured time more accurately than the last. All of them rely on something that repeats at a steady, regular rate."
+    }
+  ],
+  "coach": {
+    "mission": "Explore how people measured time through history.",
+    "whenStuck": [
+      "Tap each timekeeping device to see how it works.",
+      "Notice what repeats steadily in each one."
+    ],
+    "whenWrong": [
+      "Every timekeeper uses something regular and repeating — a shadow, a flow, a swing.",
+      "Newer devices simply measure time more accurately."
+    ],
+    "whenCorrect": [
+      "Right — that device measured time in its own clever way.",
+      "Good — all clocks rely on a steady, repeating action."
+    ],
+    "done": "You've seen how timekeeping improved over history. Explore more, or move on when you're ready."
+  }
+}

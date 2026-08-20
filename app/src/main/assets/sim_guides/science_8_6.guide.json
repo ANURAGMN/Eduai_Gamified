@@ -1,0 +1,36 @@
+{
+  "simId": "science_8_6",
+  "lang": "en",
+  "title": "Speed Calculator",
+  "steps": [
+    {
+      "text": "Speed tells us how fast something moves. It's simply distance divided by time. Let's calculate it."
+    },
+    {
+      "text": "Enter a distance and a time, then tap “Calculate”.",
+      "target": "Calculate"
+    },
+    {
+      "text": "Speed = distance ÷ time. So 100 metres in 20 seconds is 100 ÷ 20 = 5 metres per second."
+    },
+    {
+      "text": "Keep the units matched — metres with seconds gives m/s; kilometres with hours gives km/h. That's the whole idea of speed."
+    }
+  ],
+  "coach": {
+    "mission": "Calculate speed from a distance and a time.",
+    "whenStuck": [
+      "Use Speed = distance ÷ time.",
+      "Divide the distance by the time to get the speed."
+    ],
+    "whenWrong": [
+      "Speed = distance ÷ time — divide, don't multiply.",
+      "Keep units matched: metres + seconds → m/s; km + hours → km/h."
+    ],
+    "whenCorrect": [
+      "Right — distance ÷ time gives the speed.",
+      "Good — and the units follow the distance and time you used."
+    ],
+    "done": "You've calculated speed from distance and time. Try more, or move on when you're ready."
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "simId": "science_4_5",
+  "lang": "en",
+  "title": "Electrical Conductivity – Circuit Tester",
+  "steps": [
+    {
+      "text": "Some materials let electricity flow through them. Let's test which ones complete the circuit and light the bulb."
+    },
+    {
+      "text": "Pick a metal first — tap Copper.",
+      "target": "Copper"
+    },
+    {
+      "text": "Now tap “Test” to place it in the circuit.",
+      "target": "Test"
+    },
+    {
+      "text": "The bulb lights up — metals have free electrons that carry current, so they're good conductors."
+    },
+    {
+      "text": "Now test a non-metal — the bulb stays off. Metals conduct electricity, most non-metals do not."
+    }
+  ],
+  "coach": {
+    "mission": "Test a metal and a non-metal in the circuit and see which lights the bulb.",
+    "whenStuck": [
+      "Tap a material first, then tap “Test”.",
+      "Try a metal like Copper, then a non-metal, and compare."
+    ],
+    "whenWrong": [
+      "Metals light the bulb (conductors); non-metals leave it off.",
+      "If the bulb stayed off, that material is a non-metal — not a conductor."
+    ],
+    "whenCorrect": [
+      "Right — the metal completed the circuit, so it conducts electricity.",
+      "Good — the non-metal didn't conduct, so the bulb stayed off."
+    ],
+    "done": "You've seen that metals conduct electricity and most non-metals don't. Test more, or move on when you're ready."
+  }
+}

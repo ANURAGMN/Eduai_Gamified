@@ -1,0 +1,36 @@
+{
+  "simId": "science_8_3",
+  "lang": "en",
+  "title": "Simple Pendulum",
+  "steps": [
+    {
+      "text": "A pendulum is a weight that swings back and forth at a steady rate — perfect for keeping time. Let's set one going."
+    },
+    {
+      "text": "Tap “Start” to swing the pendulum.",
+      "target": "Start"
+    },
+    {
+      "text": "Watch how regular it is — one full swing (there and back) always takes the same time. That steady rhythm is why pendulums run clocks."
+    },
+    {
+      "text": "The time for one complete swing is called the time period. Because it stays the same, a pendulum can measure time reliably."
+    }
+  ],
+  "coach": {
+    "mission": "Swing the pendulum and see how steady its rhythm is.",
+    "whenStuck": [
+      "Tap “Start” and watch the pendulum swing.",
+      "Time one full swing, then another — they match."
+    ],
+    "whenWrong": [
+      "Each full swing takes the same time — that steady beat is the point.",
+      "One complete back-and-forth swing is the time period."
+    ],
+    "whenCorrect": [
+      "Right — the pendulum swings at a steady, regular rate.",
+      "Good — a constant time period is what makes it a timekeeper."
+    ],
+    "done": "You've seen a pendulum's steady swing. Explore more, or move on when you're ready."
+  }
+}

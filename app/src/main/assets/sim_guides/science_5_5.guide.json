@@ -1,0 +1,36 @@
+{
+  "simId": "science_5_5",
+  "lang": "en",
+  "title": "Fire Triangle – Requirements for Combustion",
+  "steps": [
+    {
+      "text": "Fire needs three things at once — this is the fire triangle. Let's build it and then break it."
+    },
+    {
+      "text": "Add all three elements: Oxygen, Fuel, and Heat.",
+      "target": "Oxygen"
+    },
+    {
+      "text": "With all three present, the fire burns. Now remove one — take away the Oxygen."
+    },
+    {
+      "text": "The fire goes out. Remove any single side of the triangle — oxygen, fuel, or heat — and combustion stops. That's how we put out fires."
+    }
+  ],
+  "coach": {
+    "mission": "Build the fire triangle, then remove one part to stop the fire.",
+    "whenStuck": [
+      "Add all three: Oxygen, Fuel, and Heat.",
+      "Then take one away and watch the fire."
+    ],
+    "whenWrong": [
+      "Fire needs all three — oxygen, fuel and heat — together.",
+      "Remove any one and the fire can't keep burning."
+    ],
+    "whenCorrect": [
+      "Right — all three together make fire.",
+      "Good — removing one part put the fire out."
+    ],
+    "done": "You've built and broken the fire triangle. Explore more, or move on when you're ready."
+  }
+}

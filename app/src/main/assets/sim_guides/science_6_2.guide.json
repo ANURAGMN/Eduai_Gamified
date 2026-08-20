@@ -1,0 +1,35 @@
+{
+  "simId": "science_6_2",
+  "lang": "en",
+  "title": "Growth During Adolescence",
+  "steps": [
+    {
+      "text": "During adolescence the body grows very fast — this is called the growth spurt. Let's look at it."
+    },
+    {
+      "text": "Watch how height and weight increase quickly over these years, faster than in childhood."
+    },
+    {
+      "text": "Arms and legs often grow first, so this fast growth can feel a bit awkward — that's completely normal."
+    },
+    {
+      "text": "Everyone grows at their own pace and stops at different times. Good food, sleep and exercise support healthy growth."
+    }
+  ],
+  "coach": {
+    "mission": "See how the body grows quickly during adolescence.",
+    "whenStuck": [
+      "Look at how height and weight change over the adolescent years.",
+      "Compare the growth rate with childhood."
+    ],
+    "whenWrong": [
+      "Growth speeds up during adolescence — that's the growth spurt.",
+      "Everyone grows at a different pace, and that's normal."
+    ],
+    "whenCorrect": [
+      "Right — that fast increase is the growth spurt.",
+      "Good — growth rate rises sharply during adolescence."
+    ],
+    "done": "You've seen the adolescent growth spurt. Explore more, or move on when you're ready."
+  }
+}

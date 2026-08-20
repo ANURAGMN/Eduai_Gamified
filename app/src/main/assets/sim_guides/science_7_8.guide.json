@@ -1,0 +1,36 @@
+{
+  "simId": "science_7_8",
+  "lang": "en",
+  "title": "The Water Cycle",
+  "steps": [
+    {
+      "text": "Water keeps moving between the ground, the sky, and back — the water cycle. Let's follow it step by step."
+    },
+    {
+      "text": "Tap “Next” to move through the stages.",
+      "target": "Next"
+    },
+    {
+      "text": "The Sun's heat evaporates water into vapour; it rises and cools into clouds (condensation); the clouds release rain or snow (precipitation)."
+    },
+    {
+      "text": "The water collects in rivers, lakes and oceans, and the cycle starts again. The Sun's heat is what drives the whole loop."
+    }
+  ],
+  "coach": {
+    "mission": "Follow water through evaporation, condensation, and precipitation.",
+    "whenStuck": [
+      "Tap “Next” to move through each stage of the cycle.",
+      "Watch the water change from liquid to vapour and back."
+    ],
+    "whenWrong": [
+      "The order is evaporation → condensation → precipitation → collection.",
+      "The Sun's heat powers the whole water cycle."
+    ],
+    "whenCorrect": [
+      "Right — that's the next stage of the water cycle.",
+      "Good — the cycle repeats, driven by the Sun's heat."
+    ],
+    "done": "You've followed the whole water cycle. Explore more, or move on when you're ready."
+  }
+}

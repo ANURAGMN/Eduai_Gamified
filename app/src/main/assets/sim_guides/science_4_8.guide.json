@@ -1,0 +1,41 @@
+{
+  "simId": "science_4_8",
+  "lang": "en",
+  "title": "Non-metal + Oxygen – Acidic Oxide",
+  "steps": [
+    {
+      "text": "When a non-metal burns in oxygen it forms a non-metal oxide. Let's find out whether that oxide is acidic or basic."
+    },
+    {
+      "text": "Tap “Burn S” to burn sulfur in air.",
+      "target": "Burn S"
+    },
+    {
+      "text": "It forms sulfur dioxide gas. Now tap “Add Water” to dissolve the gas.",
+      "target": "Add Water"
+    },
+    {
+      "text": "Tap “Test pH” to check the solution with litmus.",
+      "target": "Test pH"
+    },
+    {
+      "text": "The pH is below 7 and blue litmus turns red — the solution is acidic. Non-metal oxides are acidic (they form acids in water)."
+    }
+  ],
+  "coach": {
+    "mission": "Burn sulfur, dissolve the gas, and test whether it's acidic or basic.",
+    "whenStuck": [
+      "Follow the order: Burn S → Add Water → Test pH.",
+      "Use litmus to check if the solution is acidic or basic."
+    ],
+    "whenWrong": [
+      "A non-metal oxide is acidic — pH below 7, blue litmus turns red.",
+      "If blue litmus turned red, the oxide is acidic, not basic."
+    ],
+    "whenCorrect": [
+      "Right — the non-metal oxide is acidic (pH below 7).",
+      "Good — blue litmus turned red, confirming an acidic oxide."
+    ],
+    "done": "You've shown that non-metal oxides are acidic — the opposite of metal oxides. Move on when you're ready."
+  }
+}

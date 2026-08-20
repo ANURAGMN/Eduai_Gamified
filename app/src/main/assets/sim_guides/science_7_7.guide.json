@@ -1,0 +1,36 @@
+{
+  "simId": "science_7_7",
+  "lang": "en",
+  "title": "Combined Heat Transfer",
+  "steps": [
+    {
+      "text": "In real life, conduction, convection, and radiation often happen together. Let's pick them apart."
+    },
+    {
+      "text": "Tap a method — start with “Conduction” — to see where it's happening.",
+      "target": "Conduction"
+    },
+    {
+      "text": "Take boiling water on a stove: the pot heats by conduction, the water circulates by convection, and you feel radiation from the flame — all at once."
+    },
+    {
+      "text": "Conduction (through solids), convection (in fluids), radiation (as rays). Most everyday heating uses more than one of them together."
+    }
+  ],
+  "coach": {
+    "mission": "Spot conduction, convection, and radiation working together.",
+    "whenStuck": [
+      "Tap each method to see where it happens in the scene.",
+      "Solid → conduction, fluid → convection, rays → radiation."
+    ],
+    "whenWrong": [
+      "Conduction is through solids, convection is in fluids, radiation is rays.",
+      "In one scene, all three can be happening at the same time."
+    ],
+    "whenCorrect": [
+      "Right — that's the correct method for that part of the scene.",
+      "Good — real heating usually combines all three."
+    ],
+    "done": "You've seen all three heat-transfer methods work together. Move on when you're ready."
+  }
+}

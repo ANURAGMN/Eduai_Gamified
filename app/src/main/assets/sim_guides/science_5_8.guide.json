@@ -1,0 +1,36 @@
+{
+  "simId": "science_5_8",
+  "lang": "en",
+  "title": "Combustion Examples – Burning Materials",
+  "steps": [
+    {
+      "text": "Combustion is burning a fuel in oxygen to release heat and light. Different materials burn differently — let's compare."
+    },
+    {
+      "text": "Pick a material to burn — tap one from the list.",
+      "target": "Select a material"
+    },
+    {
+      "text": "Now burn it and watch: paper catches fast, while some materials burn slower or hotter."
+    },
+    {
+      "text": "Every case follows the same rule: Fuel + Oxygen → Products + Heat + Light. That's combustion."
+    }
+  ],
+  "coach": {
+    "mission": "Burn different materials and compare how each one combusts.",
+    "whenStuck": [
+      "Select a material first, then burn it.",
+      "Compare how fast and how hot each material burns."
+    ],
+    "whenWrong": [
+      "They all need fuel and oxygen — but the speed and heat differ.",
+      "Combustion always gives heat and light plus new products."
+    ],
+    "whenCorrect": [
+      "Right — that material burned in oxygen, releasing heat and light.",
+      "Good — different fuels burn at different rates."
+    ],
+    "done": "You've compared how materials combust. Try more, or move on when you're ready."
+  }
+}

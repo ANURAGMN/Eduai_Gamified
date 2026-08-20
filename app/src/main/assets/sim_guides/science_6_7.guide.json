@@ -1,0 +1,36 @@
+{
+  "simId": "science_6_7",
+  "lang": "en",
+  "title": "Nutrition for Adolescents",
+  "steps": [
+    {
+      "text": "The fast growth of adolescence needs good fuel — a balanced diet. Let's build one."
+    },
+    {
+      "text": "Tap each nutrient to see why the growing body needs it.",
+      "target": "balanced"
+    },
+    {
+      "text": "Proteins build the body, iron makes healthy blood, calcium strengthens bones, and vitamins keep everything working. Plenty of water matters too."
+    },
+    {
+      "text": "A balanced diet has a bit of everything — not too much of junk food. That's what supports healthy growth during these years."
+    }
+  ],
+  "coach": {
+    "mission": "Build a balanced diet for a growing adolescent.",
+    "whenStuck": [
+      "Tap each nutrient to learn what it does for the body.",
+      "Aim for a bit of everything — a balanced plate."
+    ],
+    "whenWrong": [
+      "A balanced diet needs proteins, iron, calcium, vitamins, and water — not just one thing.",
+      "Too much junk food doesn't give the body what it needs to grow."
+    ],
+    "whenCorrect": [
+      "Right — that nutrient supports healthy growth.",
+      "Good — a balanced plate has a bit of everything."
+    ],
+    "done": "You've built a balanced diet for adolescence. Explore more, or move on when you're ready."
+  }
+}

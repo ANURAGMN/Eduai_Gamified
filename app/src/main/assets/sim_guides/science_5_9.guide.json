@@ -1,0 +1,35 @@
+{
+  "simId": "science_5_9",
+  "lang": "en",
+  "title": "Desirable vs Undesirable Changes",
+  "steps": [
+    {
+      "text": "Not every change is good for us. Some are helpful (desirable), some are harmful (undesirable). Let's sort a few."
+    },
+    {
+      "text": "Look at each change and decide if it helps us or harms us, then check your answer."
+    },
+    {
+      "text": "Cooking food and ripening fruit are desirable — we want them. Iron rusting and milk spoiling are undesirable — we try to prevent them."
+    },
+    {
+      "text": "The same kind of change can be desirable or undesirable depending on whether it helps us — that's what decides the label."
+    }
+  ],
+  "coach": {
+    "mission": "Sort each change into desirable or undesirable.",
+    "whenStuck": [
+      "Ask: does this change help us or harm us?",
+      "Helpful → desirable; harmful → undesirable."
+    ],
+    "whenWrong": [
+      "Cooking and ripening help us (desirable); rusting and spoiling harm us (undesirable).",
+      "Think about whether we want the change to happen."
+    ],
+    "whenCorrect": [
+      "Right — that change helps us, so it's desirable.",
+      "Right — that change harms us, so it's undesirable."
+    ],
+    "done": "You've sorted desirable and undesirable changes. Try more, or move on when you're ready."
+  }
+}

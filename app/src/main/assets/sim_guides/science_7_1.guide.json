@@ -1,0 +1,36 @@
+{
+  "simId": "science_7_1",
+  "lang": "en",
+  "title": "Sources of Heat – Regional Differences",
+  "steps": [
+    {
+      "text": "The Sun is our main source of heat, but different regions feel it differently. Let's compare."
+    },
+    {
+      "text": "Tap a region to see its temperature — try a coastal one and an inland one.",
+      "target": "Coastal"
+    },
+    {
+      "text": "Places near the sea are milder — the sea warms up and cools down slowly, so it evens out the temperature."
+    },
+    {
+      "text": "Inland places, far from the sea, get hotter days and colder nights. Proximity to the sea is a big reason regions differ."
+    }
+  ],
+  "coach": {
+    "mission": "Compare how coastal and inland regions differ in temperature.",
+    "whenStuck": [
+      "Tap different regions and compare their temperatures.",
+      "Look at which ones are near the sea."
+    ],
+    "whenWrong": [
+      "Coastal areas are milder; inland areas swing hotter and colder.",
+      "The sea moderates temperature, so nearby places are more even."
+    ],
+    "whenCorrect": [
+      "Right — being near the sea keeps a region's temperature milder.",
+      "Good — inland regions have bigger temperature swings."
+    ],
+    "done": "You've seen why regions differ in temperature. Explore more, or move on when you're ready."
+  }
+}

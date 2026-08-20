@@ -1,0 +1,36 @@
+{
+  "simId": "science_4_9",
+  "lang": "en",
+  "title": "Metals vs Non-metals – Comparison",
+  "steps": [
+    {
+      "text": "Let's pull together everything about metals and non-metals into one comparison."
+    },
+    {
+      "text": "Tap a property — like Malleability or Electrical Conductivity — to see how metals and non-metals differ on it.",
+      "target": "Malleability"
+    },
+    {
+      "text": "For each property, decide whether it describes Metals or Non-metals, then check your answer."
+    },
+    {
+      "text": "Remember the pattern: metals are malleable, ductile, sonorous, lustrous, and good conductors, and form basic oxides. Non-metals are the opposite — brittle, dull, poor conductors, and form acidic oxides."
+    }
+  ],
+  "coach": {
+    "mission": "Match each property to metals or non-metals.",
+    "whenStuck": [
+      "Tap a property to review how metals and non-metals behave for it.",
+      "Recall the earlier tests: hammering, wires, sound, heat, electricity, oxides."
+    ],
+    "whenWrong": [
+      "Check the direction: metals conduct, shine, bend and ring; non-metals don't.",
+      "Oxides flip too — metal oxides are basic, non-metal oxides are acidic."
+    ],
+    "whenCorrect": [
+      "Right — that's how metals and non-metals differ on that property.",
+      "Good — you're matching the properties to the correct group."
+    ],
+    "done": "You've compared metals and non-metals across their key properties. Review more, or move on when you're ready."
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "simId": "science_7_5",
+  "lang": "en",
+  "title": "Land and Sea Breeze",
+  "steps": [
+    {
+      "text": "Near the coast, the wind changes direction between day and night. It's convection on a giant scale. Let's see why."
+    },
+    {
+      "text": "Set the time to daytime and watch the breeze.",
+      "target": "Day"
+    },
+    {
+      "text": "By day, land heats up faster than the sea. Hot air over land rises, and cool air blows in from the sea — a sea breeze."
+    },
+    {
+      "text": "At night it flips: land cools faster than the sea, so air flows from land to sea — a land breeze. Same rule: cool air moves toward the warmer side."
+    }
+  ],
+  "coach": {
+    "mission": "Find out why the breeze blows one way by day and the other by night.",
+    "whenStuck": [
+      "Switch between day and night and watch which way the breeze blows.",
+      "Ask: which heats or cools faster — land or sea?"
+    ],
+    "whenWrong": [
+      "Day: land heats faster → sea breeze (from sea to land). Night: land cools faster → land breeze.",
+      "Cool air always moves toward the warmer side."
+    ],
+    "whenCorrect": [
+      "Right — by day the cooler sea air blows onto the warmer land.",
+      "Good — at night it reverses into a land breeze."
+    ],
+    "done": "You've seen how land and sea breezes form. Explore more, or move on when you're ready."
+  }
+}

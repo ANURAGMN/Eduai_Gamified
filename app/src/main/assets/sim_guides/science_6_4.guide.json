@@ -1,0 +1,36 @@
+{
+  "simId": "science_6_4",
+  "lang": "en",
+  "title": "Voice Changes During Puberty",
+  "steps": [
+    {
+      "text": "During puberty the voice box (larynx) grows, which changes the voice. Let's compare before, during, and after."
+    },
+    {
+      "text": "Tap “Boys” and move through the stages: Before, During, and After Puberty.",
+      "target": "Boys"
+    },
+    {
+      "text": "In boys the larynx grows a lot, so the voice deepens. During the change it may crack or break for a while — that's temporary and normal."
+    },
+    {
+      "text": "In girls the voice changes too, but more gently. The voice box grows in everyone; it just grows more in boys, making a bigger difference."
+    }
+  ],
+  "coach": {
+    "mission": "Compare how the voice changes through puberty.",
+    "whenStuck": [
+      "Pick a gender, then step through Before, During, and After puberty.",
+      "Listen for how the voice deepens."
+    ],
+    "whenWrong": [
+      "The larynx grows during puberty, so the voice deepens — more in boys.",
+      "Voice cracking during the change is temporary and normal."
+    ],
+    "whenCorrect": [
+      "Right — the growing voice box deepens the voice.",
+      "Good — the change is bigger in boys but happens in everyone."
+    ],
+    "done": "You've seen why the voice changes during puberty. Move on when you're ready."
+  }
+}

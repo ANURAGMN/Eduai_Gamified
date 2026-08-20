@@ -1,0 +1,36 @@
+{
+  "simId": "science_3_3",
+  "lang": "en",
+  "title": "Inside a Torch",
+  "steps": [
+    {
+      "text": "A simple torch is a complete electric circuit you can hold. Let's look at its parts."
+    },
+    {
+      "text": "Tap each component to explore it — the cells, the bulb, the switch, and the reflector."
+    },
+    {
+      "text": "Now toggle the switch on. It closes the circuit so current flows from the cells to the bulb, and the bulb lights up.",
+      "target": "Switch"
+    },
+    {
+      "text": "Cells provide the power, wires and the metal casing carry the current, the switch controls it, and the bulb turns it into light. A torch is a circuit in your hand."
+    }
+  ],
+  "coach": {
+    "mission": "Explore the parts of a torch and light the bulb.",
+    "whenStuck": [
+      "Tap each component, then toggle the switch on.",
+      "The bulb lights only when the switch closes the circuit."
+    ],
+    "whenWrong": [
+      "The bulb lights only when the switch is ON and the circuit is complete.",
+      "Cells power it, the switch controls it, the bulb gives light."
+    ],
+    "whenCorrect": [
+      "Right — closing the switch lit the bulb.",
+      "Good — you found how each part works together."
+    ],
+    "done": "You've explored the torch as a circuit. Explore more, or move on when you're ready."
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "simId": "science_3_7",
+  "lang": "en",
+  "title": "Simple Electrical Circuit – Build & Learn",
+  "steps": [
+    {
+      "text": "A circuit is a complete loop for current to flow. Let's build one that lights a bulb."
+    },
+    {
+      "text": "Place the components — connect the cell, the bulb, and the switch with wires into a loop.",
+      "target": "cell"
+    },
+    {
+      "text": "Now tap “Test” with the switch closed. If the loop is complete, current flows and the bulb glows.",
+      "target": "Test"
+    },
+    {
+      "text": "The bulb lights only when the circuit is closed (a complete loop). Any gap — a break or an open switch — stops the current and the bulb goes dark."
+    }
+  ],
+  "coach": {
+    "mission": "Build a closed circuit that lights the bulb.",
+    "whenStuck": [
+      "Connect the cell, bulb, and switch into one complete loop.",
+      "Close the switch, then test the circuit."
+    ],
+    "whenWrong": [
+      "The bulb lights only in a complete, closed loop.",
+      "A gap or an open switch breaks the circuit and the bulb stays off."
+    ],
+    "whenCorrect": [
+      "Right — a complete closed loop lit the bulb.",
+      "Good — current needs an unbroken path."
+    ],
+    "done": "You've built a working circuit. Explore more, or move on when you're ready."
+  }
+}

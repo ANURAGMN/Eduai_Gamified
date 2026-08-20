@@ -1,0 +1,36 @@
+{
+  "simId": "science_6_6",
+  "lang": "en",
+  "title": "Emotional Changes During Adolescence",
+  "steps": [
+    {
+      "text": "Adolescence brings emotional changes too — feelings can be stronger and can shift quickly. Let's look at some situations."
+    },
+    {
+      "text": "Read each scenario and choose how you'd feel or respond, then move to the next one.",
+      "target": "Next Scenario"
+    },
+    {
+      "text": "Mood swings are normal — the same day can bring excitement, worry, and irritation. That doesn't mean anything is wrong."
+    },
+    {
+      "text": "Healthy ways to cope: talk to someone you trust, take a break, be kind to yourself, and ask for help when you need it."
+    }
+  ],
+  "coach": {
+    "mission": "Explore emotional changes and healthy ways to handle them.",
+    "whenStuck": [
+      "Read the scenario and pick a response, then tap “Next Scenario”.",
+      "Think about a calm, healthy way to handle the feeling."
+    ],
+    "whenWrong": [
+      "Strong or changing emotions are normal in adolescence.",
+      "A healthy response is to talk it out or take a break — not to bottle it up."
+    ],
+    "whenCorrect": [
+      "Right — that's a healthy way to handle the feeling.",
+      "Good — talking to someone you trust really helps."
+    ],
+    "done": "You've seen that mood changes are normal and can be handled in healthy ways. Move on when you're ready."
+  }
+}

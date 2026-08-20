@@ -1,0 +1,44 @@
+{
+  "simId": "science_4_1",
+  "lang": "en",
+  "title": "Malleability – Metals vs Non-metals",
+  "steps": [
+    {
+      "text": "Malleability means a material can be beaten or hammered into thin sheets. Let's find out which materials are malleable."
+    },
+    {
+      "text": "Pick a metal first — tap Copper.",
+      "target": "Copper"
+    },
+    {
+      "text": "Now tap “Hammer the Material” and watch what happens.",
+      "target": "Hammer the Material"
+    },
+    {
+      "text": "The metal flattens into a thin sheet — its particles slide over each other without breaking. That's malleability."
+    },
+    {
+      "text": "Now try a non-metal — tap Coal, then hammer it.",
+      "target": "Coal"
+    },
+    {
+      "text": "It shatters into pieces. Non-metals are brittle: their particles are rigidly bonded, so they break instead of bending. Metals are malleable, non-metals are brittle."
+    }
+  ],
+  "coach": {
+    "mission": "Hammer a metal and a non-metal to see which one is malleable.",
+    "whenStuck": [
+      "Tap a material first, then tap “Hammer the Material”.",
+      "Try a metal like Copper, then a non-metal like Coal, and compare."
+    ],
+    "whenWrong": [
+      "Metals flatten into sheets (malleable); non-metals break apart (brittle).",
+      "If it shattered, that was a non-metal — brittle, not malleable."
+    ],
+    "whenCorrect": [
+      "Right — the metal flattened into a sheet, so it's malleable.",
+      "Nice — you saw the non-metal shatter because it's brittle."
+    ],
+    "done": "You've seen that metals are malleable and non-metals are brittle. Test more materials, or move on when you're ready."
+  }
+}

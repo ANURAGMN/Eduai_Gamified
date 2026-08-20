@@ -1,0 +1,36 @@
+{
+  "simId": "science_8_9",
+  "lang": "en",
+  "title": "Non-Uniform Motion",
+  "steps": [
+    {
+      "text": "In non-uniform motion the speed keeps changing. Let's compare it with steady motion."
+    },
+    {
+      "text": "Tap “Start” and watch the object speed up and slow down.",
+      "target": "Start"
+    },
+    {
+      "text": "It covers different distances in equal times — sometimes more, sometimes less. That changing speed is non-uniform motion."
+    },
+    {
+      "text": "Most real motion is like this: a bus speeds up, slows for a stop, then moves again. Its distance-time graph is a curve, not a straight line."
+    }
+  ],
+  "coach": {
+    "mission": "Watch how speed changes in non-uniform motion.",
+    "whenStuck": [
+      "Tap “Start” and watch the object's speed change.",
+      "Compare the distance covered in each second."
+    ],
+    "whenWrong": [
+      "Non-uniform motion covers unequal distances in equal times — the speed changes.",
+      "A changing speed gives a curved distance-time graph."
+    ],
+    "whenCorrect": [
+      "Right — the speed keeps changing, so it's non-uniform motion.",
+      "Good — unequal steps mean the speed isn't constant."
+    ],
+    "done": "You've seen non-uniform motion. Move on when you're ready."
+  }
+}

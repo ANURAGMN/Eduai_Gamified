@@ -1,0 +1,36 @@
+{
+  "simId": "science_6_3",
+  "lang": "en",
+  "title": "Physical Changes During Puberty",
+  "steps": [
+    {
+      "text": "Puberty is when the body matures during adolescence. Some changes happen in everyone, and some are specific. Let's look."
+    },
+    {
+      "text": "Tap “Common Changes” to see the ones that happen in everyone.",
+      "target": "Common Changes"
+    },
+    {
+      "text": "Common changes include a growth spurt, more sweating, and new hair growth. Now tap “In Boys” and “In Girls” to see the specific changes for each."
+    },
+    {
+      "text": "All of these changes are natural, healthy, and part of growing up. They happen at different ages for different people — there's no single \"right\" time."
+    }
+  ],
+  "coach": {
+    "mission": "Explore the physical changes that happen during puberty.",
+    "whenStuck": [
+      "Tap each category: Common Changes, In Boys, In Girls.",
+      "Notice which changes happen in everyone."
+    ],
+    "whenWrong": [
+      "Some changes are common to everyone; others are specific — check each category.",
+      "All of these changes are a normal, healthy part of growing up."
+    ],
+    "whenCorrect": [
+      "Right — that's one of the natural changes during puberty.",
+      "Good — these changes are healthy and happen to everyone in time."
+    ],
+    "done": "You've explored the physical changes of puberty. They're all a normal part of growing up. Move on when you're ready."
+  }
+}

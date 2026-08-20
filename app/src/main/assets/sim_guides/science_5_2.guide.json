@@ -1,0 +1,40 @@
+{
+  "simId": "science_5_2",
+  "lang": "en",
+  "title": "Chemical Changes – New Substances Formed",
+  "steps": [
+    {
+      "text": "In a chemical change, a brand-new substance is formed. Let's make one happen."
+    },
+    {
+      "text": "Pick a reaction — tap “Vinegar + Baking Soda”.",
+      "target": "Vinegar + Baking Soda"
+    },
+    {
+      "text": "Now tap “Mix the Chemicals” and watch.",
+      "target": "Mix the Chemicals"
+    },
+    {
+      "text": "It fizzes and produces a new gas (carbon dioxide) — that bubbling is the sign a new substance has formed."
+    },
+    {
+      "text": "Unlike a physical change, a chemical change makes new substances and usually can't be reversed."
+    }
+  ],
+  "coach": {
+    "mission": "Mix the chemicals and spot the sign of a new substance.",
+    "whenStuck": [
+      "Pick a reaction first, then tap “Mix the Chemicals”.",
+      "Watch for fizzing, colour change, heat, or a gas — signs of a new substance."
+    ],
+    "whenWrong": [
+      "A chemical change forms a new substance — look for bubbles, colour change or heat.",
+      "The fizzing gas is the new substance, so this is a chemical change."
+    ],
+    "whenCorrect": [
+      "Right — a new substance (the gas) formed. That's a chemical change.",
+      "Good — and a chemical change usually can't be undone."
+    ],
+    "done": "You've made a chemical change and seen a new substance form. Try another, or move on when you're ready."
+  }
+}

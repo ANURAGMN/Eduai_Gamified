@@ -1,0 +1,35 @@
+{
+  "simId": "science_6_5",
+  "lang": "en",
+  "title": "Understanding Menstruation",
+  "steps": [
+    {
+      "text": "Menstruation is a natural, healthy monthly process that begins in girls during puberty. Let's understand the cycle."
+    },
+    {
+      "text": "Tap through the phases of the cycle to see what happens in each part."
+    },
+    {
+      "text": "The cycle repeats about every month. It's a normal sign that the body is growing up, and it's nothing to be ashamed of."
+    },
+    {
+      "text": "Good hygiene, rest, and a healthy diet help during the period. If there's ever pain or worry, it's fine to talk to a parent, teacher, or doctor."
+    }
+  ],
+  "coach": {
+    "mission": "Understand the menstrual cycle as a natural monthly process.",
+    "whenStuck": [
+      "Tap through the phases to follow the cycle.",
+      "Notice that the cycle repeats roughly every month."
+    ],
+    "whenWrong": [
+      "Menstruation is a normal, healthy monthly process — nothing to worry about.",
+      "The cycle repeats about once a month."
+    ],
+    "whenCorrect": [
+      "Right — that's part of the natural monthly cycle.",
+      "Good — it's a normal, healthy sign of growing up."
+    ],
+    "done": "You've learned that menstruation is a natural, healthy process. Move on when you're ready."
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "simId": "science_3_10",
+  "lang": "en",
+  "title": "Conductors & Insulators – Material Testing",
+  "steps": [
+    {
+      "text": "Some materials let current pass through them, others don't. Let's test which is which by putting each into a circuit."
+    },
+    {
+      "text": "Pick a material and tap “Test” to place it in the circuit.",
+      "target": "Test"
+    },
+    {
+      "text": "If the bulb lights, the material is a conductor (like metals). If the bulb stays off, it's an insulator (like rubber, plastic, or wood)."
+    },
+    {
+      "text": "Conductors carry current; insulators block it. That's why wires are metal (conductor) but their covering is plastic (insulator) for safety."
+    }
+  ],
+  "coach": {
+    "mission": "Test materials to find conductors and insulators.",
+    "whenStuck": [
+      "Pick a material, tap “Test”, and watch the bulb.",
+      "Bulb on → conductor; bulb off → insulator."
+    ],
+    "whenWrong": [
+      "Conductors light the bulb (metals); insulators leave it off (rubber, plastic, wood).",
+      "If the bulb stayed off, the material is an insulator."
+    ],
+    "whenCorrect": [
+      "Right — the bulb lit, so that's a conductor.",
+      "Good — the bulb stayed off, so that's an insulator."
+    ],
+    "done": "You've sorted conductors from insulators. That completes the electricity chapter — move on when you're ready."
+  }
+}

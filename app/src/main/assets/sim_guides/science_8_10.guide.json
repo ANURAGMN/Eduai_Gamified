@@ -1,0 +1,35 @@
+{
+  "simId": "science_8_10",
+  "lang": "en",
+  "title": "Speedometer & Odometer",
+  "steps": [
+    {
+      "text": "Vehicles have two meters that measure motion. Let's see what each one does."
+    },
+    {
+      "text": "Start driving and watch both dials as the vehicle moves."
+    },
+    {
+      "text": "The speedometer shows the speed right now (how fast you're going). The odometer adds up the total distance travelled."
+    },
+    {
+      "text": "So speedometer = current speed, odometer = total distance. The trip meter is an odometer you can reset for a single journey."
+    }
+  ],
+  "coach": {
+    "mission": "Tell apart what the speedometer and odometer measure.",
+    "whenStuck": [
+      "Drive and watch both dials change.",
+      "Ask: which shows speed now, and which adds up distance?"
+    ],
+    "whenWrong": [
+      "Speedometer = current speed; odometer = total distance travelled.",
+      "The odometer keeps counting distance even when speed changes."
+    ],
+    "whenCorrect": [
+      "Right — the speedometer shows how fast, the odometer shows how far.",
+      "Good — the trip meter is a resettable odometer for one journey."
+    ],
+    "done": "You've learned what the speedometer and odometer measure. Move on when you're ready."
+  }
+}

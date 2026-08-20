@@ -1,0 +1,36 @@
+{
+  "simId": "science_7_3",
+  "lang": "en",
+  "title": "Conductors vs Insulators – Race!",
+  "steps": [
+    {
+      "text": "Some materials carry heat quickly (conductors), others slow it down (insulators). Let's race them."
+    },
+    {
+      "text": "Tap “Start Race!” and watch the heat travel up each material.",
+      "target": "Start Race"
+    },
+    {
+      "text": "The metal wins — heat races through it. Wood and plastic lag far behind; they're insulators."
+    },
+    {
+      "text": "Conductors (metals) let heat through fast; insulators (wood, plastic, air) block it. That's why cooking pots are metal but their handles aren't."
+    }
+  ],
+  "coach": {
+    "mission": "Race the materials to see which conducts heat fastest.",
+    "whenStuck": [
+      "Tap “Start Race!” and watch which material heats up first.",
+      "Compare a metal with wood or plastic."
+    ],
+    "whenWrong": [
+      "Metals conduct fast (win); wood and plastic are insulators (slow).",
+      "If it lagged behind, that material is an insulator."
+    ],
+    "whenCorrect": [
+      "Right — the metal conducted heat fastest.",
+      "Good — insulators like wood block heat."
+    ],
+    "done": "You've raced conductors against insulators. Try Compare mode, or move on when you're ready."
+  }
+}

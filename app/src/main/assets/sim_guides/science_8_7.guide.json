@@ -1,0 +1,36 @@
+{
+  "simId": "science_8_7",
+  "lang": "en",
+  "title": "Speed Race",
+  "steps": [
+    {
+      "text": "The faster something moves, the more distance it covers in the same time. Let's race and see."
+    },
+    {
+      "text": "Tap “Start Race!” and watch the racers.",
+      "target": "Start Race"
+    },
+    {
+      "text": "The fastest racer reaches the finish first because it covers more distance each second — higher speed."
+    },
+    {
+      "text": "Same distance, less time = higher speed. That's what winning the race shows: greater speed means less time to cover the track."
+    }
+  ],
+  "coach": {
+    "mission": "Race the runners and see how speed decides the winner.",
+    "whenStuck": [
+      "Tap “Start Race!” and watch which racer finishes first.",
+      "Think about who covers more distance each second."
+    ],
+    "whenWrong": [
+      "The faster racer covers more distance per second, so it wins.",
+      "For the same distance, higher speed means less time."
+    ],
+    "whenCorrect": [
+      "Right — the fastest racer covered the distance in the least time.",
+      "Good — more speed, less time for the same distance."
+    ],
+    "done": "You've seen how speed decides a race. Race again, or move on when you're ready."
+  }
+}
