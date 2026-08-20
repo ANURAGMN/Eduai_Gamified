@@ -2,6 +2,7 @@ package com.ncert7.aitutorandlab.ui.screens.home
 
 import android.app.Activity
 import android.content.Intent
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -48,7 +49,9 @@ import com.ncert7.aitutorandlab.R
 import com.ncert7.aitutorandlab.config.GamificationFeatureFlags
 import com.ncert7.aitutorandlab.config.ReelsFeatureFlags
 import com.ncert7.aitutorandlab.data.local.SharedPreferenceUtils
+import com.ncert7.aitutorandlab.domain.gamification.EconomyConfig
 import com.ncert7.aitutorandlab.domain.gamification.QuestClaimType
+import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.AppDialog
 import com.ncert7.aitutorandlab.utils.ReelsCopy
 import com.ncert7.aitutorandlab.service.analytics.ContentClickNavigation
 import com.ncert7.aitutorandlab.service.analytics.EngagementAnalyticsTracker
@@ -169,6 +172,7 @@ fun GamifiedHomeRoute(
 
     var pendingQuestClaim by remember { mutableStateOf<QuestClaimType?>(null) }
     var selectedYoutubeVideo by remember { mutableStateOf<YoutubeVideoItem?>(null) }
+    var showGemsInfoDialog by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
@@ -409,6 +413,20 @@ fun GamifiedHomeRoute(
             )
         }
 
+        AppDialog(
+            show = showGemsInfoDialog,
+            title = HomeCopy.gemsHowToEarnTitle(currentLanguage),
+            message =
+                HomeCopy.gemsHowToEarnBody(
+                    languageCode = currentLanguage,
+                    gemsPerMandatoryAd = EconomyConfig.GEM_TRIAL_MANDATORY_CLAIM,
+                    trialsPerAd = EconomyConfig.TRIALS_PER_MANDATORY_AD,
+                ),
+            confirmText = HomeCopy.gemsHowToEarnGotIt(currentLanguage),
+            onConfirm = { showGemsInfoDialog = false },
+            onDismiss = { showGemsInfoDialog = false },
+        )
+
         Box(modifier = Modifier.fillMaxSize()) {
         // When Reels is on, Home taps go to the nocookie Reels player route (passed by parent).
         // Legacy dialog stays for the flag-off path.
@@ -439,7 +457,7 @@ fun GamifiedHomeRoute(
                 },
                 onProfileClick = onNavigateToSettings,
                 onStreakClick = onNavigateToProgress,
-                onGemsClick = { /* Sprint 2+ */ },
+                onGemsClick = { showGemsInfoDialog = true },
                 onLeagueClick = {
                     viewModel.refreshHomeLeagueRank()
                     onNavigateToLeagues()
@@ -710,6 +728,15 @@ fun GamifiedHomeRoute(
                     viewModel.acknowledgeDailyStreakGreeting()
                 },
             )
+            val streakOverlayVisible =
+                streaksEnabled && (streakExtended != null || dailyStreakGreeting != null)
+            BackHandler(enabled = streakOverlayVisible) {
+                if (streakExtended != null) {
+                    viewModel.acknowledgeStreakExtended()
+                } else {
+                    viewModel.acknowledgeDailyStreakGreeting()
+                }
+            }
         }
     }
 }

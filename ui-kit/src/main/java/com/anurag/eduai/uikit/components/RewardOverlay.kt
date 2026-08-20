@@ -22,7 +22,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.outlined.WorkspacePremium
+import androidx.compose.material.icons.outlined.Diamond
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -248,7 +248,7 @@ private fun RewardStat(
         Row(verticalAlignment = Alignment.CenterVertically) {
             if (leadingIcon) {
                 Icon(
-                    Icons.Outlined.WorkspacePremium,
+                    Icons.Outlined.Diamond,
                     contentDescription = null,
                     tint = valueColor,
                     modifier = Modifier.size(16.dp),

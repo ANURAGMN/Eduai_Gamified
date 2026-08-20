@@ -173,8 +173,8 @@ class SharedPreferenceUtils(context: Context) : AppMigrationVersionStore {
         prefs.edit { putBoolean(KEY_HANDS_FREE_MODE, enabled) }
     }
 
-    /** Which input the tutor chat opens in: false = text-first (default), true = voice-first. */
-    fun getVoiceFirst(): Boolean = prefs.getBoolean(KEY_VOICE_FIRST, false)
+    /** Which input the tutor chat opens in: true = tap-to-speak (default), false = text keyboard. */
+    fun getVoiceFirst(): Boolean = prefs.getBoolean(KEY_VOICE_FIRST, true)
 
     fun setVoiceFirst(enabled: Boolean) {
         prefs.edit { putBoolean(KEY_VOICE_FIRST, enabled) }

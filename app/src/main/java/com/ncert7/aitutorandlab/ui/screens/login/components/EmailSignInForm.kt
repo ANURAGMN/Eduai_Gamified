@@ -11,6 +11,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -36,8 +37,10 @@ import com.ncert7.aitutorandlab.service.analytics.FunnelStep
 import com.ncert7.aitutorandlab.ui.screens.login.viewmodel.ExistingUserSyncState
 import com.ncert7.aitutorandlab.ui.screens.login.viewmodel.LoginState
 import com.ncert7.aitutorandlab.ui.screens.login.viewmodel.UserViewModel
+import com.ncert7.aitutorandlab.ui.theme.BackgroundPrimary
 import com.ncert7.aitutorandlab.ui.theme.BrandPrimary
 import com.ncert7.aitutorandlab.ui.theme.LocalDimensions
+import com.ncert7.aitutorandlab.ui.theme.TextPrimary
 import com.ncert7.aitutorandlab.ui.theme.TextSecondary
 import com.ncert7.aitutorandlab.ui.theme.White
 
@@ -137,6 +140,26 @@ fun EmailSignInForm(
 
             Spacer(modifier = Modifier.height(dimens.spaceSmall))
 
+            // Login card is always light; force dark text so dark app theme cannot wash out the fields.
+            val lightFieldColors =
+                OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = TextPrimary,
+                    unfocusedTextColor = TextPrimary,
+                    disabledTextColor = TextSecondary,
+                    focusedContainerColor = BackgroundPrimary,
+                    unfocusedContainerColor = BackgroundPrimary,
+                    disabledContainerColor = BackgroundPrimary,
+                    cursorColor = BrandPrimary,
+                    focusedBorderColor = BrandPrimary,
+                    unfocusedBorderColor = TextSecondary,
+                    focusedLabelColor = TextPrimary,
+                    unfocusedLabelColor = TextSecondary,
+                    focusedPlaceholderColor = TextSecondary,
+                    unfocusedPlaceholderColor = TextSecondary,
+                    focusedSupportingTextColor = TextSecondary,
+                    unfocusedSupportingTextColor = TextSecondary,
+                )
+
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it.trim().lowercase() },
@@ -148,7 +171,8 @@ fun EmailSignInForm(
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                 modifier = Modifier.fillMaxWidth(),
-                enabled = !isLoading
+                enabled = !isLoading,
+                colors = lightFieldColors,
             )
 
             Spacer(modifier = Modifier.height(dimens.spaceSmall))
@@ -161,7 +185,8 @@ fun EmailSignInForm(
                 visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 modifier = Modifier.fillMaxWidth(),
-                enabled = !isLoading
+                enabled = !isLoading,
+                colors = lightFieldColors,
             )
 
             Spacer(modifier = Modifier.height(dimens.spaceMedium))

@@ -156,8 +156,13 @@ fun SettingScreen(
         }
     }
 
-    BackHandler(enabled = showNotificationSettings || activeScreen != null) {
-        dismissOrNavigateBack()
+    BackHandler(enabled = showNotificationSettings || activeScreen != null || !showBackNavigation) {
+        when {
+            showNotificationSettings -> showNotificationSettings = false
+            activeScreen != null -> activeScreen = null
+            !showBackNavigation -> onNavigateBack()
+            else -> onNavigateBack()
+        }
     }
 
     val useGamifiedTabChrome = !showBackNavigation && gamifiedHomeEnabled

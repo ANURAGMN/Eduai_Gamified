@@ -86,7 +86,7 @@ data class HomeUiState(
     val leagueName: String = "Silver",
     val leagueRank: Int = 4,
     val streakCaption: String = "Streak",
-    val gemsCaption: String = "Badge",
+    val gemsCaption: String = "Gems",
     val weeklyXp: Int = 0,
     val todayDone: Boolean = false,
     val heroEyebrow: String = "Today's focus · 18 min",

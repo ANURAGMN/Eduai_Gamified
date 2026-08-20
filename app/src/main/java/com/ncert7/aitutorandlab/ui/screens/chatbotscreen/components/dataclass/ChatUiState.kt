@@ -72,8 +72,10 @@ val ChatUiState.lastAiMessage: ChatMessageModel?
     get() = messages.findLast { it.sender.lowercase() == "ai" }
 
 /**
- * Check if conversation has started
+ * Check if conversation has started.
+ * Error-only messages (e.g. server failure before any agent reply) do not count, so the idle
+ * full-body avatar stays visible — matching Maths session-start failures.
  */
 val ChatUiState.isConversationStarted: Boolean
-    get() = messages.isNotEmpty()
+    get() = messages.any { !it.isError }
 

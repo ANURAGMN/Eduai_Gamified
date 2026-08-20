@@ -14,6 +14,7 @@ import androidx.compose.ui.platform.LocalContext
 import com.ncert7.aitutorandlab.data.local.SharedPreferenceUtils
 import com.ncert7.aitutorandlab.service.analytics.EngagementAnalyticsTracker
 import com.ncert7.aitutorandlab.utils.normalizeLanguageCode
+import kotlinx.coroutines.delay
 
 @Composable
 fun NotificationPermissionHost() {
@@ -24,6 +25,7 @@ fun NotificationPermissionHost() {
             normalizeLanguageCode(prefs.getLanguagePreference())
         }
     var pendingVariant by remember { mutableStateOf<NotificationPrimerVariant?>(null) }
+    var startupPromptLaunched by remember { mutableStateOf(false) }
 
     val permissionLauncher =
         rememberLauncherForActivityResult(
@@ -32,7 +34,23 @@ fun NotificationPermissionHost() {
             EngagementAnalyticsTracker.notificationPermissionResult(granted)
             prefs.setAskedNotificationPermission(true)
             pendingVariant = null
+            if (granted) {
+                prefs.setNotificationsEnabled(true)
+                NotificationScheduler.scheduleAll(context.applicationContext)
+            }
         }
+
+    // Request OS permission once after login on cold start (product: ask automatically).
+    LaunchedEffect(Unit) {
+        if (startupPromptLaunched) return@LaunchedEffect
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return@LaunchedEffect
+        if (!prefs.isLoggedIn()) return@LaunchedEffect
+        if (NotificationPermissionHelper.hasPostNotificationsPermission(context)) return@LaunchedEffect
+        if (prefs.hasAskedNotificationPermission()) return@LaunchedEffect
+        delay(900)
+        startupPromptLaunched = true
+        permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+    }
 
     LaunchedEffect(Unit) {
         NotificationPermissionGate.primerRequests.collect { variant ->
@@ -50,6 +68,8 @@ fun NotificationPermissionHost() {
                     permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                 } else {
                     prefs.setAskedNotificationPermission(true)
+                    prefs.setNotificationsEnabled(true)
+                    NotificationScheduler.scheduleAll(context.applicationContext)
                     pendingVariant = null
                 }
             },

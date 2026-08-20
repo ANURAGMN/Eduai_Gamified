@@ -575,6 +575,44 @@ class SimulationAgentViewModel @Inject constructor(
     }
 
     /**
+     * When the agent session returns a blank html_url (common for some Science chapters),
+     * fall back to the concept catalog simulation URL so the WebView still loads.
+     */
+    private suspend fun applyConceptHtmlFallback(
+        simulationId: String,
+        response: SimSessionResponse,
+    ): SimSessionResponse {
+        if (response.simulation.htmlUrl.isNotBlank()) return response
+        return try {
+            val conceptId =
+                currentConceptId
+                    ?: fetchConceptIdForSimulation(simulationId)
+                    ?: return response
+            val concept =
+                withContext(Dispatchers.IO) { conceptRepository.getConcept(conceptId) }
+                    ?: return response
+            val lang = getCurrentLanguageCode()
+            val fallback =
+                if (lang == "kn") {
+                    concept.simulationUrlKannada?.takeIf { it.isNotBlank() }
+                        ?: concept.simulationUrl
+                } else {
+                    concept.simulationUrl?.takeIf { it.isNotBlank() }
+                        ?: concept.simulationUrlKannada
+                }?.takeIf { it.isNotBlank() }
+                    ?: return response
+            DebugLogger.debugLog(
+                TAG,
+                "Agent html_url blank — using concept simulationUrl for $simulationId",
+            )
+            response.copy(simulation = response.simulation.copy(htmlUrl = fallback))
+        } catch (e: Exception) {
+            DebugLogger.warnLog(TAG, "Concept HTML fallback failed: ${e.message}")
+            response
+        }
+    }
+
+    /**
      * Load all available simulations from the API
      */
     fun loadAvailableSimulations() {
@@ -701,7 +739,10 @@ class SimulationAgentViewModel @Inject constructor(
                 val result = simulationSessionUseCase.startNewSession(simulationId)
 
                 if (result.isSuccess) {
-                    val response = result.getOrNull()!!
+                    val response = applyConceptHtmlFallback(
+                        simulationId,
+                        result.getOrNull()!!,
+                    )
                     DebugLogger.debugLog(TAG, "Session started successfully")
                     DebugLogger.debugLog(TAG, "Session ID: ${response.sessionId}")
                     DebugLogger.debugLog(TAG, "Teacher Message: ${response.teacherMessage.text}")

@@ -29,7 +29,34 @@ object HomeCopy {
         if (isKannadaLanguage(languageCode)) "ಸರಣಿ" else "Streak"
 
     fun gemsCaption(languageCode: String): String =
-        if (isKannadaLanguage(languageCode)) "ಬ್ಯಾಡ್ಜ್" else "Badge"
+        if (isKannadaLanguage(languageCode)) "ರತ್ನಗಳು" else "Gems"
+
+    fun gemsHowToEarnTitle(languageCode: String): String =
+        if (isKannadaLanguage(languageCode)) "ರತ್ನಗಳನ್ನು ಹೇಗೆ ಗಳಿಸುವುದು" else "How to earn gems"
+
+    /**
+     * Explains gem sources shown when the home Gems chip is tapped.
+     * [gemsPerMandatoryAd] / [trialsPerAd] should match [EconomyConfig].
+     */
+    fun gemsHowToEarnBody(
+        languageCode: String,
+        gemsPerMandatoryAd: Int,
+        trialsPerAd: Int,
+    ): String =
+        if (isKannadaLanguage(languageCode)) {
+            "ರತ್ನಗಳು ಪ್ರತಿ ಕಾರ್ಯದಿಂದ ಬರುವುದಿಲ್ಲ — ಅವುಗಳನ್ನು ಹೀಗೆ ಗಳಿಸಿ:\n\n" +
+                "• ದೈನಂದಿನ ಕ್ವೆಸ್ಟ್‌ಗಳನ್ನು ಮುಗಿಸಿ, ನಂತರ ಬಹುಮಾನಕ್ಕೆ ಚಿಕ್ಕ ವೀಡಿಯೋ ನೋಡಿ\n" +
+                "• ಪ್ರತಿ $trialsPerAd ಯೋಜನೆ ಕಾರ್ಯಗಳ ನಂತರ ಚಿಕ್ಕ ವೀಡಿಯೋ ನೋಡಿ (+$gemsPerMandatoryAd ರತ್ನ)\n" +
+                "• ಸ್ನೇಹಿತರನ್ನು ಆಹ್ವಾನಿಸಿ"
+        } else {
+            "Gems aren't awarded for every task — here's how to earn them:\n\n" +
+                "• Finish daily quests, then watch a short video to claim\n" +
+                "• After every $trialsPerAd plan tasks, watch a short video (+$gemsPerMandatoryAd gems)\n" +
+                "• Invite friends"
+        }
+
+    fun gemsHowToEarnGotIt(languageCode: String): String =
+        if (isKannadaLanguage(languageCode)) "ಸರಿ" else "Got it"
 
     /** Short tier label for the home top-bar caption. */
     fun leagueCaption(tierStorageKey: String?, languageCode: String): String {
@@ -117,7 +144,7 @@ object HomeCopy {
         if (isKannadaLanguage(languageCode)) "ದಿನ" else "Day"
 
     fun bookmarksSectionTitle(languageCode: String): String =
-        if (isKannadaLanguage(languageCode)) "ಬುಕ್‌ಮಾರ್ಕ್‌ಗಳು" else "Bookmarks"
+        if (isKannadaLanguage(languageCode)) "ಇತ್ತೀಚೆಗೆ ಪೂರ್ಣಗೊಂಡಿದ್ದು" else "Recently completed"
 
     fun seeAllCountLabel(languageCode: String, count: Int): String =
         if (isKannadaLanguage(languageCode)) "ಎಲ್ಲಾ ನೋಡಿ ($count)" else "See all ($count)"
@@ -160,7 +187,7 @@ object HomeCopy {
         if (isKannadaLanguage(languageCode)) "ಬುಕ್‌ಮಾರ್ಕ್" else "Bookmark"
 
     fun bookmarkPlaceholderKey(languageCode: String): String =
-        if (isKannadaLanguage(languageCode)) "ನಿಮ್ಮ ಉಳಿಸಿದ ವಿಷಯಗಳು" else "Your saved topics"
+        if (isKannadaLanguage(languageCode)) "ಇನ್ನೂ ಯಾವುದೇ ಪೂರ್ಣಗೊಂಡ ವಿಷಯಗಳಿಲ್ಲ" else "No completed topics yet"
 
     // —— NCERT textbooks ——
     fun textbooksSectionTitle(languageCode: String): String =

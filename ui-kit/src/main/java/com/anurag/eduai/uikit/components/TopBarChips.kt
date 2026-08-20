@@ -18,7 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.LocalFireDepartment
 import androidx.compose.material.icons.outlined.Shield
-import androidx.compose.material.icons.outlined.WorkspacePremium
+import androidx.compose.material.icons.outlined.Diamond
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -47,7 +47,7 @@ fun TopBarChips(
     leagueName: String,
     leagueRank: Int,
     streakCaption: String = "Streak",
-    gemsCaption: String = "Badge",
+    gemsCaption: String = "Gems",
     showFriendDot: Boolean = false,
     showGemsDot: Boolean = false,
     showLeagueDot: Boolean = false,
@@ -157,7 +157,7 @@ fun TopBarChips(
                         showNotificationDot = showGemsDot,
                         leading = {
                             Icon(
-                                Icons.Outlined.WorkspacePremium,
+                                Icons.Outlined.Diamond,
                                 contentDescription = null,
                                 tint = colors.pro,
                                 modifier = Modifier.size(13.dp),

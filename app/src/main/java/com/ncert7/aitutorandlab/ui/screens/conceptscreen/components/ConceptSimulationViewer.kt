@@ -105,6 +105,18 @@ fun ConceptSimulationViewer(
         avatarCode = coachAvatarCode,
         ttsController = ttsController,
     )
+    val coachVoiceOptions =
+        remember(ttsState.availableVoices, languageCode, coachAvatarCode) {
+            ttsController.getFilteredVoiceOptions(languageCode, coachAvatarCode)
+        }
+    LaunchedEffect(coachVoiceOptions, ttsState.selectedVoice) {
+        if (selectedVoiceLabel.isBlank() || selectedVoiceLabel !in coachVoiceOptions) {
+            selectedVoiceLabel =
+                ttsState.selectedVoice?.let { ttsController.formatVoiceName(it) }
+                    ?.takeIf { it in coachVoiceOptions }
+                    ?: coachVoiceOptions.firstOrNull().orEmpty()
+        }
+    }
     val useNativeAvatar = LocalNativeTutorAvatarEnabled.current
     val wordBoundaryIndex by keyConceptTts.wordBoundaryIndex.collectAsState()
 
@@ -1052,11 +1064,12 @@ fun ConceptSimulationViewer(
                     onVoiceEnabled = { voiceEnabled = it },
                     speed = ttsState.speechRate,
                     onSpeed = { ttsController.setSpeechRate(it) },
-                    voiceOptions = ttsState.availableVoices.take(8).mapIndexed { i, _ -> "Voice ${i + 1}" },
+                    voiceOptions = coachVoiceOptions,
                     selectedVoice = selectedVoiceLabel,
                     onVoiceSelect = { label ->
-                        val idx = (label.removePrefix("Voice ").trim().toIntOrNull() ?: 1) - 1
-                        ttsState.availableVoices.getOrNull(idx)?.let { ttsController.setVoice(it) }
+                        ttsState.availableVoices
+                            .find { ttsController.formatVoiceName(it) == label }
+                            ?.let { ttsController.setVoice(it) }
                         selectedVoiceLabel = label
                     },
                     avatarOptions = listOf("Boy", "Girl", "None"),

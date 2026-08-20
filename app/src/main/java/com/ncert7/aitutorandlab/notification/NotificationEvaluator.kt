@@ -21,7 +21,12 @@ object NotificationEvaluator {
         if (settings.reminderMode == NotificationReminderMode.OFF) return emptyList()
 
         val hour = now.hour
-        if (NotificationTimeRules.isQuietHours(hour, settings.quietHoursStart, settings.quietHoursEnd)) {
+
+        // Quiet hours normally suppress everything. The daily alarm is the user's chosen
+        // reminder time — still allow DAILY_REMINDER so a late/inexact fire is not dropped.
+        val inQuietHours =
+            NotificationTimeRules.isQuietHours(hour, settings.quietHoursStart, settings.quietHoursEnd)
+        if (inQuietHours && trigger != NotificationEvalTrigger.DAILY_ALARM) {
             return emptyList()
         }
 
@@ -29,9 +34,15 @@ object NotificationEvaluator {
 
         if (settings.isCategoryEnabled(NotificationCategory.REMINDERS) &&
             !snapshot.studiedToday &&
-            isDailyReminderEligible(trigger, settings, now)
+            isDailyReminderEligible(trigger, settings, now) &&
+            (!inQuietHours || trigger == NotificationEvalTrigger.DAILY_ALARM)
         ) {
             candidates += Candidate(NotificationType.DAILY_REMINDER, "daily")
+        }
+
+        if (inQuietHours) {
+            // Only daily reminder may escape quiet hours when the alarm itself fired.
+            return candidates
         }
 
         if (settings.isCategoryEnabled(NotificationCategory.STREAKS) &&

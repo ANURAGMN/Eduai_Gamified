@@ -481,6 +481,9 @@ private fun BottomNavBarContent(
             composable(EduBottomNavItem.Profile.route) {
                 SettingScreen(
                     showBackNavigation = false,
+                    onNavigateBack = {
+                        navController.navigateToTab(EduBottomNavItem.Home.route)
+                    },
                     onLogout = onLogout,
                     onNavigateToFriends = { navController.navigate("friends") },
                     onNavigateToAvatarStudio = {
@@ -544,9 +547,12 @@ private fun BottomNavBarContent(
                         }
                     },
                     onGoSetting = {
-                        navController.navigate("setting") {
-                            popUpTo(navController.graph.startDestinationId) { inclusive = true }
-                            restoreState = true
+                        if (isGamified) {
+                            navController.navigateToTab(EduBottomNavItem.Profile.route)
+                        } else {
+                            navController.navigate(BottomNavItem.Setting.route) {
+                                launchSingleTop = true
+                            }
                         }
                     }
                 )
@@ -555,7 +561,8 @@ private fun BottomNavBarContent(
                 SettingScreen(
                     onNavigateBack = {
                         navController.navigate("home") {
-                            popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                            popUpTo(navController.graph.startDestinationId) { inclusive = false }
+                            launchSingleTop = true
                             restoreState = true
                         }
                     },
@@ -588,10 +595,12 @@ private fun BottomNavBarContent(
                         }
                     },
                     onGoSetting = {
-                        navController.navigate("setting") {
-                            popUpTo(navController.graph.startDestinationId) { inclusive = true }
-                            launchSingleTop = true
-                            restoreState = true
+                        if (isGamified) {
+                            navController.navigateToTab(EduBottomNavItem.Profile.route)
+                        } else {
+                            navController.navigate(BottomNavItem.Setting.route) {
+                                launchSingleTop = true
+                            }
                         }
                     },
                     onGoProgress = {
@@ -687,9 +696,12 @@ private fun BottomNavBarContent(
                         )
                     },
                     onGoSetting = {
-                        navController.navigate("setting") {
-                            popUpTo(navController.graph.startDestinationId) { inclusive = true }
-                            restoreState = true
+                        if (isGamified) {
+                            navController.navigateToTab(EduBottomNavItem.Profile.route)
+                        } else {
+                            navController.navigate(BottomNavItem.Setting.route) {
+                                launchSingleTop = true
+                            }
                         }
                     }
                 )
@@ -718,9 +730,12 @@ private fun BottomNavBarContent(
                         }
                     },
                     onGoSetting = {
-                        navController.navigate("setting") {
-                            popUpTo(navController.graph.startDestinationId) { inclusive = true }
-                            launchSingleTop = true
+                        if (isGamified) {
+                            navController.navigateToTab(EduBottomNavItem.Profile.route)
+                        } else {
+                            navController.navigate(BottomNavItem.Setting.route) {
+                                launchSingleTop = true
+                            }
                         }
                     }
                 )

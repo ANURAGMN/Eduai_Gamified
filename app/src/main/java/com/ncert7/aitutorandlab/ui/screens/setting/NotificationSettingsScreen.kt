@@ -22,6 +22,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -33,6 +34,7 @@ import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTimePickerState
+import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
@@ -55,6 +57,7 @@ import com.ncert7.aitutorandlab.ui.screens.setting.viewmodel.NotificationSetting
 import com.ncert7.aitutorandlab.ui.theme.AccentBlue
 import com.ncert7.aitutorandlab.ui.theme.BackgroundSecondary
 import com.ncert7.aitutorandlab.ui.theme.BrandPrimary
+import com.ncert7.aitutorandlab.ui.theme.CardBackground
 import com.ncert7.aitutorandlab.ui.theme.IconSecondary
 import com.ncert7.aitutorandlab.ui.theme.LocalDimensions
 import com.ncert7.aitutorandlab.ui.theme.TextOnPrimary
@@ -318,11 +321,26 @@ private fun ReminderModeChip(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // Screen chrome is light; pin chip colors so dark Material3 theme cannot invert labels.
     FilterChip(
         selected = selected,
         onClick = onClick,
-        label = { Text(label) },
+        label = { Text(label, color = if (selected) TextOnPrimary else TextPrimary) },
         modifier = modifier,
+        colors =
+            FilterChipDefaults.filterChipColors(
+                containerColor = CardBackground,
+                labelColor = TextPrimary,
+                selectedContainerColor = BrandPrimary,
+                selectedLabelColor = TextOnPrimary,
+            ),
+        border =
+            FilterChipDefaults.filterChipBorder(
+                enabled = true,
+                selected = selected,
+                borderColor = TextSecondary.copy(alpha = 0.4f),
+                selectedBorderColor = Color.Transparent,
+            ),
     )
 }
 
@@ -402,16 +420,17 @@ private fun HourMinutePickerDialog(
         )
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(title) },
+        title = { Text(title, color = TextPrimary) },
         text = { TimePicker(state = state) },
+        containerColor = CardBackground,
         confirmButton = {
             TextButton(onClick = { onConfirm(state.hour, state.minute) }) {
-                Text(okLabel)
+                Text(okLabel, color = BrandPrimary)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text(cancelLabel)
+                Text(cancelLabel, color = TextSecondary)
             }
         },
     )
@@ -435,16 +454,17 @@ private fun HourPickerDialog(
         )
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(title) },
+        title = { Text(title, color = TextPrimary) },
         text = { TimePicker(state = state) },
+        containerColor = CardBackground,
         confirmButton = {
             TextButton(onClick = { onConfirm(state.hour) }) {
-                Text(okLabel)
+                Text(okLabel, color = BrandPrimary)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text(cancelLabel)
+                Text(cancelLabel, color = TextSecondary)
             }
         },
     )
