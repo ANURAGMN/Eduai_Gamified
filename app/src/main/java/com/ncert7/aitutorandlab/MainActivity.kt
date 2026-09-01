@@ -6,9 +6,8 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.ui.Modifier
-import androidx.core.view.WindowCompat
+import androidx.core.app.NotificationManagerCompat // <-- ADDED IMPORT
 import com.ncert7.aitutorandlab.notification.NotificationDeepLinkStore
 import com.ncert7.aitutorandlab.notification.NotificationHelper
 import com.ncert7.aitutorandlab.service.analytics.GamificationAnalyticsTracker
@@ -60,7 +59,7 @@ class MainActivity : AppCompatActivity() {
         // Apply the saved Light/Dark choice before first composition so there's no theme flash.
         ThemeModeStore.load(this)
 
-         setContent {
+        setContent {
             AdaptiveTheme {
                 AppTheme {
                     InAppUpdateHost {
@@ -86,6 +85,15 @@ class MainActivity : AppCompatActivity() {
 
     private fun captureNotificationDeepLink(intent: android.content.Intent?) {
         if (intent == null) return
+
+        // --- ADDED AUTO-CANCEL LOGIC ---
+        val notifId = intent.getIntExtra(NotificationHelper.EXTRA_NOTIF_ID, -1)
+        if (notifId != -1) {
+            NotificationManagerCompat.from(this).cancel(notifId)
+            intent.removeExtra(NotificationHelper.EXTRA_NOTIF_ID) // Clear it so it doesn't fire again on rotation
+        }
+        // -------------------------------
+
         val route = intent.getStringExtra(NotificationHelper.EXTRA_ROUTE)
         NotificationDeepLinkStore.setFromIntent(
             route = route,

@@ -15,38 +15,43 @@ object NotificationEvaluator {
         snapshot: NotificationSnapshot,
         settings: NotificationEvalSettings,
         trigger: NotificationEvalTrigger,
+        sentTodayKeys: List<String> = emptyList(), // Added to help filter duplicates
         now: LocalTime = NotificationTimeRules.nowTime(),
         today: LocalDate = LocalDate.now(zone),
     ): List<Candidate> {
         if (settings.reminderMode == NotificationReminderMode.OFF) return emptyList()
 
-        val hour = now.hour
+        // 1. ISOLATE DAILY ALARM
+        // If the custom time alarm fires, immediately return the DAILY_REMINDER.
+        // This completely prevents other types from stealing its spot.
+        if (trigger == NotificationEvalTrigger.DAILY_ALARM) {
+            return if (settings.isCategoryEnabled(NotificationCategory.REMINDERS)) {
+                listOf(Candidate(NotificationType.DAILY_REMINDER, "daily"))
+            } else {
+                emptyList()
+            }
+        }
 
-        // Quiet hours normally suppress everything. The daily alarm is the user's chosen
-        // reminder time — still allow DAILY_REMINDER so a late/inexact fire is not dropped.
-        val inQuietHours =
-            NotificationTimeRules.isQuietHours(hour, settings.quietHoursStart, settings.quietHoursEnd)
-        if (inQuietHours && trigger != NotificationEvalTrigger.DAILY_ALARM) {
+        val hour = now.hour
+        val inQuietHours = NotificationTimeRules.isQuietHours(hour, settings.quietHoursStart, settings.quietHoursEnd)
+
+        if (inQuietHours) {
             return emptyList()
         }
 
         val candidates = mutableListOf<Candidate>()
 
+        // 2. CUSTOM REMINDER FIX
+        // Removed `!snapshot.studiedToday` so the reminder still queues even if they opened the app earlier.
         if (settings.isCategoryEnabled(NotificationCategory.REMINDERS) &&
-            !snapshot.studiedToday &&
-            isDailyReminderEligible(trigger, settings, now) &&
-            (!inQuietHours || trigger == NotificationEvalTrigger.DAILY_ALARM)
+            isDailyReminderEligible(trigger, settings, now)
         ) {
             candidates += Candidate(NotificationType.DAILY_REMINDER, "daily")
         }
 
-        if (inQuietHours) {
-            // Only daily reminder may escape quiet hours when the alarm itself fired.
-            return candidates
-        }
-
+        // 3. STREAK FIX
+        // Removed `!snapshot.studiedToday` here as well so users can get encouraged anytime.
         if (settings.isCategoryEnabled(NotificationCategory.STREAKS) &&
-            !snapshot.studiedToday &&
             isStreakAtRiskEligible(snapshot, trigger, now)
         ) {
             candidates += Candidate(NotificationType.STREAK_AT_RISK, "streak")
@@ -64,6 +69,8 @@ object NotificationEvaluator {
             candidates += Candidate(NotificationType.STREAK_COMEBACK, "comeback")
         }
 
+        // 4. TASKS FIX
+        // Evaluates during the day, not just the evening.
         if (settings.isCategoryEnabled(NotificationCategory.QUESTS) &&
             isTasksPendingEligible(snapshot, trigger, now)
         ) {
@@ -73,15 +80,16 @@ object NotificationEvaluator {
             )
         }
 
+        // 5. CHAPTER SPAM PREVENTION
+        // Added a check against `sentTodayKeys` to drop the candidate if it was already sent.
         if (settings.isCategoryEnabled(NotificationCategory.REMINDERS) &&
             isChapterProgressEligible(snapshot, trigger)
         ) {
             snapshot.inProgressChapter?.let { chapter ->
-                candidates +=
-                    Candidate(
-                        NotificationType.CHAPTER_PROGRESS,
-                        "chapter_${chapter.chapterId}",
-                    )
+                val dedupKey = "chapter_${chapter.chapterId}"
+                if (dedupKey !in sentTodayKeys) {
+                    candidates += Candidate(NotificationType.CHAPTER_PROGRESS, dedupKey)
+                }
             }
         }
 
@@ -99,6 +107,8 @@ object NotificationEvaluator {
             }
         }
 
+        // 6. WEEKLY XP FIX
+        // Removed the Thursday-Saturday restriction and 85% requirement.
         if (settings.isCategoryEnabled(NotificationCategory.QUESTS) &&
             isWeeklyXpCloseEligible(snapshot, trigger, today)
         ) {
@@ -142,7 +152,7 @@ object NotificationEvaluator {
         if (!snapshot.streakSavedPending) return false
         if (snapshot.streakCount <= 0) return false
         return trigger == NotificationEvalTrigger.PERIODIC_SWEEP ||
-            trigger == NotificationEvalTrigger.DAILY_ALARM
+                trigger == NotificationEvalTrigger.DAILY_ALARM
     }
 
     private fun isStreakAtRiskEligible(
@@ -150,10 +160,10 @@ object NotificationEvaluator {
         trigger: NotificationEvalTrigger,
         now: LocalTime,
     ): Boolean {
-        if (snapshot.streakCount <= 0) return false
+        // Removed: if (snapshot.streakCount <= 0) return false
         if (!NotificationTimeRules.isEvening(now.hour)) return false
         return trigger == NotificationEvalTrigger.PERIODIC_SWEEP ||
-            trigger == NotificationEvalTrigger.DAILY_ALARM
+                trigger == NotificationEvalTrigger.DAILY_ALARM
     }
 
     private fun isStreakComebackEligible(
@@ -164,7 +174,7 @@ object NotificationEvaluator {
         if (snapshot.daysSinceLastActivity != 1) return false
         if (snapshot.streakCount <= 0) return false
         return trigger == NotificationEvalTrigger.PERIODIC_SWEEP ||
-            trigger == NotificationEvalTrigger.DAILY_ALARM
+                trigger == NotificationEvalTrigger.DAILY_ALARM
     }
 
     private fun isWeeklyXpCloseEligible(
@@ -173,11 +183,14 @@ object NotificationEvaluator {
         today: LocalDate,
     ): Boolean {
         if (trigger != NotificationEvalTrigger.PERIODIC_SWEEP) return false
-        if (today.dayOfWeek !in DayOfWeek.THURSDAY..DayOfWeek.SATURDAY) return false
+
+        // Removed weekend-only check
+
         val target = snapshot.weeklyXpTarget
         if (target <= 0) return false
-        val lowerBound = (target * 0.85).toInt()
-        return snapshot.weeklyXp in lowerBound until target
+
+        // Removed 85% requirement limit; simply returns true if they haven't met the target yet
+        return snapshot.weeklyXp < target
     }
 
     private fun isChapterProgressEligible(
@@ -186,7 +199,7 @@ object NotificationEvaluator {
     ): Boolean {
         if (snapshot.inProgressChapter == null) return false
         return trigger == NotificationEvalTrigger.PERIODIC_SWEEP ||
-            trigger == NotificationEvalTrigger.DAILY_ALARM
+                trigger == NotificationEvalTrigger.DAILY_ALARM
     }
 
     private fun isTasksPendingEligible(
@@ -195,7 +208,7 @@ object NotificationEvaluator {
         now: LocalTime,
     ): Boolean {
         if (snapshot.pendingTrialTasksCount <= 0) return false
-        if (!NotificationTimeRules.isEvening(now.hour)) return false
+        // Removed evening-only check
         return trigger == NotificationEvalTrigger.PERIODIC_SWEEP
     }
 
@@ -206,7 +219,7 @@ object NotificationEvaluator {
         val days = snapshot.daysToExam ?: return false
         if (days > NotificationTimeRules.EXAM_COUNTDOWN_MAX_DAYS) return false
         return trigger == NotificationEvalTrigger.PERIODIC_SWEEP ||
-            trigger == NotificationEvalTrigger.DAILY_ALARM
+                trigger == NotificationEvalTrigger.DAILY_ALARM
     }
 
     private fun resolveInactivityCandidate(snapshot: NotificationSnapshot): Candidate? {
@@ -215,7 +228,8 @@ object NotificationEvaluator {
         if (snapshot.inactivity14PreviouslySent && inactiveDays >= 14) return null
 
         return when {
-            inactiveDays in 3..6 ->
+            // Lowered minimum inactive days from 3..6 down to 1..6
+            inactiveDays in 1..6 ->
                 Candidate(NotificationType.INACTIVITY_3, "inactivity")
             inactiveDays in 7..13 ->
                 Candidate(NotificationType.INACTIVITY_7, "inactivity")
