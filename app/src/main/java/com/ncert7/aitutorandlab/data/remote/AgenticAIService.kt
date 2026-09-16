@@ -112,6 +112,31 @@ interface AgenticAIService {
 
     @GET("/math/session/history/{thread_id}")
     suspend fun getMathSessionHistory(@Path("thread_id") threadId: String): Response<MathSessionHistoryResponse>
+
+    // ==================== WHITEBOARD TUTOR ENDPOINTS ====================
+    @GET("/whiteboard-tutor/concepts")
+    suspend fun getWhiteboardConcepts(): Response<WbConceptsResponse>
+
+    @POST("/whiteboard-tutor/session/start")
+    suspend fun startWhiteboardSession(@Body request: WbStartSessionRequest): Response<WbSessionTurnResponse>
+
+    @POST("/whiteboard-tutor/session/continue")
+    suspend fun continueWhiteboardSession(@Body request: WbContinueSessionRequest): Response<WbSessionTurnResponse>
+
+    @GET("/whiteboard-tutor/session/status/{thread_id}")
+    suspend fun getWhiteboardSessionStatus(@Path("thread_id") threadId: String): Response<WbSessionStatusResponse>
+
+    @GET("/whiteboard-tutor/session/history/{thread_id}")
+    suspend fun getWhiteboardSessionHistory(@Path("thread_id") threadId: String): Response<WbSessionHistoryResponse>
+
+    @POST("/whiteboard-tutor/session/{thread_id}/whiteboard/reset")
+    suspend fun resetWhiteboardSession(@Path("thread_id") threadId: String): Response<WbSessionTurnResponse>
+
+    @DELETE("/whiteboard-tutor/session/{thread_id}")
+    suspend fun deleteWhiteboardSession(@Path("thread_id") threadId: String): Response<WbDeleteSessionResponse>
+
+    @GET("/whiteboard-tutor/scenes/manifest")
+    suspend fun getWhiteboardSceneManifest(): Response<WbSceneManifestResponse>
 }
 
 //All Data Classes
@@ -493,4 +518,112 @@ data class NodeTransition(
     val to: String? = null,
     val timestamp: String? = null,
     val reason: String? = null
+)
+// ==================== WHITEBOARD DATA CLASSES ====================
+data class WbConceptInfo(
+    @SerializedName("concept_id") val conceptId: String,
+    val title: String,
+    val chapter: Int,
+    @SerializedName("has_scene") val hasScene: Boolean,
+    @SerializedName("scene_id") val sceneId: String? = null
+)
+
+data class WbConceptsResponse(
+    val success: Boolean,
+    val concepts: List<WbConceptInfo>,
+    val total: Int,
+    val message: String? = null
+)
+
+data class WbStartSessionRequest(
+    @SerializedName("concept_id") val conceptId: String,
+    @SerializedName("student_id") val studentId: String? = null
+)
+
+data class WbContinueSessionRequest(
+    @SerializedName("thread_id") val threadId: String,
+    @SerializedName("user_message") val userMessage: String
+)
+
+// FIX: Made all dynamic whiteboard fields deeply nullable to prevent Gson parsing crashes
+data class WbApiTutorTurn(
+    val message: String,
+    @SerializedName("current_node") val currentNode: String? = null,
+    @SerializedName("current_state") val currentState: String? = null,
+    @SerializedName("whiteboard_summary") val whiteboardSummary: String? = null,
+    @SerializedName("whiteboard_state") val whiteboardState: WbStateResponse? = null,
+    @SerializedName("reveal_timeline") val revealTimeline: List<WbRevealTimelineUnit>? = null,
+    val metadata: Map<String, Any>? = null
+)
+
+data class WbStateResponse(
+    val objects: Map<String, WbBackendWhiteboardObject>? = null
+)
+
+data class WbBackendWhiteboardObject(
+    val instance_id: String? = null,
+    val object_type_id: String? = null,
+    val props: WbWhiteboardProps? = null
+)
+
+data class WbWhiteboardProps(
+    val title: String? = null,
+    val text: String? = null,
+    val steps: List<String>? = null,
+    val scene_id: String? = null,
+    val base_layer_id: String? = null
+)
+
+data class WbRevealTimelineUnit(
+    @SerializedName("unit_id") val unitId: String,
+    @SerializedName("object_id") val objectId: String,
+    @SerializedName("unit_type") val unitType: String,
+    @SerializedName("unit_index") val unitIndex: Int,
+    @SerializedName("part_id") val partId: String?,
+    val cue: String,
+    @SerializedName("trigger_char_index") val triggerCharIndex: Int
+)
+
+data class WbSessionTurnResponse(
+    val success: Boolean,
+    @SerializedName("session_id") val sessionId: String,
+    @SerializedName("thread_id") val threadId: String,
+    val concept: WbConceptInfo,
+    val turn: WbApiTutorTurn,
+    val message: String? = null
+)
+
+data class WbSessionStatusResponse(
+    val success: Boolean,
+    @SerializedName("session_id") val sessionId: String,
+    @SerializedName("thread_id") val threadId: String,
+    val concept: WbConceptInfo,
+    @SerializedName("current_node") val currentNode: String? = null,
+    @SerializedName("current_state") val currentState: String? = null,
+    @SerializedName("board_revision") val boardRevision: Int? = null,
+    @SerializedName("whiteboard_state") val whiteboardState: WbStateResponse? = null,
+    val message: String? = null
+)
+
+data class WbSessionHistoryResponse(
+    val success: Boolean,
+    @SerializedName("session_id") val sessionId: String,
+    @SerializedName("thread_id") val threadId: String,
+    val concept: WbConceptInfo,
+    val messages: List<SessionMessage>,
+    val message: String? = null
+)
+
+data class WbDeleteSessionResponse(
+    val success: Boolean,
+    @SerializedName("thread_id") val threadId: String,
+    val message: String? = null
+)
+
+data class WbSceneManifestResponse(
+    val success: Boolean,
+    @SerializedName("schema_version") val schemaVersion: String,
+    val scenes: List<Map<String, Any>>,
+    val total: Int,
+    val message: String? = null
 )
