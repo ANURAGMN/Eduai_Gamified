@@ -17,7 +17,7 @@ data class ChatMessage(val role: String, val content: String, val isLatestAi: Bo
 @HiltViewModel
 class WhiteboardViewModel @Inject constructor(
     private val apiClient: AgenticAIClient,
-    private val sharedPrefs: SharedPreferenceUtils // Added to fetch student ID
+    private val sharedPrefs: SharedPreferenceUtils
 ) : ViewModel() {
 
     private val _concepts = MutableStateFlow<List<WbConceptInfo>>(emptyList())
@@ -50,7 +50,8 @@ class WhiteboardViewModel @Inject constructor(
 
             val result = apiClient.getWhiteboardConcepts()
             if (result.isSuccess) {
-                _concepts.value = result.getOrNull()!!.concepts
+                // FIX: Strictly filter to only show concepts where visuals are available
+                _concepts.value = result.getOrNull()!!.concepts.filter { it.hasScene }
             } else {
                 _errorMessage.value = result.exceptionOrNull()?.message ?: "Failed to load concepts."
             }
@@ -66,9 +67,9 @@ class WhiteboardViewModel @Inject constructor(
             _errorMessage.value = null
             _chatHistory.value = emptyList()
 
-            val studentId = sharedPrefs.getUserId() ?: "" // Safely grab student ID
+            val studentId = sharedPrefs.getUserId() ?: ""
 
-            val result = apiClient.startWhiteboardSession(conceptId, studentId) // Pass it to the client
+            val result = apiClient.startWhiteboardSession(conceptId, studentId)
             if (result.isSuccess) {
                 val body = result.getOrNull()!!
                 _currentThreadId.value = body.threadId
