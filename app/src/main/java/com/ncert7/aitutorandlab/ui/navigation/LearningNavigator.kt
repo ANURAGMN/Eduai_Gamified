@@ -30,6 +30,10 @@ import com.ncert7.aitutorandlab.ui.screens.subjectscreen.SubjectScreen
 import com.ncert7.aitutorandlab.ui.screens.textbook.TextbookWebScreen
 import com.ncert7.aitutorandlab.ui.screens.textbook.TextbooksScreen
 
+// NEW IMPORTS
+import com.ncert7.aitutorandlab.ui.screens.whiteboard.WhiteboardConceptsScreen
+import com.ncert7.aitutorandlab.ui.screens.whiteboard.WhiteboardChatbotScreen
+
 object LearningRoutes {
     const val HOME = "home"
     const val SUBJECTS = "subjects"
@@ -40,6 +44,10 @@ object LearningRoutes {
     const val SIMULATION_AGENT = "simulation_agent/{simulationId}?conceptId={conceptId}"
     const val CONCEPT_SIM_VIEW = "concept_sim_view/{url}/{title}/{conceptId}/{subjectName}/{chapterName}"
     const val REVISION = "revision/{chapterId}"
+
+    // NEW ROUTES
+    const val WHITEBOARD_CONCEPTS = "whiteboard_concepts"
+    const val WHITEBOARD_CHATBOT = "whiteboard_chatbot?conceptId={conceptId}"
 }
 
 @Composable
@@ -97,7 +105,6 @@ fun LearningNavigator(
                             },
                             navigate = {
                                 val encodedUrl = java.net.URLEncoder.encode(url, "UTF-8")
-                                // Titles with `?` (e.g. "Are They Equal?") break unencoded path routes.
                                 val encodedTitle = java.net.URLEncoder.encode(
                                     title.replace("/", "-"),
                                     "UTF-8",
@@ -135,6 +142,7 @@ fun LearningNavigator(
                 ChapterScreen(
                     subjectId = subjectId,
                     onBackClick = { navController.popBackStack() },
+                    onOpenWhiteboard = { navController.navigate(LearningRoutes.WHITEBOARD_CONCEPTS) }, // <-- ADDED THIS HOOK
                     onOpenChapterTrial = { chapterId ->
                         gated.run(
                             trackClick = { ContentClickNavigation.trackChapterListClick(chapterId, "TRIAL") },
@@ -195,7 +203,6 @@ fun LearningNavigator(
                     },
                     onSimulationClick = { title, url, conceptId, subjectName, chapterName ->
                         val encodedUrl = java.net.URLEncoder.encode(url, "UTF-8")
-                        // Titles with `?` (e.g. "Are They Equal?") break unencoded path routes.
                         val encodedTitle = java.net.URLEncoder.encode(
                             title.replace("/", "-"),
                             "UTF-8",
@@ -333,6 +340,27 @@ fun LearningNavigator(
                     url = url,
                     title = title,
                     onBack = { navController.popBackStack() },
+                )
+            }
+
+            // ================== NEW: WHITEBOARD ROUTES ADDED HERE ================== //
+            composable(LearningRoutes.WHITEBOARD_CONCEPTS) {
+                WhiteboardConceptsScreen(
+                    onBackClick = { navController.popBackStack() },
+                    onConceptClick = { conceptId ->
+                        navController.navigate("whiteboard_chatbot?conceptId=$conceptId")
+                    }
+                )
+            }
+
+            composable(
+                route = LearningRoutes.WHITEBOARD_CHATBOT,
+                arguments = listOf(navArgument("conceptId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val conceptId = backStackEntry.arguments?.getString("conceptId") ?: ""
+                WhiteboardChatbotScreen(
+                    conceptId = conceptId,
+                    onBackClick = { navController.popBackStack() }
                 )
             }
         }
