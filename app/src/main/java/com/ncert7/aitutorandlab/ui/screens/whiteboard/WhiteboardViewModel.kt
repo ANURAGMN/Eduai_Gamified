@@ -7,6 +7,7 @@ import com.ncert7.aitutorandlab.data.remote.AgenticAIClient
 import com.ncert7.aitutorandlab.data.remote.WbApiTutorTurn
 import com.ncert7.aitutorandlab.data.remote.WbConceptInfo
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -50,7 +51,6 @@ class WhiteboardViewModel @Inject constructor(
 
             val result = apiClient.getWhiteboardConcepts()
             if (result.isSuccess) {
-                // FIX: Strictly filter to only show concepts where visuals are available
                 _concepts.value = result.getOrNull()!!.concepts.filter { it.hasScene }
             } else {
                 _errorMessage.value = result.exceptionOrNull()?.message ?: "Failed to load concepts."
@@ -69,7 +69,15 @@ class WhiteboardViewModel @Inject constructor(
 
             val studentId = sharedPrefs.getUserId() ?: ""
 
-            val result = apiClient.startWhiteboardSession(conceptId, studentId)
+            // Attempt 1
+            var result = apiClient.startWhiteboardSession(conceptId, studentId)
+
+            // Retry exactly once if the first attempt fails (e.g., gets a 500 error)
+            if (result.isFailure) {
+                delay(1000L) // Wait 1 second before retrying
+                result = apiClient.startWhiteboardSession(conceptId, studentId)
+            }
+
             if (result.isSuccess) {
                 val body = result.getOrNull()!!
                 _currentThreadId.value = body.threadId
@@ -100,7 +108,15 @@ class WhiteboardViewModel @Inject constructor(
         viewModelScope.launch {
             _isLoading.value = true
 
-            val result = apiClient.continueWhiteboardSession(threadId, userText)
+            // Attempt 1
+            var result = apiClient.continueWhiteboardSession(threadId, userText)
+
+            // Retry exactly once if the first attempt fails (e.g., gets a 500 error)
+            if (result.isFailure) {
+                delay(1000L) // Wait 1 second before retrying
+                result = apiClient.continueWhiteboardSession(threadId, userText)
+            }
+
             if (result.isSuccess) {
                 val body = result.getOrNull()!!
                 _latestTurn.value = body.turn
