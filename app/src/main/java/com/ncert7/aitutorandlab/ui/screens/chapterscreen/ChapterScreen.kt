@@ -155,7 +155,7 @@ fun ChapterScreen(
                                 contentColor = BrandPrimary
                             )
                         ) {
-                            Text("Try Interactive Science Whiteboard", fontWeight = FontWeight.Bold)
+                            Text("Try Interactive Whiteboard", fontWeight = FontWeight.Bold)
                         }
                     }
                 }

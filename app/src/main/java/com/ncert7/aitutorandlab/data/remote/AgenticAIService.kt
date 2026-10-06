@@ -524,6 +524,7 @@ data class WbConceptInfo(
     @SerializedName("concept_id") val conceptId: String,
     val title: String,
     val chapter: Int,
+    val subject: String? = null,
     @SerializedName("has_scene") val hasScene: Boolean,
     @SerializedName("scene_id") val sceneId: String? = null
 )

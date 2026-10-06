@@ -48,6 +48,8 @@ import com.ncert7.aitutorandlab.ui.theme.LocalDimensions
 import com.ncert7.aitutorandlab.ui.theme.TextPrimary
 import com.ncert7.aitutorandlab.ui.theme.White
 import com.ncert7.aitutorandlab.ui.viewModel.TextToSpeech
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 
 @Composable
 fun CustomTopBar(title: String, onBack: () -> Unit) {
@@ -82,6 +84,18 @@ fun WhiteboardConceptsScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
 
+    // Add local state for the active filter
+    var selectedFilter by remember { mutableStateOf("All") }
+
+    // Filter the concepts based on the selection
+    val filteredConcepts = remember(concepts, selectedFilter) {
+        if (selectedFilter == "All") {
+            concepts
+        } else {
+            concepts.filter { it.subject?.equals(selectedFilter, ignoreCase = true) == true }
+        }
+    }
+
     LaunchedEffect(Unit) {
         viewModel.fetchConcepts()
     }
@@ -94,11 +108,34 @@ fun WhiteboardConceptsScreen(
                 ErrorBanner(errorMessage!!)
             }
 
+            // Subject Filter UI
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp) // Keeps them close together
+            ) {
+                listOf("All", "Science", "Math").forEach { filter ->
+                    FilterChip(
+                        selected = selectedFilter == filter,
+                        onClick = { selectedFilter = filter },
+                        label = { Text(filter, fontSize = 12.sp) },
+                        modifier = Modifier.height(32.dp), // Reduces the height to make it smaller
+                        colors = FilterChipDefaults.filterChipColors(
+                            labelColor = Color.Black, // Forces unselected text to be black
+                            selectedContainerColor = Color(0xFF4F46E5),
+                            selectedLabelColor = Color.White
+                        )
+                    )
+                }
+            }
+
             if (isLoading && concepts.isEmpty()) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
             } else {
                 LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(top = 4.dp, bottom = 4.dp)) {
-                    items(concepts) { concept ->
+                    // Use the filtered list here
+                    items(filteredConcepts) { concept ->
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -111,7 +148,16 @@ fun WhiteboardConceptsScreen(
                             Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
                                 Text(concept.title, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color.Black)
                                 Spacer(modifier = Modifier.height(2.dp))
-                                Text("Chapter: ${concept.chapter} | Visuals: ${if(concept.hasScene) "Yes" else "No"}", color = Color.DarkGray, fontSize = 11.sp)
+
+                                // Format the subject to be capitalized, defaulting to "N/A" if missing
+                                val displaySubject = concept.subject?.replaceFirstChar { it.uppercase() } ?: "N/A"
+
+                                // Added Subject to the display text
+                                Text(
+                                    "Subject: $displaySubject | Chapter: ${concept.chapter} | Visuals: ${if(concept.hasScene) "Yes" else "No"}",
+                                    color = Color.DarkGray,
+                                    fontSize = 11.sp
+                                )
                             }
                         }
                     }
