@@ -36,6 +36,7 @@ class AppLifecycleObserver(
             SessionManager.startSession()
             DebugLogger.debugLog("AppLifecycleObserver", "Session started on app return")
             recordStreakOnAppOpen()
+            DataSyncService.syncAppVersionIfNeeded()
         }
     }
 

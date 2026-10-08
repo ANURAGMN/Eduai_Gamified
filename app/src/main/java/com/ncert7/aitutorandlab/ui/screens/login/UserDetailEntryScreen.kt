@@ -294,9 +294,21 @@ fun UserDetailEntryScreen(
                             DropDownMenu(
                                 label = stringResource(R.string.class_selection),
                                 options = classOptions,
-                                selectedValue = "Class $selectedClass",
+                                selectedValue = classOptions.getOrNull(selectedClass - 1)
+                                    ?: classOptions.firstOrNull()
+                                    ?: "Class $selectedClass",
                                 onValueSelected = { selectedString ->
-                                    selectedClass = selectedString.removePrefix("Class ").trim().toInt()
+                                    // Locale-proof: map the label back to its class number by option
+                                    // index, never by parsing text. Kannada labels ("ತರಗತಿ 7") and
+                                    // Kannada digits broke the old `.toInt()` (NumberFormatException,
+                                    // vitals 1.0.8 / v13 crash). Digit-scrape kept only as a fallback.
+                                    val idx = classOptions.indexOf(selectedString)
+                                    selectedClass = if (idx >= 0) {
+                                        idx + 1
+                                    } else {
+                                        Regex("\\d+").find(selectedString)?.value?.toIntOrNull()
+                                            ?: selectedClass
+                                    }
                                 }
                             )
                         }

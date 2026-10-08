@@ -115,7 +115,9 @@ class GraphRenderLogic(
 
         // Find root nodes
         val rootNodes = graphData.nodes.filter { (inDegree[it.id] ?: 0) == 0 }
-        val roots = if (rootNodes.isEmpty()) listOf(graphData.nodes.first()) else rootNodes
+        // ifEmpty + take(1): if there are no root nodes AND no nodes at all, this yields an empty
+        // list instead of crashing on .first() (NoSuchElementException) for an empty graph.
+        val roots = rootNodes.ifEmpty { graphData.nodes.take(1) }
 
         // Layout parameters
         val startY = 180f

@@ -276,12 +276,19 @@ fun EditProfileScreen(
                 DropDownMenu(
                     label = stringResource(R.string.class_selection),
                     options = classOptions,
-                    selectedValue = "Class $classValue",
+                    selectedValue = classOptions.getOrNull(classValue - 1)
+                        ?: classOptions.firstOrNull()
+                        ?: "Class $classValue",
                     onValueSelected = { selectedString ->
-                        classValue = selectedString
-                            .removePrefix("Class ")
-                            .trim()
-                            .toInt()
+                        // Locale-proof: map the label to its class number by option index, never by
+                        // parsing text. `.toInt()` on a localized label ("ತರಗತಿ 7") throws
+                        // NumberFormatException — the same crash class as the login screen (vitals).
+                        val idx = classOptions.indexOf(selectedString)
+                        classValue = if (idx >= 0) {
+                            idx + 1
+                        } else {
+                            Regex("\\d+").find(selectedString)?.value?.toIntOrNull() ?: classValue
+                        }
                     }
                 )
             }

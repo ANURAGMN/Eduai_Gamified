@@ -6,9 +6,11 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.google.firebase.firestore.FirebaseFirestore
+import com.ncert7.aitutorandlab.BuildConfig
 import com.ncert7.aitutorandlab.data.local.SharedPreferenceUtils
 import com.ncert7.aitutorandlab.data.local.database.EduAiDatabase
 import com.ncert7.aitutorandlab.debug.DebugLogger
+import com.ncert7.aitutorandlab.repository.FirebaseRepository
 import com.ncert7.aitutorandlab.utils.NetworkConnectivityObserver
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -409,6 +411,7 @@ object DataSyncService {
         val restoreGate = CompletableDeferred<Unit>()
         gardenRestoreGate = restoreGate
         gardenRestoredFromRemote = false
+        syncAppVersionIfNeeded(studentId)
         scope.launch {
             try {
                 // RV.2: bound the whole restore sequence. A network *hang* (not an exception) would
@@ -444,6 +447,25 @@ object DataSyncService {
                 updateStudentId(studentId)
             } finally {
                 restoreGate.complete(Unit)
+            }
+        }
+    }
+
+    /**
+     * Merges [BuildConfig] version onto the signed-in user's Firestore doc when the installed
+     * versionCode differs from the last successful sync (debounce for Spark write quota).
+     */
+    fun syncAppVersionIfNeeded(studentId: String? = null) {
+        if (!isInitialized) return
+        scope.launch {
+            val userId = studentId?.takeIf { it.isNotBlank() }
+                ?: sharedPref.getUserId()?.takeIf { it.isNotBlank() }
+                ?: return@launch
+            val currentCode = BuildConfig.VERSION_CODE
+            if (sharedPref.getLastSyncedAppVersionCode() == currentCode) return@launch
+            val ok = FirebaseRepository().syncAppVersion(userId)
+            if (ok) {
+                sharedPref.setLastSyncedAppVersionCode(currentCode)
             }
         }
     }

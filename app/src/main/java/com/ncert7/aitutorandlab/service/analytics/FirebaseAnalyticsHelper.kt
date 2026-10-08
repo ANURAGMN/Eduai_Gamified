@@ -9,6 +9,9 @@ import com.ncert7.aitutorandlab.BuildConfig
 
 /**
  * GA4 sink for all product analytics. High-frequency events stay here only (not Firestore).
+ *
+ * Registration for Google Ads App campaigns: fire [logSignUp] once per new account so Firebase
+ * can mark `sign_up` as a Key Event and Google Ads can import it as an in-app conversion.
  */
 object FirebaseAnalyticsHelper {
 
@@ -55,6 +58,19 @@ object FirebaseAnalyticsHelper {
             }
         }
         firebaseAnalytics?.logEvent(eventName, bundle)
+    }
+
+    /**
+     * Standard GA4 / Firebase `sign_up` — required for Google Ads "in-app action" signup import.
+     * Call only after [com.ncert7.aitutorandlab.repository.CreateUserResult.Created]
+     * (not returning logins, not profile merge/retry).
+     */
+    fun logSignUp(method: String) {
+        val normalized = method.ifBlank { "unknown" }
+        logEvent(
+            eventName = SignUpAnalytics.EVENT_NAME,
+            params = mapOf(SignUpAnalytics.PARAM_METHOD to normalized),
+        )
     }
 
     fun logSimulationClick(

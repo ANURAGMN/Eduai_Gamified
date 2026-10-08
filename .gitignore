@@ -55,3 +55,4 @@ node-v24.17.0-win-x64.zip
 /docs/verify-*.png
 /scripts/__pycache__/
 /scripts/migrate-legacy-run.log
+/exports/

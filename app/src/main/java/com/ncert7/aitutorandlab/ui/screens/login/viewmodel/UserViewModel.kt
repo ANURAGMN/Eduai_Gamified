@@ -9,6 +9,7 @@ import com.ncert7.aitutorandlab.data.local.SharedPreferenceUtils
 import com.ncert7.aitutorandlab.data.local.entities.StudentEntity
 import com.ncert7.aitutorandlab.debug.DebugLogger
 import com.ncert7.aitutorandlab.config.AppConfig
+import com.ncert7.aitutorandlab.repository.CreateUserResult
 import com.ncert7.aitutorandlab.repository.FirebaseRepository
 import com.ncert7.aitutorandlab.repository.StreakRepository
 import com.ncert7.aitutorandlab.repository.StudentLocalRepository
@@ -16,11 +17,14 @@ import com.ncert7.aitutorandlab.repository.TutorConfigRepository
 import com.ncert7.aitutorandlab.repository.UserCheckResult
 import com.ncert7.aitutorandlab.service.auth.FirebaseAuthBridge
 import com.ncert7.aitutorandlab.service.auth.PadaamsEmailAuth
+import com.ncert7.aitutorandlab.service.analytics.FirebaseAnalyticsHelper
+import com.ncert7.aitutorandlab.service.analytics.SignUpAnalytics
 import com.ncert7.aitutorandlab.service.sync.DataSyncService
 import com.ncert7.aitutorandlab.service.sync.FirebaseSyncManager
 import com.ncert7.aitutorandlab.utils.LanguageHelper
 import com.ncert7.aitutorandlab.utils.getCurrentLanguageCode
 import com.ncert7.aitutorandlab.utils.normalizeLanguageCode
+import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -407,68 +411,81 @@ class UserViewModel @Inject constructor(
                 DebugLogger.debugLog("UserViewModel", "User email: ${currentUser.email}")
                 DebugLogger.debugLog("UserViewModel", "User name: ${currentUser.displayName}")
 
-                // Create user in Firebase
-                val success = repo.createNewUser(currentUser)
-
-                if (success) {
-                    // Save to local database
-                    val db = EduAiDatabase.getInstance(context)
-                    val localRepo = StudentLocalRepository(db.studentDao())
-                    val sharedPreference = SharedPreferenceUtils(context)
-
-                    val studentEntity = StudentEntity(
-                        studentId = currentUser.id,
-                        studentName = currentUser.displayName.orEmpty(),
-                        email = currentUser.email,
-                        phoneNumber = currentUser.phoneNumber,
-                        studentSchool = currentUser.schoolName,
-                        language = currentUser.language,
-                        classLevel = currentUser.studentClass,
-                        profilePhotoUrl = currentUser.profilePictureUri,
-                        createdAt = currentUser.createdAt,
-                        updatedAt = currentUser.lastLogin,
-                        isSynced = true
-                    )
-                    localRepo.saveStudentLocally(studentEntity)
-
-                    // Sync content and restore any cloud progress (same as existing-user login)
-                    val syncManager = FirebaseSyncManager(
-                        subjectDao = db.subjectDao(),
-                        chapterDao = db.chapterDao(),
-                        conceptDao = db.conceptDao(),
-                        progressDao = db.progressDao(),
-                        streakDao = db.streakDao(),
-                        chapterProgressDao = db.chapterAgentProgressDao(),
-                        context = context
-                    )
-                    val contentResult = syncManager.syncAllContent()
-                    DebugLogger.debugLog("UserViewModel", "Content sync: ${contentResult.message}")
-
-                    val progressResult = syncManager.syncUserProgress(currentUser.id)
-                    DebugLogger.debugLog("UserViewModel", "Progress sync: ${progressResult.message}")
-
-                    val chapterProgressResult = syncManager.syncChapterAgentProgress(currentUser.id)
-                    DebugLogger.debugLog("UserViewModel", "Chapter progress sync: ${chapterProgressResult.message}")
-
-                    // Create initial streak for new user
-                    DebugLogger.debugLog("UserViewModel", "Creating initial streak for new user")
-                    streakRepository.syncStreakOnLogin(currentUser.id)
-                    DebugLogger.debugLog("UserViewModel", "Initial streak created")
-
-                    // Save preferences
-                    sharedPreference.setLoggedIn(true)
-                    sharedPreference.setLanguagePreference(currentUser.language)
-                    sharedPreference.setUserId(currentUser.id)
-
-                    tutorConfigRepository.ensureLoaded(appContext, currentUser.id)
-
-                    DataSyncService.onUserAuthenticated(currentUser.id)
-                    DebugLogger.debugLog("UserViewModel", "DataSyncService initialized with studentId: ${currentUser.id}")
-
-                    _userSaveState.value = UserSaveState.Success
-                } else {
-                    _userSaveState.value = UserSaveState.Error(Exception("Failed to create user"))
+                // Create user in Firebase — sign_up only when a new doc is written.
+                when (repo.createNewUser(currentUser)) {
+                    CreateUserResult.Created -> {
+                        val method = signUpMethod()
+                        FirebaseAnalyticsHelper.initialize(context)
+                        FirebaseAnalyticsHelper.logSignUp(method)
+                        DebugLogger.debugLog(
+                            "UserViewModel",
+                            "GA4 ${SignUpAnalytics.EVENT_NAME} fired method=$method",
+                        )
+                    }
+                    CreateUserResult.Updated -> {
+                        // Retry / race: profile merged — do not inflate Ads signup conversions.
+                        DebugLogger.debugLog(
+                            "UserViewModel",
+                            "User already existed; skipping GA4 ${SignUpAnalytics.EVENT_NAME}",
+                        )
+                    }
                 }
+
+                // Save to local database
+                val db = EduAiDatabase.getInstance(context)
+                val localRepo = StudentLocalRepository(db.studentDao())
+                val sharedPreference = SharedPreferenceUtils(context)
+
+                val studentEntity = StudentEntity(
+                    studentId = currentUser.id,
+                    studentName = currentUser.displayName.orEmpty(),
+                    email = currentUser.email,
+                    phoneNumber = currentUser.phoneNumber,
+                    studentSchool = currentUser.schoolName,
+                    language = currentUser.language,
+                    classLevel = currentUser.studentClass,
+                    profilePhotoUrl = currentUser.profilePictureUri,
+                    createdAt = currentUser.createdAt,
+                    updatedAt = currentUser.lastLogin,
+                    isSynced = true
+                )
+                localRepo.saveStudentLocally(studentEntity)
+
+                // Sync content and restore any cloud progress (same as existing-user login)
+                val syncManager = FirebaseSyncManager(
+                    subjectDao = db.subjectDao(),
+                    chapterDao = db.chapterDao(),
+                    conceptDao = db.conceptDao(),
+                    progressDao = db.progressDao(),
+                    streakDao = db.streakDao(),
+                    chapterProgressDao = db.chapterAgentProgressDao(),
+                    context = context
+                )
+                val contentResult = syncManager.syncAllContent()
+                DebugLogger.debugLog("UserViewModel", "Content sync: ${contentResult.message}")
+
+                val progressResult = syncManager.syncUserProgress(currentUser.id)
+                DebugLogger.debugLog("UserViewModel", "Progress sync: ${progressResult.message}")
+
+                val chapterProgressResult = syncManager.syncChapterAgentProgress(currentUser.id)
+                DebugLogger.debugLog("UserViewModel", "Chapter progress sync: ${chapterProgressResult.message}")
+
+                // Create initial streak for new user
+                DebugLogger.debugLog("UserViewModel", "Creating initial streak for new user")
+                streakRepository.syncStreakOnLogin(currentUser.id)
+                DebugLogger.debugLog("UserViewModel", "Initial streak created")
+
+                // Save preferences
+                sharedPreference.setLoggedIn(true)
+                sharedPreference.setLanguagePreference(currentUser.language)
+                sharedPreference.setUserId(currentUser.id)
+
+                tutorConfigRepository.ensureLoaded(appContext, currentUser.id)
+
+                DataSyncService.onUserAuthenticated(currentUser.id)
+                DebugLogger.debugLog("UserViewModel", "DataSyncService initialized with studentId: ${currentUser.id}")
+
+                _userSaveState.value = UserSaveState.Success
             } catch (e: Exception) {
                 _userSaveState.value = UserSaveState.Error(e)
                 DebugLogger.debugLog("UserViewModel", "Error submitting user: ${e.message}")
@@ -508,6 +525,14 @@ class UserViewModel @Inject constructor(
         _userSaveState.value = UserSaveState.Idle
         _existingUserSyncState.value = ExistingUserSyncState.Idle
         _selectedLanguage.value = sharedPreferenceUtils.getLanguagePreference() ?: "en"
+    }
+
+    /** Auth provider for GA4 `sign_up` method param (google.com → google, password → email). */
+    private fun signUpMethod(): String {
+        val providerIds = FirebaseAuth.getInstance().currentUser
+            ?.providerData
+            ?.map { it.providerId }
+        return SignUpAnalytics.methodFromProviderIds(providerIds)
     }
 }
 

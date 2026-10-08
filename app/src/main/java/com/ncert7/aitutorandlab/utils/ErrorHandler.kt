@@ -244,43 +244,50 @@ object ErrorHandler {
                     "Seconds remaining: ${secondsRemaining}, Retry attempt: $tokenExpiredRetries/$maxTokenRefreshRetries"
         )
 
-        if (isTokenExpired && tokenExpiredRetries < maxTokenRefreshRetries) {
+        // Always try silent refresh on 401 (even if JWT still looks valid — clock skew /
+        // revoked session / audience mismatch). Cap retries via maxTokenRefreshRetries.
+        if (tokenExpiredRetries < maxTokenRefreshRetries) {
             val newRetryCount = tokenExpiredRetries + 1
             DebugLogger.debugLog(
                 tag,
-                "⟳ Token is expired/expiring, attempting refresh ($newRetryCount/$maxTokenRefreshRetries)"
+                "⟳ 401 → silent refresh ($newRetryCount/$maxTokenRefreshRetries; " +
+                    "jwtExpired=$isTokenExpiredFromJwt, buffer=$isTokenExpiringWithinBuffer, left=${secondsRemaining}s)"
             )
 
             val refreshSuccess = TokenManager.refreshTokenSilently(context)
             if (refreshSuccess) {
-                // Verify new token was actually obtained
                 val newToken = TokenManager.getIdToken(context)
-                if (newToken != null && newToken != currentToken) {
-                    val newSecondsRemaining = JwtDecoder.getSecondsUntilExpiry(newToken) ?: 0
-                    DebugLogger.debugLog(tag, "✓ Token refreshed successfully (${newSecondsRemaining}s now available)")
-                    delay(300L) // Small delay before retry to ensure token is propagated
+                // Same JWT is OK when Google reuses a still-valid token.
+                val tokenUsable = AuthTokenPolicy.isRefreshedTokenUsable(
+                    newToken = newToken,
+                    hasExpClaim = newToken?.let { JwtDecoder.hasExpClaim(it) } == true,
+                    isExpired = newToken?.let { JwtDecoder.isTokenExpired(it) } == true,
+                )
+                if (tokenUsable) {
+                    val newSecondsRemaining = JwtDecoder.getSecondsUntilExpiry(newToken!!) ?: -1
+                    DebugLogger.debugLog(
+                        tag,
+                        "✓ Token ready after refresh (${newSecondsRemaining}s; sameToken=${newToken == currentToken})"
+                    )
+                    delay(300L)
                     return ResponseHandlerResult.Token401RetryAfterRefresh(newRetryCount)
-                } else {
-                    DebugLogger.errorLog(tag, " Token refresh returned same token or null")
-                    return ResponseHandlerResult.Token401RetryAfterFailedRefresh(newRetryCount)
                 }
-            } else {
-                DebugLogger.errorLog(tag, " Token refresh failed")
+                DebugLogger.debugLog(tag, "Token refresh produced null/expired token")
                 return ResponseHandlerResult.Token401RetryAfterFailedRefresh(newRetryCount)
             }
-        } else if (isTokenExpired && tokenExpiredRetries >= maxTokenRefreshRetries) {
-            DebugLogger.errorLog(
-                tag,
-                " Token refresh retries exhausted ($maxTokenRefreshRetries attempts), giving up"
-            )
-            return ResponseHandlerResult.Token401Exhausted(lastEx)
+            DebugLogger.debugLog(tag, "Token refresh failed")
+            return ResponseHandlerResult.Token401RetryAfterFailedRefresh(newRetryCount)
+        }
+
+        DebugLogger.errorLog(
+            tag,
+            "401 refresh retries exhausted ($maxTokenRefreshRetries). " +
+                "jwtLooksExpired=$isTokenExpired left=${secondsRemaining}s"
+        )
+        return if (isTokenExpired) {
+            ResponseHandlerResult.Token401Exhausted(lastEx)
         } else {
-            // Got 401 but token appears valid
-            DebugLogger.errorLog(
-                tag,
-                " Got 401 but token appears valid (${secondsRemaining}s remaining) - authentication issue"
-            )
-            return ResponseHandlerResult.Token401NotExpired(lastEx)
+            ResponseHandlerResult.Token401NotExpired(lastEx)
         }
     }
 

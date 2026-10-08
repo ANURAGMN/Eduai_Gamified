@@ -17,6 +17,7 @@ import com.ncert7.aitutorandlab.service.sync.DataSyncService
 import com.ncert7.aitutorandlab.ui.screens.conceptscreen.dataclass.ConceptScreenState
 import com.ncert7.aitutorandlab.ui.screens.conceptscreen.components.SimulationTrialPromptKind
 import com.ncert7.aitutorandlab.ui.screens.conceptscreen.SimulationViewerTiming
+import com.ncert7.aitutorandlab.utils.SimulationLanguageUrl
 import com.ncert7.aitutorandlab.utils.StreakManager
 import com.ncert7.aitutorandlab.utils.TrialCopy
 import com.ncert7.aitutorandlab.utils.getCurrentLanguageCode
@@ -185,11 +186,13 @@ class ConceptSimulationViewModel @Inject constructor(
         chapterName: String,
         language: String,
     ): String? {
+        val url = SimulationLanguageUrl.resolve(
+            languageCode = language,
+            englishUrl = concept.simulationUrl,
+            kannadaUrl = concept.simulationUrlKannada,
+            allowEnglishFallback = true,
+        ) ?: return null
         val kn = language.equals("kn", ignoreCase = true)
-        val url = (if (kn) concept.simulationUrlKannada else concept.simulationUrl)
-            ?.takeIf { it.isNotBlank() }
-            ?: concept.simulationUrl?.takeIf { it.isNotBlank() }
-            ?: return null
         val title = (if (kn) concept.conceptNameKannada else concept.conceptName)
             .ifBlank { concept.conceptName }
         fun enc(s: String) = URLEncoder.encode(s, "UTF-8")
@@ -487,14 +490,14 @@ class ConceptSimulationViewModel @Inject constructor(
 
     private fun getSelectedSimulationUrl(
         englishUrl: String?,
-        kannadaUrl: String?
-    ): String? {
-        return if (isKannada()) {
-            kannadaUrl?.takeIf { it.isNotBlank() && it != "Not found" }
-        } else {
-            englishUrl?.takeIf { it.isNotBlank() && it != "Not found" }
-        }
-    }
+        kannadaUrl: String?,
+    ): String? =
+        SimulationLanguageUrl.resolve(
+            languageCode = getCurrentLanguageCode(),
+            englishUrl = englishUrl,
+            kannadaUrl = kannadaUrl,
+            allowEnglishFallback = true,
+        )
 
     /**
      * Page finished loading — streak only. Chapter % must not advance on open alone.

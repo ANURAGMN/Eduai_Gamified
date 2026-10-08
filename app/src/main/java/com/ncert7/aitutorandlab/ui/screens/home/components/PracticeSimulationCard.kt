@@ -26,6 +26,7 @@ import com.ncert7.aitutorandlab.ui.theme.LocalDimensions
 import com.ncert7.aitutorandlab.ui.theme.TextPrimary
 import com.ncert7.aitutorandlab.utils.getLocalizedName
 import com.ncert7.aitutorandlab.utils.isKannadaLanguage
+import com.ncert7.aitutorandlab.utils.SimulationLanguageUrl
 
 @Composable
 fun PracticeSimulationCard(
@@ -73,7 +74,12 @@ fun PracticeSimulationCard(
                                 else -> ProgressStatus.NOT_STARTED
                             },
                             type = sim.type,
-                            simulationUrl = if (isKannadaLanguage(languageCode)) sim.simulationUrlKannada else sim.simulationUrl,
+                            simulationUrl = SimulationLanguageUrl.resolve(
+                                languageCode = languageCode,
+                                englishUrl = sim.simulationUrl,
+                                kannadaUrl = sim.simulationUrlKannada,
+                                allowEnglishFallback = false,
+                            ) ?: if (!isKannadaLanguage(languageCode)) sim.simulationUrl else null,
                             simulationId = if (isKannadaLanguage(languageCode)) sim.simulationIdKannada else sim.simulationId
                         )
 

@@ -85,6 +85,7 @@ class SharedPreferenceUtils(context: Context) : AppMigrationVersionStore {
         private const val KEY_STREAK_GREETING_DAY = "streak_greeting_day"
         private const val KEY_ONBOARDING_PICKS_APPLIED = "onboarding_picks_applied"
         private const val KEY_ONBOARDING_UI_VERSION = "onboarding_ui_version"
+        private const val KEY_LAST_SYNCED_APP_VERSION_CODE = "last_synced_app_version_code"
     }
 
     fun setIdToken(idToken: String) {
@@ -116,30 +117,25 @@ class SharedPreferenceUtils(context: Context) : AppMigrationVersionStore {
             return true
         }
 
-        // Check JWT expiry directly from token (most accurate)
-        // This validates against the actual exp claim from Google
-        val isTokenExpiringFromJwt = com.ncert7.aitutorandlab.utils.JwtDecoder.isTokenExpiringWithinBuffer(token, 600L)
-        if (isTokenExpiringFromJwt) {
-            com.ncert7.aitutorandlab.debug.DebugLogger.debugLog("SharedPreferenceUtils", "✗ Token expiring (from JWT exp claim)")
-            return true
-        }
+        val jwt = com.ncert7.aitutorandlab.utils.JwtDecoder
+        val expiredOrExpiring = com.ncert7.aitutorandlab.utils.AuthTokenPolicy.isExpiredOrExpiring(
+            hasExpClaim = jwt.hasExpClaim(token),
+            secondsUntilExpiry = jwt.getSecondsUntilExpiry(token),
+            storedExpiryMs = getTokenExpiryTime(),
+        )
 
-        // Fallback: also check stored expiry time as secondary validation
-        val storedExpiryTime = getTokenExpiryTime()
-        if (storedExpiryTime > 0L) {
-            val currentTime = System.currentTimeMillis()
-            val bufferTime = 10 * 60 * 1000 // 10 minutes
-            val isStoredExpired = currentTime >= (storedExpiryTime - bufferTime)
-            if (isStoredExpired) {
-                com.ncert7.aitutorandlab.debug.DebugLogger.debugLog("SharedPreferenceUtils", "✗ Token expiring (from stored expiry time)")
-                return true
-            }
+        if (expiredOrExpiring) {
+            com.ncert7.aitutorandlab.debug.DebugLogger.debugLog(
+                "SharedPreferenceUtils",
+                "✗ Token expired/expiring (jwtExp=${jwt.hasExpClaim(token)}, left=${jwt.getSecondsUntilExpiry(token)})"
+            )
+        } else {
+            com.ncert7.aitutorandlab.debug.DebugLogger.debugLog(
+                "SharedPreferenceUtils",
+                "✓ Token valid (left=${jwt.getSecondsUntilExpiry(token)}s)"
+            )
         }
-
-        // Token is still valid
-        val secondsRemaining = com.ncert7.aitutorandlab.utils.JwtDecoder.getSecondsUntilExpiry(token) ?: 0
-        com.ncert7.aitutorandlab.debug.DebugLogger.debugLog("SharedPreferenceUtils", "✓ Token valid: ${secondsRemaining}s remaining")
-        return false
+        return expiredOrExpiring
     }
 
     fun clearAllAuthData() {
@@ -337,7 +333,20 @@ class SharedPreferenceUtils(context: Context) : AppMigrationVersionStore {
             remove(KEY_ONBOARDING_AVATAR)
             putBoolean(KEY_HOME_TOUR_COMPLETED, false)
             putBoolean(KEY_NAV_TOUR_COMPLETED, false)
+            remove(KEY_LAST_SYNCED_APP_VERSION_CODE)
         }
+    }
+
+    /** Last app versionCode successfully merged onto the Firestore user doc. */
+    fun getLastSyncedAppVersionCode(): Int =
+        prefs.getInt(KEY_LAST_SYNCED_APP_VERSION_CODE, -1)
+
+    fun setLastSyncedAppVersionCode(versionCode: Int) {
+        prefs.edit { putInt(KEY_LAST_SYNCED_APP_VERSION_CODE, versionCode) }
+    }
+
+    fun clearLastSyncedAppVersionCode() {
+        prefs.edit { remove(KEY_LAST_SYNCED_APP_VERSION_CODE) }
     }
 
     /**

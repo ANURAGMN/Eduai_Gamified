@@ -4,7 +4,6 @@ package com.ncert7.aitutorandlab.data.remote
 import android.content.Context
 import com.ncert7.aitutorandlab.BuildConfig
 import com.ncert7.aitutorandlab.debug.DebugLogger
-import com.ncert7.aitutorandlab.utils.ErrorHandler
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import okhttp3.Interceptor
@@ -31,31 +30,30 @@ object RetrofitProvider {
             HttpLoggingInterceptor.Level.NONE
         }
 
-        // Proactive token interceptor to ensure valid token BEFORE API calls
+        // Proactive token attach/refresh before API calls; Authenticator recovers from 401 once
         val proactiveTokenInterceptor = ProactiveTokenInterceptor(context)
-        DebugLogger.debugLog("RetrofitProvider", "Proactive token interceptor configured - refreshes before API calls")
+        val tokenAuthenticator = TokenAuthenticator(context)
+        DebugLogger.debugLog("RetrofitProvider", "Token interceptor + 401 authenticator configured")
 
         val errorLoggingInterceptor = Interceptor { chain ->
             val request = chain.request()
             val response = chain.proceed(request)
 
-            // Log HTTP status codes
+            // Log HTTP status codes (debug only — avoid Firestore spam on routine 4xx/5xx)
             if (!response.isSuccessful) {
-                val statusCode = response.code
-                val message = response.message
-                ErrorHandler.logError(
+                DebugLogger.debugLog(
                     "HttpError",
-                    statusCode,
-                    "$message - ${request.url}"
+                    "HTTP ${response.code} ${response.message} - ${request.url}"
                 )
             }
             response
         }
 
         val client = OkHttpClient.Builder()
-            .addInterceptor(proactiveTokenInterceptor)      // Ensure fresh token BEFORE request
-            .addInterceptor(logging)                        //  Log request with fresh token
-            .addNetworkInterceptor(errorLoggingInterceptor) //  Network-level error logging
+            .addInterceptor(proactiveTokenInterceptor)
+            .addInterceptor(logging)
+            .addNetworkInterceptor(errorLoggingInterceptor)
+            .authenticator(tokenAuthenticator)
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(120, TimeUnit.SECONDS)
             .writeTimeout(60, TimeUnit.SECONDS)

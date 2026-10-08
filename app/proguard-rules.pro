@@ -150,3 +150,11 @@
     *** get*();
 }
 
+# ========== ENUMS DESERIALIZED BY NAME (valueOf on persisted strings) ==========
+# Preserve enum constant names so valueOf(name) resolves under R8. These are read back from
+# persisted strings — TutorCharacter from Firestore tutor config, NotificationEvalTrigger from
+# WorkManager inputData. Both call sites use runCatching (so obfuscation degrades rather than
+# crashes), but without these keeps release would silently fall back to defaults.
+-keepclassmembers enum com.anurag.eduai.uikit.avatar.core.TutorCharacter { *; }
+-keepclassmembers enum com.ncert7.aitutorandlab.notification.NotificationEvalTrigger { *; }
+

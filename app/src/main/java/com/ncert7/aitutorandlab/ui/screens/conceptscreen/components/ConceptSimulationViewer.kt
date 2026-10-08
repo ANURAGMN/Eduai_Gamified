@@ -636,6 +636,20 @@ fun ConceptSimulationViewer(
     val isV4 = coachMode == SimCoachMode.ONE_CLOCK
     val coachV4Active = isV4 && viewerSession.guideUnlocked && !viewerSession.guideDismissed
 
+    // Hosted Science Ch.5–8 (and science_4_10) omit edu-coach.js, so the page never publishes a
+    // v4Line — the floating coach stays invisible even though guide JSON ships in the APK.
+    // After unlock, seed the coach from the bundled guide mission / first step when the page
+    // stays silent. Ch.2–4 keep their live edu-coach.js lines (they arrive before this delay).
+    LaunchedEffect(coachV4Active, pageReady, guideDoc, decodedUrl) {
+        if (!coachV4Active || !pageReady) return@LaunchedEffect
+        delay(1_800)
+        if (v4Line.isNotBlank()) return@LaunchedEffect
+        val seeded = coachMission
+            ?: guideDoc?.steps?.firstOrNull()?.text?.takeIf { it.isNotBlank() }
+            ?: return@LaunchedEffect
+        v4Line = seeded
+    }
+
     // Reteach (red answer glow) auto-expires after ~4s so it can't persist indefinitely if the learner
     // neither taps Continue nor triggers a round change.
     LaunchedEffect(mathReteachStep, decodedUrl) {

@@ -26,8 +26,8 @@ android {
         applicationId = "com.ncert7.aitutorandlab"
         minSdk = 28
         targetSdk = 36
-        versionCode = 13
-        versionName = "1.0.11"
+        versionCode = 14
+        versionName = "1.0.12"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         buildConfigField("String", "AUTH_KEY", "\"${prop("AUTH_KEY")}\"")
@@ -218,8 +218,6 @@ dependencies {
     // Kotlin Serialization
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
 
-    // JWT Decoding
-    implementation("com.auth0:java-jwt:4.4.0")
     // Google Play In-App Update
     implementation("com.google.android.play:app-update:2.1.0")
     implementation("com.google.android.play:review:2.0.2")

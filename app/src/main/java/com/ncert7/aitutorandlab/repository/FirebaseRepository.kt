@@ -1,6 +1,7 @@
 package com.ncert7.aitutorandlab.repository
 
 import com.anurag.eduai.uikit.avatar.TutorConfig
+import com.ncert7.aitutorandlab.BuildConfig
 import com.ncert7.aitutorandlab.domain.avatar.TutorConfigMapper
 import com.google.firebase.auth.FirebaseAuth
 import com.ncert7.aitutorandlab.config.AppConfig
@@ -151,7 +152,12 @@ class FirebaseRepository(
         return user.copy(appName = AppConfig.APP_NAME)
     }
 
-    suspend fun createNewUser(user: User): Boolean {
+    /**
+     * Writes the profile for a first-time registrant.
+     * Returns [CreateUserResult.Created] only when a new `users/{id}` doc is written —
+     * callers must fire GA4 `sign_up` on Created only (not on Updated / retry merges).
+     */
+    suspend fun createNewUser(user: User): CreateUserResult {
         return try {
             // Validate user ID is not empty
             if (user.id.isBlank()) {
@@ -162,6 +168,14 @@ class FirebaseRepository(
             val appName = AppConfig.APP_NAME
             DebugLogger.debugLog("FirebaseRepository", "Creating/updating user: email=${user.email}, app=$appName")
 
+            val now = System.currentTimeMillis()
+            val versionFields = mapOf(
+                "appVersionName" to BuildConfig.VERSION_NAME,
+                "appVersionCode" to BuildConfig.VERSION_CODE,
+                "appVersionUpdatedAt" to now,
+                "appVersionFirstSeenName" to BuildConfig.VERSION_NAME,
+                "appVersionFirstSeenCode" to BuildConfig.VERSION_CODE,
+            )
             val data = mapOf(
                 "id" to user.id,
                 "email" to user.email,
@@ -173,8 +187,8 @@ class FirebaseRepository(
                 "language" to user.language,
                 "createdAt" to user.createdAt,
                 "updatedAt" to user.lastLogin,
-                "appName" to appName
-            )
+                "appName" to appName,
+            ) + versionFields
 
             // Check if user already exists by email and appName
             val existingQuery = usersCollection
@@ -184,16 +198,19 @@ class FirebaseRepository(
                 .await()
 
             if (existingQuery.documents.isNotEmpty()) {
-                // User exists - update instead of create
+                // Existing user: merge only — bare set would wipe onboarding/tutorConfig.
+                // Do not overwrite first-seen; syncAppVersion stamps current version fields.
                 val docId = existingQuery.documents.first().id
-                usersCollection.document(docId).set(data).await()
+                val update = data - "appVersionFirstSeenName" - "appVersionFirstSeenCode"
+                usersCollection.document(docId).set(update, SetOptions.merge()).await()
                 DebugLogger.debugLog("FirebaseRepository", "User updated successfully: ${user.email} for app: $appName")
+                CreateUserResult.Updated
             } else {
                 // New user - use userId (Google ID) as document ID
                 usersCollection.document(user.id).set(data).await()
                 DebugLogger.debugLog("FirebaseRepository", "User created successfully: ${user.id} for app: $appName")
+                CreateUserResult.Created
             }
-            true
         } catch (e: FirebaseNetworkException) {
             DebugLogger.errorLog("FirebaseRepository", "Network error creating user: ${e.message}")
             throw NetworkException("Network error. Please check your connection and try again.", e)
@@ -216,6 +233,38 @@ class FirebaseRepository(
         } catch (e: Exception) {
             DebugLogger.errorLog("FirebaseRepository", "Error creating user: ${e.message}")
             throw e
+        }
+    }
+
+    /**
+     * Merges current [BuildConfig] version onto `users/{userId}` for ops upgrade counts.
+     * Sets first-seen fields only when missing. Never replaces the whole user doc.
+     */
+    suspend fun syncAppVersion(userId: String): Boolean {
+        if (userId.isBlank()) return false
+        return try {
+            val docRef = usersCollection.document(userId)
+            val snap = docRef.get().await()
+            val now = System.currentTimeMillis()
+            val payload = mutableMapOf<String, Any>(
+                "appVersionName" to BuildConfig.VERSION_NAME,
+                "appVersionCode" to BuildConfig.VERSION_CODE,
+                "appVersionUpdatedAt" to now,
+                "appName" to AppConfig.APP_NAME,
+            )
+            if (!snap.exists() || snap.get("appVersionFirstSeenCode") == null) {
+                payload["appVersionFirstSeenName"] = BuildConfig.VERSION_NAME
+                payload["appVersionFirstSeenCode"] = BuildConfig.VERSION_CODE
+            }
+            docRef.set(payload, SetOptions.merge()).await()
+            DebugLogger.debugLog(
+                "FirebaseRepository",
+                "App version synced for $userId → ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
+            )
+            true
+        } catch (e: Exception) {
+            DebugLogger.errorLog("FirebaseRepository", "app version sync failed: ${e.message}")
+            false
         }
     }
 
@@ -937,6 +986,12 @@ sealed class UserCheckResult {
     data class Found(val user: User) : UserCheckResult()
     object NotFound : UserCheckResult()
     data class Error(val exception: Throwable) : UserCheckResult()
+}
+
+/** Outcome of [FirebaseRepository.createNewUser] — use Created to gate GA4 `sign_up`. */
+sealed class CreateUserResult {
+    data object Created : CreateUserResult()
+    data object Updated : CreateUserResult()
 }
 
 /**

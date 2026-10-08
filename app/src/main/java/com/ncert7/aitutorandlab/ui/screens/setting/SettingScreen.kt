@@ -174,29 +174,29 @@ fun SettingScreen(
                     EduScreenTopBar(title = "Profile")
                 }
             } else {
-                TopAppBar(
-                    title = {
-                        Text(
+            TopAppBar(
+                title = {
+                    Text(
                             if (showBackNavigation) stringResource(R.string.settings) else "Profile",
-                            fontWeight = FontWeight.SemiBold,
-                            color = TextOnPrimary
-                        )
-                    },
-                    navigationIcon = {
+                        fontWeight = FontWeight.SemiBold,
+                        color = TextOnPrimary
+                    )
+                },
+                navigationIcon = {
                         if (showBackNavigation) {
                             IconButton(onClick = { dismissOrNavigateBack() }) {
-                                Icon(
-                                    Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = stringResource(R.string.back),
-                                    modifier = Modifier.size(dimens.iconMedium),
-                                    tint = TextOnPrimary
-                                )
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.back),
+                            modifier = Modifier.size(dimens.iconMedium),
+                            tint = TextOnPrimary
+                        )
                             }
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = BrandPrimary)
-                )
-            }
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = BrandPrimary)
+            )
+        }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { paddingValues ->

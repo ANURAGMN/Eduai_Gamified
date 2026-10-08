@@ -16,6 +16,7 @@ import com.ncert7.aitutorandlab.utils.getCurrentLanguageCode
 import com.ncert7.aitutorandlab.utils.getLocalizedName
 import com.ncert7.aitutorandlab.utils.isKannadaLanguage
 import com.ncert7.aitutorandlab.utils.normalizeLanguageCode
+import com.ncert7.aitutorandlab.utils.SimulationLanguageUrl
 import com.ncert7.aitutorandlab.data.local.dao.ProgressDao
 import com.ncert7.aitutorandlab.config.AppConfig
 import com.ncert7.aitutorandlab.domain.progress.ProgressEventTracker
@@ -217,11 +218,14 @@ class ConceptViewModel @Inject constructor(
                             concept.simulationId
                         }
 
-                        val simUrl = if (isKannadaLanguage(lang)) {
-                            concept.simulationUrlKannada
-                        } else {
-                            concept.simulationUrl
-                        }
+                        // Prefer Firestore KN URL; if Room is stale/empty, derive *_kn.html from EN URL
+                        // so Kannada learners are not pushed to the Agent (which returns English HTML).
+                        val simUrl = SimulationLanguageUrl.resolve(
+                            languageCode = lang,
+                            englishUrl = concept.simulationUrl,
+                            kannadaUrl = concept.simulationUrlKannada,
+                            allowEnglishFallback = false,
+                        ) ?: if (!isKannadaLanguage(lang)) concept.simulationUrl else null
 
                         val hasAgent = !simId.isNullOrBlank() && !simId.equals("null", ignoreCase = true) && !simId.trim().equals("not found", ignoreCase = true)
                         val hasUrl = !simUrl.isNullOrBlank() && !simUrl.equals("null", ignoreCase = true) && !simUrl.trim().equals("not found", ignoreCase = true)

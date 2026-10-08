@@ -37,9 +37,9 @@ object TokenManager {
             val expiresInSeconds = (expiryTimeMs - currentTimeMs) / 1000
             DebugLogger.debugLog("TokenManager", "✓ Token expiry extracted from JWT: expires in ${expiresInSeconds}s")
         } else {
-            // Fallback to 60 minutes if JWT decoding fails
+            // Fallback to 60 minutes if JWT decoding fails (should be rare with Gson decoder)
             prefs.setTokenExpiryTime(System.currentTimeMillis() + 60 * 60 * 1000L)
-            DebugLogger.errorLog("TokenManager", "Failed to extract JWT expiry, using 60min fallback")
+            DebugLogger.debugLog("TokenManager", "JWT exp unreadable — using 60min stored fallback")
         }
 
         if (isRefresh) {
@@ -110,10 +110,17 @@ object TokenManager {
                     return@withLock false
                 }
 
-                // Verify it's a different token
+                // Google often returns the same JWT while it is still valid — that is OK.
                 val oldToken = getIdToken(context)
                 if (oldToken != null && oldToken == newToken) {
-                    DebugLogger.warnLog("TokenManager", "⚠ New token is same as old token - refresh may not have worked")
+                    if (JwtDecoder.hasExpClaim(newToken) && !JwtDecoder.isTokenExpired(newToken)) {
+                        DebugLogger.debugLog("TokenManager", "Same token returned but still valid — OK")
+                    } else {
+                        DebugLogger.debugLog(
+                            "TokenManager",
+                            "Same token returned and exp missing/expired — saving anyway"
+                        )
+                    }
                 }
 
                 // Save the new token with isRefresh=true for logging

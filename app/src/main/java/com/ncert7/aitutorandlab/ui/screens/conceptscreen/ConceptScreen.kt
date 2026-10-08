@@ -48,7 +48,10 @@ fun ConceptScreen(
     val pendingNavigation by viewModel.pendingNavigation.collectAsState()
     val showAdDialog by viewModel.showAdDialog.collectAsState()
     val context = androidx.compose.ui.platform.LocalContext.current
-    val currentLanguage = configuration.locales[0]?.language ?: "en"
+    // Prefer app language preference / AppCompat locales — not only Configuration, which can
+    // briefly (or permanently on some OEMs) stay on device English while the UI is Kannada.
+    // Wrong language here made Kannada sessions open English simulation_url after reinstall.
+    val currentLanguage = com.ncert7.aitutorandlab.utils.getCurrentLanguageCode()
 
     LaunchedEffect(pendingNavigation) {
         pendingNavigation?.let { nav ->

@@ -64,6 +64,9 @@ class TutorConfigViewModel @Inject constructor(
             }
         if (!rewardedAdManager.isReady()) {
             rewardedAdManager.preload()
+            if (!rewardedAdManager.awaitReady(timeoutMs = 5_000)) {
+                return false
+            }
         }
         return rewardedAdManager.showRewardedSequence(activity, totalAds, placement)
     }

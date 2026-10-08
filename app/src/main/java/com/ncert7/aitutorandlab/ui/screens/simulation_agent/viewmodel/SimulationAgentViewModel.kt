@@ -23,6 +23,7 @@ import com.ncert7.aitutorandlab.repository.ConceptRepository
 import com.ncert7.aitutorandlab.ui.screens.chatbotscreen.components.dataclass.ChatBotSettingsState
 import com.ncert7.aitutorandlab.ui.viewModel.TextToSpeech
 import com.ncert7.aitutorandlab.utils.ErrorHandler
+import com.ncert7.aitutorandlab.utils.SimulationLanguageUrl
 import com.ncert7.aitutorandlab.utils.getCurrentLanguageCode
 import com.ncert7.aitutorandlab.utils.isKannada
 import kotlinx.coroutines.Dispatchers
@@ -575,14 +576,16 @@ class SimulationAgentViewModel @Inject constructor(
     }
 
     /**
-     * When the agent session returns a blank html_url (common for some Science chapters),
-     * fall back to the concept catalog simulation URL so the WebView still loads.
+     * Prefer the concept-catalog URL for the **app language** over the agent `html_url`.
+     *
+     * The agent often returns a non-blank English `html_url` even when `language=kannada`.
+     * TTS then narrates in Kannada against English HTML. Always reconcile with
+     * [SimulationLanguageUrl] when we can resolve a concept.
      */
     private suspend fun applyConceptHtmlFallback(
         simulationId: String,
         response: SimSessionResponse,
     ): SimSessionResponse {
-        if (response.simulation.htmlUrl.isNotBlank()) return response
         return try {
             val conceptId =
                 currentConceptId
@@ -592,22 +595,21 @@ class SimulationAgentViewModel @Inject constructor(
                 withContext(Dispatchers.IO) { conceptRepository.getConcept(conceptId) }
                     ?: return response
             val lang = getCurrentLanguageCode()
-            val fallback =
-                if (lang == "kn") {
-                    concept.simulationUrlKannada?.takeIf { it.isNotBlank() }
-                        ?: concept.simulationUrl
-                } else {
-                    concept.simulationUrl?.takeIf { it.isNotBlank() }
-                        ?: concept.simulationUrlKannada
-                }?.takeIf { it.isNotBlank() }
-                    ?: return response
+            val preferred =
+                SimulationLanguageUrl.preferKannadaOverAgentUrl(
+                    languageCode = lang,
+                    agentHtmlUrl = response.simulation.htmlUrl,
+                    englishUrl = concept.simulationUrl,
+                    kannadaUrl = concept.simulationUrlKannada,
+                ) ?: return response
+            if (preferred == response.simulation.htmlUrl) return response
             DebugLogger.debugLog(
                 TAG,
-                "Agent html_url blank — using concept simulationUrl for $simulationId",
+                "Replacing agent html_url with language-matched catalog URL for $simulationId (lang=$lang)",
             )
-            response.copy(simulation = response.simulation.copy(htmlUrl = fallback))
+            response.copy(simulation = response.simulation.copy(htmlUrl = preferred))
         } catch (e: Exception) {
-            DebugLogger.warnLog(TAG, "Concept HTML fallback failed: ${e.message}")
+            DebugLogger.warnLog(TAG, "Concept HTML language reconcile failed: ${e.message}")
             response
         }
     }
@@ -786,7 +788,10 @@ class SimulationAgentViewModel @Inject constructor(
                 val result = simulationSessionUseCase.resumeExistingSession(simulationId)
 
                 if (result.isSuccess) {
-                    val response = result.getOrNull()!!
+                    val response = applyConceptHtmlFallback(
+                        simulationId,
+                        result.getOrNull()!!,
+                    )
                     DebugLogger.debugLog(TAG, "Session resumed successfully")
                     DebugLogger.debugLog(TAG, "Session ID: ${response.sessionId}")
                     DebugLogger.debugLog(TAG, "Teacher Message: ${response.teacherMessage.text}")

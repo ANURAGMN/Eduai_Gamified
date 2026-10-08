@@ -381,7 +381,7 @@
     <string name="error_server_try_later">Server error. Please try again later.</string>
     <string name="error_please_sign_in_again">Please sign in again.</string>
     <string name="error_service_busy_try_again_shortly">Service busy, try again shortly.</string>
-    <string name="error_server_error">Server error.</string>
+    <string name="error_server_error">Tutor is busy right now. Please try again.</string>
     <string name="error_request_error">Request error. Please try again.</string>
     <string name="error_network_error_with_code">Network error (%1$d). Please try again.</string>
     <string name="error_connection_error">Connection error. Please check your internet and try again.</string>
