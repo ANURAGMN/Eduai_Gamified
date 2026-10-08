@@ -21,9 +21,9 @@ Status legend: ☑ done in tree · ◻ to do · ⚠ verify
   Updated/retry merge, not returning login). Method via `SignUpAnalytics`. Required so Google Ads can
   optimize for signups, not installs-only. **Do not** invent `sign_up` via Analytics “Create event
   without code.” Unit: `SignUpAnalyticsTest`.
-- ◻ **Commit the ship set** — §1 ☑ items are in the **working tree**, not on `main` yet. Commit crash +
-  language/coach Kotlin + JWT/auth package + `appVersion*` sync + `logSignUp` (+ docs as needed). **Do not**
-  fold Avatar Studio / `_tmp_*` junk into the release commit.
+- ☑ **Commit the ship set** — landed as `b66f5c0` (crash + KN URL reconcile + JWT/auth + `appVersion*` +
+  `logSignUp` + docs/scripts). Avatar Studio / `_tmp_*` left out. **Push** to remote still pending (see
+  `docs/PENDING_BEFORE_NEXT_RELEASE.md`).
 - ◻ **Build the release AAB and confirm it does NOT crash on open** — install the actual release build, run
   onboarding in **Kannada** (the crash locale), pick a class on the user-detail screen and in Edit Profile.
   This is the single most important gate — it's what Play rejected.
@@ -101,6 +101,6 @@ installs with no signup signal.
 *Appeal for vc13 was filed 2026-08-31; still ship vc14 — do not resubmit 13. See also
 `docs/STATUS_play_vc14_coach_language_notifications.md`.*
 
-*Everything in §1 marked ☑ is already in the working tree; remaining ◻ items are **commit** + build/verify
-actions, not new feature code — except any fixes surfaced by the device pass. §1b console steps need the
-shipped build before `sign_up` appears for Key Event / Ads import.*
+*Ship code is on `main` as `b66f5c0`. Remaining ◻ items are **push** + build/verify + Ads console — not new
+feature code, except fixes from the device pass. Full pending list: `docs/PENDING_BEFORE_NEXT_RELEASE.md`.
+§1b needs the shipped build before `sign_up` appears for Key Event / Ads import.*

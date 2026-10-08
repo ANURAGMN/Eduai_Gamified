@@ -8,6 +8,7 @@
 |----------|------|
 | **This file** | Context — what is live vs in-tree vs backlog |
 | **Ship gates** | `docs/RELEASE_CHECKLIST_v1.0.12.md` |
+| **All pending** | `docs/PENDING_BEFORE_NEXT_RELEASE.md` |
 
 ---
 
@@ -172,6 +173,7 @@ Checkboxes: `docs/RELEASE_CHECKLIST_v1.0.12.md`.
 
 | Topic | Pointer |
 |-------|---------|
+| All pending work | `docs/PENDING_BEFORE_NEXT_RELEASE.md` |
 | Ship checklist | `docs/RELEASE_CHECKLIST_v1.0.12.md` |
 | Class NFE | `docs/CURSOR_NOTE_crash_class_dropdown_nfe.md` |
 | Chat auth audit (JWT/R8) | `docs/AUDIT_chat_auth_jwt_vc14.md` · live wave cleared by backend |
