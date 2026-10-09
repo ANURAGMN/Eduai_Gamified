@@ -23,11 +23,8 @@ class NotificationOrchestrator @Inject constructor(
 ) {
     sealed class DebugFireResult {
         data class Fired(val typeId: String) : DebugFireResult()
-
         data object NotDebugBuild : DebugFireResult()
-
         data object NoPermission : DebugFireResult()
-
         data object NotLoggedIn : DebugFireResult()
     }
 
@@ -50,11 +47,21 @@ class NotificationOrchestrator @Inject constructor(
         if (candidates.isEmpty()) return
 
         val dailyCap = settingsStore.effectiveDailyCap()
-        if (ledger.blockReason(studentId, dailyCap) != null) return
+        val blockReason = ledger.blockReason(studentId, dailyCap)
+
+        // Let Daily Reminder bypass the 2-hour gap, but still respect the daily cap of 3
+        val validCandidates = candidates.filter { candidate ->
+            if (candidate.type == NotificationType.DAILY_REMINDER) {
+                blockReason !is NotificationLedger.SendBlockReason.DailyCap
+            } else {
+                blockReason == null
+            }
+        }
+        if (validCandidates.isEmpty()) return
 
         val todayEpochDay = NotificationTimeRules.todayEpochDay()
         val winner =
-            candidates.firstOrNull { candidate ->
+            validCandidates.firstOrNull { candidate ->
                 !ledger.wasShownToday(
                     studentId = studentId,
                     type = candidate.type,
@@ -168,7 +175,7 @@ class NotificationOrchestrator @Inject constructor(
                 NotificationType.STREAK_AT_RISK,
                 NotificationType.TASKS_PENDING,
                 NotificationType.STREAK_COMEBACK,
-                -> mapOf("dayIndex" to (snapshot.todayDayIndex ?: 1).toString())
+                    -> mapOf("dayIndex" to (snapshot.todayDayIndex ?: 1).toString())
 
                 NotificationType.CHAPTER_PROGRESS ->
                     snapshot.inProgressChapter?.chapterId?.let { mapOf("chapterId" to it) } ?: emptyMap()
