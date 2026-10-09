@@ -22,9 +22,10 @@ Status legend: ☑ done in tree · ◻ to do · ⚠ verify
   optimize for signups, not installs-only. **Do not** invent `sign_up` via Analytics “Create event
   without code.” Unit: `SignUpAnalyticsTest`.
 - ☑ **Commit the ship set** — landed as `b66f5c0` (crash + KN URL reconcile + JWT/auth + `appVersion*` +
-  `logSignUp` + docs/scripts). Avatar Studio / `_tmp_*` left out. **Push** to remote still pending (see
-  `docs/PENDING_BEFORE_NEXT_RELEASE.md`).
-- ◻ **Build the release AAB and confirm it does NOT crash on open** — install the actual release build, run
+  `logSignUp` + docs/scripts). **Pushed** to `gamified/main` 2026-10-08. Avatar Studio unlock fix committed
+  separately as `9c34206` (it is in the AAB) — push pending.
+- ☑ **Build the release AAB** — built 2026-10-08 (1.0.12 / 14, upload-key signed): `app/build/outputs/bundle/release/app-release.aab`.
+- ◻ **Confirm the release build does NOT crash on open** — install the actual release build, run
   onboarding in **Kannada** (the crash locale), pick a class on the user-detail screen and in Edit Profile.
   This is the single most important gate — it's what Play rejected.
 - ⚠ **R8/minify is on** (`isMinifyEnabled = true`). After building, smoke-test the *release* build (not just
@@ -66,8 +67,8 @@ installs with no signup signal.
 
 ## 3. Verify (tests + device QA)
 
-- ◻ **Unit tests** — `./gradlew testDebugUnitTest`; expect the known baseline (was 225 total / 8 pre-existing
-  failures unrelated). No *new* failures. Include the new `SimulationUrlResolverTest`.
+- ☑ **Unit tests** — `./gradlew testDebugUnitTest` 2026-10-08: 298 tests, 9 failures — identical to the `main`
+  baseline (`android.util.Log` not mocked). No *new* failures.
 - ◻ **Login / onboarding** — fresh install, sign in, complete user-detail (EN **and** KN), no crash.
 - ◻ **Simulations** — EN + KN load the correct-language HTML with matching voice; coach appears (mission →
   steps; hint; glow where targets exist) on Science Ch.2–8.

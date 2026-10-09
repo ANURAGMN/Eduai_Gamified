@@ -56,3 +56,6 @@ node-v24.17.0-win-x64.zip
 /scripts/__pycache__/
 /scripts/migrate-legacy-run.log
 /exports/
+# Local scratch (screenshots / UI dumps) and agent config
+/_tmp_*
+/.codex/
