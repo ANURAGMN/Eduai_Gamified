@@ -46,6 +46,7 @@ import com.anurag.eduai.uikit.avatar.rememberUnlockedAvatars
 import com.anurag.eduai.uikit.avatar.shareAvatar
 import com.anurag.eduai.uikit.avatar.weeklyAvatarPresets
 import com.anurag.eduai.uikit.avatar.EduTutorAvatar
+import com.anurag.eduai.uikit.avatar.AllAvatarPresets
 import com.anurag.eduai.uikit.avatar.AvatarUnlockStore
 import com.anurag.eduai.uikit.avatar.AvatarPreset
 import com.anurag.eduai.uikit.avatar.AdRewardOverlay
@@ -319,17 +320,45 @@ fun EduAvatarStudioScreen(
                   }
                   sessionId.startsWith("unlock_") -> {
                       val presetId = sessionId.removePrefix("unlock_")
-                      weekly.find { it.id == presetId }?.let {
-                          AvatarUnlockStore.unlock(context, it.id)
+                      // Prefer weekly match, but fall back to the full pool so a successful ad
+                      // always unlocks even if the weekly slice recomputed mid-flow.
+                      val preset =
+                          weekly.find { it.id == presetId }
+                              ?: AllAvatarPresets.find { it.id == presetId }
+                      if (preset != null) {
+                          AvatarUnlockStore.unlock(context, preset.id)
+                          // Apply immediately so unlock feels complete (not just "Use" later).
+                          onConfigPersisted(preset.config, preset.id)
+                          character = preset.config.character
+                          outfit = preset.config.outfit
+                          neck = preset.config.neck
+                          hair = preset.config.hair
+                          hairColor = preset.config.hairColor
+                          glasses = preset.config.glasses
+                          frameColor = preset.config.frameColor
+                          eyeLine = preset.config.eyeLine
+                          cheeks = preset.config.cheeks
+                          feedback.reward()
+                          saveErrorMessage = null
+                      } else if (presetId.isNotBlank()) {
+                          AvatarUnlockStore.unlock(context, presetId)
+                          feedback.reward()
+                          saveErrorMessage = null
+                      } else {
+                          saveErrorMessage = copy.unlockAdFailed
                       }
-                      feedback.reward()
                   }
               }
               adRequest = null
           },
           onCancel = { sessionId ->
-              if (sessionId == "save_custom") {
-                  saveErrorMessage = copy.saveAdFailed
+              if (sessionId == "save_custom" || sessionId.startsWith("unlock_")) {
+                  saveErrorMessage =
+                      if (sessionId.startsWith("unlock_")) {
+                          copy.unlockAdFailed
+                      } else {
+                          copy.saveAdFailed
+                      }
               }
               adRequest = null
           },

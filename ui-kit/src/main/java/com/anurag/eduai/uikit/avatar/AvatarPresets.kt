@@ -3,6 +3,7 @@ package com.anurag.eduai.uikit.avatar
 import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.platform.LocalContext
 import com.anurag.eduai.uikit.avatar.core.TutorCharacter
@@ -111,15 +112,21 @@ object AvatarUnlockStore {
         if (loaded) return
         loaded = true
         val p = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        // Copy out of the prefs-owned set — never hold or mutate getStringSet's instance.
         unlocked.value = p.getStringSet(KEY, emptySet())?.toSet() ?: emptySet()
     }
 
     fun unlock(context: Context, id: String) {
+        if (id.isBlank()) return
+        load(context)
         val next = unlocked.value + id
         unlocked.value = next
+        // Android StringSet quirk: always write a fresh HashSet (and remove first) or the
+        // change can be dropped when the same set instance was previously stored.
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .edit()
-            .putStringSet(KEY, next)
+            .remove(KEY)
+            .putStringSet(KEY, HashSet(next))
             .apply()
     }
 
@@ -130,5 +137,6 @@ object AvatarUnlockStore {
 fun rememberUnlockedAvatars(): Set<String> {
     val context = LocalContext.current
     AvatarUnlockStore.load(context)
-    return AvatarUnlockStore.unlocked.value
+    val unlocked by AvatarUnlockStore.unlocked
+    return unlocked
 }
