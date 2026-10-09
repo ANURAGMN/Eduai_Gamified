@@ -67,14 +67,18 @@ class WhiteboardViewModel @Inject constructor(
             _errorMessage.value = null
             _chatHistory.value = emptyList()
 
+            // Clear the whiteboard so the screen resets and goes blank while loading the new concept
+            _whiteboardData.value = null
+            _latestTurn.value = null
+
             val studentId = sharedPrefs.getUserId() ?: ""
 
             // Attempt 1
             var result = apiClient.startWhiteboardSession(conceptId, studentId)
 
-            // Retry exactly once if the first attempt fails (e.g., gets a 500 error)
+            // Retry exactly once if the first attempt fails
             if (result.isFailure) {
-                delay(1000L) // Wait 1 second before retrying
+                delay(1000L)
                 result = apiClient.startWhiteboardSession(conceptId, studentId)
             }
 
@@ -108,12 +112,10 @@ class WhiteboardViewModel @Inject constructor(
         viewModelScope.launch {
             _isLoading.value = true
 
-            // Attempt 1
             var result = apiClient.continueWhiteboardSession(threadId, userText)
 
-            // Retry exactly once if the first attempt fails (e.g., gets a 500 error)
             if (result.isFailure) {
-                delay(1000L) // Wait 1 second before retrying
+                delay(1000L)
                 result = apiClient.continueWhiteboardSession(threadId, userText)
             }
 
