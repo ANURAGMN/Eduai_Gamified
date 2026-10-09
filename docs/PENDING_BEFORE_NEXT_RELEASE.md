@@ -40,8 +40,9 @@ Context lives in `docs/STATUS_play_vc14_coach_language_notifications.md`.
 |------|--------|--------|
 | Release AAB (`bundleRelease`) for vc14 | **Done** 2026-10-08 — `app/build/outputs/bundle/release/app-release.aab` (1.0.12 / 14, upload key SHA-1 `db4406fd…`, registered in Firebase) | Rebuild only if code changes. If Gradle OOMs: `-Dorg.gradle.jvmargs=-Xmx4g` (default heap is 2g) |
 | Release APK for sideload | **Done** — `app/build/outputs/apk/release/app-release.apk` | — |
-| Install **release** build on device | **Blocked** — wireless adb dropped | Re-pair phone; uninstall debug/whiteboard build first (signature differs) |
-| Kannada onboarding + class pick (user-detail **and** Edit Profile) | **Not done** | **Must not crash** — this is the Play rejection fix |
+| Install **release** build on device | **Done** 2026-10-09 (OnePlus CPH2661, release APK 1.0.12 / 14) | — |
+| Kannada class pick — **user-detail (signup)** | **Passed** 2026-10-09 — no crash; Firestore `studentClass: 7`, `language: kn` | — |
+| Kannada class pick — **Edit Profile** | **Not done** | Profile → Edit Profile → change class → save; must not crash |
 | R8 smoke: onboarding → home → concept → sim → settings | **Not done** | On the release APK |
 | Full unit test suite | **Done** — 298 tests, 9 failures, **same 9 on `main` baseline** (`android.util.Log` not mocked: MobileAdsInitializer, ResourceDecisionUseCase, SimulationIntroTtsSanitizer ×7) | — |
 | Login / onboarding EN + KN | **Not done** | Fresh install |
@@ -85,12 +86,20 @@ Code is in `b66f5c0`. Console steps are gated on vc14 being on a device.
 | Step | Status | Gate |
 |------|--------|------|
 | 1. Ads ↔ GA4 `517375741` link | Done | — |
-| 2. One **new** registration on vc14 → `sign_up` in GA4 DebugView / Realtime (`method=google`) | **Blocked** | vc14 on device. Enable DebugView: `adb shell setprop debug.firebase.analytics.app com.ncert7.aitutorandlab`. Existing accounts do **not** fire `sign_up` (by design) |
-| 3. Mark **`sign_up` as Key event** | Pre-stageable now | Safe/reversible; useful only after step 2 |
-| 4. Ads → Goals → Conversions → App → import `sign_up` | **Blocked** | ~24h after first real event |
+| 2. One **new** registration on vc14 → `sign_up` in GA4 DebugView / Realtime (`method=google`) | **Done** 2026-10-09 14:29 IST — fired **once** on profile submit (`method=google`, `language=kn`), uploaded (204); existing account sign-in fired **none** (correct) | Still to check: same new account logout → login fires none (scenario C) |
+| 3. Mark **`sign_up` as Key event** | **Unblocked** | GA4 → Admin → Events → `sign_up` → Key event (appears after processing; or create by name) |
+| 4. Ads → Goals → Conversions → App → import `sign_up` | Pending | ~24h after the first event (from 2026-10-10) |
 | 5. Point App campaign bidding at `sign_up` | **Hold** | Volume (below) |
 
 **Code contract:** `logSignUp` only when `CreateUserResult.Created` (`SignUpAnalytics` + `SignUpAnalyticsTest`).
+
+**How to verify on a device:** `adb shell setprop debug.firebase.analytics.app com.ncert7.aitutorandlab`,
+`setprop log.tag.FA VERBOSE` / `log.tag.FA-SVC VERBOSE`, then `adb logcat -s FA FA-SVC` and watch for
+`name=sign_up`. Off: `setprop debug.firebase.analytics.app .none.`
+
+**Production cross-check (daily):** GA4 `sign_up` count vs Firestore `users` with **`createdAt`** that day.
+Do **not** use `appVersionFirstSeenCode` — pre-vc14 docs get it backfilled to 14 on their first vc14 sync.
+Expect GA4 ≈ or slightly below Firestore; far below = not firing; above = double-firing.
 
 ### Volume caveat before switching bidding to `sign_up`
 
@@ -186,8 +195,9 @@ baselineProfiles — **must not merge**. Close as superseded.
 ## 9. Suggested order of operations
 
 1. **Push** `main` (`9c34206` + docs) so the remote matches the AAB.  
-2. Re-pair phone → install **release APK** → **Kannada class pick** (must pass) → R8 smoke → Avatar unlock.  
-3. Same session: register **one new account** → `sign_up` in GA4 DebugView (Ads step 2).  
+2. ~~Install release APK → Kannada class pick at signup → new-account `sign_up`~~ (done 2026-10-09).
+   Remaining on device: **Edit Profile class pick (KN)**, scenario C, R8 smoke, Avatar unlock.  
+3. GA4: mark `sign_up` as Key event.  
 4. Upload AAB to **Closed testing** (can start now, in parallel) → Pre-launch report.  
 5. Pages + coverage + KN URL dry-run.  
 6. Promote to Production as **vc14**.  

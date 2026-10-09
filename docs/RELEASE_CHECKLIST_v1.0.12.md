@@ -25,7 +25,8 @@ Status legend: ☑ done in tree · ◻ to do · ⚠ verify
   `logSignUp` + docs/scripts). **Pushed** to `gamified/main` 2026-10-08. Avatar Studio unlock fix committed
   separately as `9c34206` (it is in the AAB) — push pending.
 - ☑ **Build the release AAB** — built 2026-10-08 (1.0.12 / 14, upload-key signed): `app/build/outputs/bundle/release/app-release.aab`.
-- ◻ **Confirm the release build does NOT crash on open** — install the actual release build, run
+- ◐ **Confirm the release build does NOT crash on open** — 2026-10-09: release APK on OnePlus, Kannada signup
+  class pick **passed** (no crash, `studentClass: 7`); **Edit Profile** class pick still to do. Install the actual release build, run
   onboarding in **Kannada** (the crash locale), pick a class on the user-detail screen and in Edit Profile.
   This is the single most important gate — it's what Play rejected.
 - ⚠ **R8/minify is on** (`isMinifyEnabled = true`). After building, smoke-test the *release* build (not just
@@ -47,8 +48,8 @@ installs with no signup signal.
 
 **Post-build / pre-optimize for signups (console):**
 
-- ◻ Install **this** release (or Closed testing) → complete **one new** registration → confirm `sign_up` in
-  GA4 Realtime / Events (last 28 days). Event is absent until the new build fires it.
+- ☑ Install **this** release → complete **one new** registration → `sign_up` confirmed 2026-10-09 (fired once,
+  `method=google`, `language=kn`, uploaded; existing-account login fired none).
 - ◻ Analytics → Events → star **`sign_up` as Key event** (once per event). Do **not** create a fake
   screen-based `sign_up`.
 - ◻ Google Ads → Goals → Conversions → App → import **`sign_up`** from Firebase/GA4 (can take up to ~24h
