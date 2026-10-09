@@ -1,6 +1,5 @@
 package com.ncert7.aitutorandlab.data.remote
 
-
 import android.content.Context
 import com.ncert7.aitutorandlab.BuildConfig
 import com.ncert7.aitutorandlab.debug.DebugLogger
@@ -16,15 +15,17 @@ import java.io.IOException
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody
 import okhttp3.Headers
+import okhttp3.OkHttpClient
+import okhttp3.Request
 
 class AgenticAIClient(
     agenticAIBaseUrl: String,
     private val context: Context
 ) {
     val service: AgenticAIService
+    private val okHttpClient = OkHttpClient()
 
     private val _currentThreadId = MutableStateFlow<String?>(null)
-
     private val _currentSessionId = MutableStateFlow<String?>(null)
 
     init {
@@ -56,11 +57,9 @@ class AgenticAIClient(
 
                 val resp = call()
                 try {
-                    // Log response basic info
                     val urlStr = resp.raw().request.url.toString()
                     val code = resp.code()
                     DebugLogger.debugLog("AgenticAIClient", "Response received: attempt=$attempt url=$urlStr code=$code")
-                    // Check whether header exists in the request (mask it if present)
                     val reqHeaders: Headers = resp.raw().request.headers
                     val headerName = BuildConfig.API_KEY_HEADER_NAME.trim().ifEmpty { "X-API-Key" }
                     val hv = reqHeaders[headerName]
@@ -79,7 +78,6 @@ class AgenticAIClient(
                         val body = resp.body()!!
                         val isAppSuccess = isApplicationSuccess(body)
 
-                        // Log the full response body as JSON for debugging
                         try {
                             val jsonString = com.google.gson.Gson().toJson(body)
                             DebugLogger.debugLog("AgenticAIClient", "Response body JSON: $jsonString")
@@ -90,7 +88,6 @@ class AgenticAIClient(
                         if (isAppSuccess) {
                             return Result.success(body)
                         } else {
-                            // App returned success=false
                             val message = getServerMessage(body)
                             lastEx = IOException("Server error: ${message ?: "Unknown error"}")
                             break
@@ -102,7 +99,6 @@ class AgenticAIClient(
                         break
                     }
 
-                    // Delegate all response code handling to ErrorHandler
                     else -> {
                         val result = ErrorHandler.handleResponseCode(
                             resp, context, attempt, tokenExpiredRetries, maxTokenRefreshRetries, "AgenticAIClient"
@@ -116,21 +112,17 @@ class AgenticAIClient(
                                 lastEx = result.exception
                                 val errMsg = result.exception.message.orEmpty()
                                 val code = ErrorHandler.extractStatusCode(errMsg)
-                                // Most 500s (quota / hard failures) won't heal on immediate retry.
-                                // Upstream LLM SSL EOF returns 500 with retry=start_new_session — retry those.
                                 val transientSsl500 = code == 500 && (
-                                    errMsg.contains("start_new_session", ignoreCase = true) ||
-                                        errMsg.contains("SSL error", ignoreCase = true) ||
-                                        errMsg.contains("unexpected eof", ignoreCase = true)
-                                )
+                                        errMsg.contains("start_new_session", ignoreCase = true) ||
+                                                errMsg.contains("SSL error", ignoreCase = true) ||
+                                                errMsg.contains("unexpected eof", ignoreCase = true) ||
+                                                errMsg.contains("TutorExecutionFailed", ignoreCase = true)
+                                        )
                                 if (code == 500 && !transientSsl500) {
                                     break
                                 }
                                 if (transientSsl500) {
-                                    DebugLogger.debugLog(
-                                        "AgenticAIClient",
-                                        "Transient SSL/upstream 500 — will retry (attempt=$attempt)"
-                                    )
+                                    DebugLogger.debugLog("AgenticAIClient", "Transient SSL/upstream 500 — will retry (attempt=$attempt)")
                                 }
                             }
                             is ErrorHandler.ResponseHandlerResult.ClientError -> {
@@ -139,21 +131,18 @@ class AgenticAIClient(
                             }
                             is ErrorHandler.ResponseHandlerResult.OtherClientError -> {
                                 lastEx = result.exception
-                                // Retry other 4xx errors (429, etc.)
                             }
                             is ErrorHandler.ResponseHandlerResult.UnknownError -> {
                                 lastEx = result.exception
                             }
                             is ErrorHandler.ResponseHandlerResult.Token401RetryAfterRefresh -> {
                                 tokenExpiredRetries = result.newRetryCount
-                                // Retry without incrementing attempt counter
                                 attempt--
                                 continue
                             }
                             is ErrorHandler.ResponseHandlerResult.Token401RetryAfterFailedRefresh -> {
                                 tokenExpiredRetries = result.newRetryCount
                                 lastEx = IOException("Token refresh failed")
-                                // Continue to next retry
                                 continue
                             }
                             is ErrorHandler.ResponseHandlerResult.Token401Exhausted -> {
@@ -169,22 +158,14 @@ class AgenticAIClient(
                 }
             } catch (e: Exception) {
                 lastEx = e
-                DebugLogger.errorLog(
-                    "AgenticAIClient",
-                    "Attempt $attempt/$maxAttempts failed: ${e.message}"
-                )
+                DebugLogger.errorLog("AgenticAIClient", "Attempt $attempt/$maxAttempts failed: ${e.message}")
             }
 
-            // Retry logic
             if (attempt < maxAttempts && ErrorHandler.shouldRetryException(lastEx)) {
-                DebugLogger.debugLog(
-                    "AgenticAIClient",
-                    "Retrying in ${delayMs}ms (attempt $attempt/$maxAttempts)"
-                )
                 delay(delayMs)
                 delayMs = (delayMs * factor).toLong()
             } else if (attempt < maxAttempts && !ErrorHandler.shouldRetryException(lastEx)) {
-                break  // Don't retry
+                break
             }
         }
 
@@ -215,6 +196,8 @@ class AgenticAIClient(
             is MathSessionStatusResponse -> body.success
             is MathSessionHistoryResponse -> body.success
             is ProblemsListResponse -> body.success
+            is WbConceptsResponse -> body.success
+            is WbSessionTurnResponse -> body.success
             else -> true
         }
     }
@@ -241,6 +224,8 @@ class AgenticAIClient(
             is MathContinueSessionResponse -> body.message
             is MathSessionHistoryResponse -> body.message
             is ProblemsListResponse -> body.message
+            is WbConceptsResponse -> body.message
+            is WbSessionTurnResponse -> body.message
             else -> null
         }
     }
@@ -253,6 +238,7 @@ class AgenticAIClient(
         }
     }
 
+    // ==================== EDUCATION AGENT ====================
 
     suspend fun startSession(
         conceptTitle: String,
@@ -268,12 +254,11 @@ class AgenticAIClient(
             personaName = personaName,
             sessionLabel = sessionLabel,
             isKannada = isKannada,
-            studentLevel=studentLevel
+            studentLevel = studentLevel
         )
 
         val res = callWithRetry { service.startSession(req) }
 
-        // Update state only on success
         if (res.isSuccess) {
             val body = res.getOrNull()
             body?.threadId?.let { _currentThreadId.value = it }
@@ -306,7 +291,6 @@ class AgenticAIClient(
 
             val res = callWithRetry { service.continueSession(req) }
 
-            // Update threadId if it changed
             if (res.isSuccess) {
                 val body = res.getOrNull()
                 body?.threadId?.let {
@@ -314,10 +298,6 @@ class AgenticAIClient(
                         DebugLogger.debugLog(
                             "AgenticAIClient",
                             "ThreadId updated: ${_currentThreadId.value} -> $it"
-                        )
-                        DebugLogger.debugLog(
-                            "AgenticAIClient",
-                            "Call with clickedAutosuggestion: $clickedAutosuggestion, studentLevel: $studentLevel"
                         )
                         _currentThreadId.value = it
                     }
@@ -331,6 +311,7 @@ class AgenticAIClient(
         _currentThreadId.value = threadId
         _currentSessionId.value = sessionId
     }
+
     suspend fun getSessionStatus(threadId: String): Result<SessionStatusResponse> =
         withContext(Dispatchers.IO) {
             callWithRetry { service.getSessionStatus(threadId) }
@@ -346,7 +327,8 @@ class AgenticAIClient(
             callWithRetry { service.getAvailableConcepts() }
         }
 
-    // Translation methods
+    // ==================== TRANSLATION METHODS ====================
+
     suspend fun translateToKannada(text: String): Result<TranslationResponse> =
         withContext(Dispatchers.IO) {
             val req = TranslationRequest(text)
@@ -359,7 +341,8 @@ class AgenticAIClient(
             callWithRetry { service.translateToEnglish(req) }
         }
 
-    // Revision methods
+    // ==================== REVISION METHODS ====================
+
     suspend fun getRevisionChapters(): Result<RevisionChaptersResponse> =
         withContext(Dispatchers.IO) {
             callWithRetry { service.getRevisionChapters() }
@@ -380,15 +363,10 @@ class AgenticAIClient(
 
         val res = callWithRetry { service.startRevisionSession(req) }
 
-        // Update state only on success
         if (res.isSuccess) {
             val body = res.getOrNull()
             body?.threadId?.let { _currentThreadId.value = it }
             body?.sessionId?.let { _currentSessionId.value = it }
-            DebugLogger.debugLog(
-                "AgenticAIClient",
-                "Revision session started: threadId=${body?.threadId}, sessionId=${body?.sessionId}"
-            )
         }
         res
     }
@@ -406,15 +384,10 @@ class AgenticAIClient(
 
         val res = callWithRetry { service.continueRevisionSession(req) }
 
-        // Update threadId if it changed
         if (res.isSuccess) {
             val body = res.getOrNull()
             body?.threadId?.let {
                 if (it != _currentThreadId.value) {
-                    DebugLogger.debugLog(
-                        "AgenticAIClient",
-                        "Revision ThreadId updated: ${_currentThreadId.value} -> $it"
-                    )
                     _currentThreadId.value = it
                 }
             }
@@ -447,6 +420,7 @@ class AgenticAIClient(
                 Result.failure(e)
             }
         }
+
     // ==================== SIMULATION METHODS ====================
 
     suspend fun simulationHealthCheck(): Result<SimHealthResponse> =
@@ -472,14 +446,9 @@ class AgenticAIClient(
 
         val res = callWithRetry { service.startSimulationSession(req) }
 
-        // Update session state on success
         if (res.isSuccess) {
             val body = res.getOrNull()
             body?.sessionId?.let { _currentSessionId.value = it }
-            DebugLogger.debugLog(
-                "AgenticAIClient",
-                "Simulation session started: sessionId=${body?.sessionId}"
-            )
         }
         res
     }
@@ -551,14 +520,9 @@ class AgenticAIClient(
 
         val res = callWithRetry { service.startMathSession(req) }
 
-        // Update thread state on success
         if (res.isSuccess) {
             val body = res.getOrNull()
             body?.threadId?.let { _currentThreadId.value = it }
-            DebugLogger.debugLog(
-                "AgenticAIClient",
-                "Math session started: threadId=${body?.threadId}, problemId=${body?.problemId}"
-            )
         }
         res
     }
@@ -569,31 +533,15 @@ class AgenticAIClient(
         isKannada: Boolean = false,
         imageUri: String? = null,
     ): Result<MathContinueSessionResponse> = withContext(Dispatchers.IO) {
-        // Validate threadId before making request
-        if (threadId.isNullOrEmpty()) {
-            DebugLogger.errorLog("AgenticAIClient", "✗ Cannot continue math session: threadId is null or empty")
-            return@withContext Result.failure(IllegalArgumentException("Thread ID cannot be null or empty"))
-        }
-
-        if (threadId.isBlank()) {
-            DebugLogger.errorLog("AgenticAIClient", "✗ Cannot continue math session: threadId is blank (whitespace only)")
-            return@withContext Result.failure(IllegalArgumentException("Thread ID cannot be blank"))
+        if (threadId.isNullOrEmpty() || threadId.isBlank()) {
+            return@withContext Result.failure(IllegalArgumentException("Thread ID cannot be null or blank"))
         }
         val hasImage = imageUri != null
-        DebugLogger.debugLog("MathSessionUseCase", "Image attached: $hasImage, imageUri: $imageUri")
 
-        DebugLogger.debugLog("AgenticAIClient", "=== MATH CONTINUE SESSION (MULTIPART) DEBUG ===")
-        DebugLogger.debugLog("AgenticAIClient", "threadId: '$threadId'")
-        DebugLogger.debugLog("AgenticAIClient", "userMessage: '$userMessage'")
-        DebugLogger.debugLog("AgenticAIClient", "isKannada: $isKannada")
-        DebugLogger.debugLog("AgenticAIClient", "imageUri is null: ${imageUri == null}")
-
-        // Build multipart form data
         val threadIdPart = RequestBody.create("text/plain".toMediaType(), threadId)
         val userMessagePart = RequestBody.create("text/plain".toMediaType(), userMessage)
         val isKannadaPart = RequestBody.create("text/plain".toMediaType(), isKannada.toString())
 
-        // Image part (optional) - read file from URI and create proper MultipartBody.Part
         val imagePart: okhttp3.MultipartBody.Part? = imageUri?.let { uriStr ->
             try {
                 val uri = android.net.Uri.parse(uriStr)
@@ -601,42 +549,22 @@ class AgenticAIClient(
                 if (inputStream != null) {
                     val bytes = inputStream.readBytes()
                     inputStream.close()
-                    // Create RequestBody with application/octet-stream MIME type for file data
                     val requestBody = okhttp3.RequestBody.create("application/octet-stream".toMediaType(), bytes)
-                    // Wrap in MultipartBody.Part with "image" as the part name and filename
                     okhttp3.MultipartBody.Part.createFormData("image", "image.jpg", requestBody)
                 } else {
-                    DebugLogger.errorLog("AgenticAIClient", "Could not open input stream for image URI: $uriStr")
                     null
                 }
             } catch (e: Exception) {
-                DebugLogger.errorLog("AgenticAIClient", "Error reading image file from URI: ${e.message}")
                 null
             }
         }
 
-        DebugLogger.debugLog("AgenticAIClient", "✓ Built multipart form data with all required fields")
-        DebugLogger.debugLog("AgenticAIClient", "  - thread_id part size: ${threadIdPart.contentLength()} bytes")
-        DebugLogger.debugLog("AgenticAIClient", "  - user_message part size: ${userMessagePart.contentLength()} bytes")
-        DebugLogger.debugLog("AgenticAIClient", "  - is_kannada part: '$isKannada'")
-        DebugLogger.debugLog("AgenticAIClient", "  - image part is null: ${imagePart == null}")
-        if (imagePart != null) {
-            DebugLogger.debugLog("AgenticAIClient", "  - image part created with filename: image.jpg")
-        }
-
         try {
-            // When an image is attached the backend needs time to process/store it before
-            // it can generate a response. The first call often returns success=false with
-            // "failed to continue" because callWithRetry breaks immediately on app-level
-            // failures. We handle this with a dedicated polling loop only for image requests
-            // so we don't change callWithRetry behaviour for any other endpoint.
             val maxImageRetryAttempts = if (hasImage) 5 else 1
-            val imageRetryDelayMs = 3000L // 3 seconds between retries while backend processes image
+            val imageRetryDelayMs = 3000L
 
             var lastResult: Result<MathContinueSessionResponse>? = null
             for (imageAttempt in 1..maxImageRetryAttempts) {
-                DebugLogger.debugLog("AgenticAIClient", "Image-aware attempt $imageAttempt/$maxImageRetryAttempts for continueMathSession")
-
                 val response = callWithRetry {
                     service.continueMathSession(
                         threadId = threadIdPart,
@@ -649,35 +577,20 @@ class AgenticAIClient(
                 lastResult = response
 
                 if (response.isSuccess) {
-                    DebugLogger.debugLog("AgenticAIClient", "✓ Multipart continue session request completed on attempt $imageAttempt")
                     return@withContext response
                 }
 
-                // If no image is attached there is no reason to retry an app-level failure
                 if (!hasImage) {
-                    DebugLogger.debugLog("AgenticAIClient", "No image attached, not retrying app-level failure")
                     break
                 }
 
-                // Image is attached and backend returned failure — it is likely still processing
-                // the image. Wait and retry unless this was the last attempt.
                 if (imageAttempt < maxImageRetryAttempts) {
-                    DebugLogger.debugLog(
-                        "AgenticAIClient",
-                        "Image still processing on backend (attempt $imageAttempt). Waiting ${imageRetryDelayMs}ms before retry..."
-                    )
                     delay(imageRetryDelayMs)
-                } else {
-                    DebugLogger.errorLog(
-                        "AgenticAIClient",
-                        "✗ All $maxImageRetryAttempts image-aware attempts exhausted. Last error: ${response.exceptionOrNull()?.message}"
-                    )
                 }
             }
 
             lastResult ?: Result.failure(IOException("No response received"))
         } catch (e: Exception) {
-            DebugLogger.errorLog("AgenticAIClient", "✗ Error in multipart continue session: ${e.message}")
             throw e
         }
     }
@@ -691,4 +604,57 @@ class AgenticAIClient(
         withContext(Dispatchers.IO) {
             callWithRetry { service.getMathSessionHistory(threadId) }
         }
+
+    // ==================== NEW WHITEBOARD METHODS ====================
+
+    suspend fun getWhiteboardConcepts(): Result<WbConceptsResponse> = withContext(Dispatchers.IO) {
+        callWithRetry { service.getWhiteboardConcepts() }
+    }
+
+    // FIX: Pass studentId dynamically to avoid 500 error on fresh sessions
+    suspend fun startWhiteboardSession(conceptId: String, studentId: String? = null): Result<WbSessionTurnResponse> = withContext(Dispatchers.IO) {
+        val req = WbStartSessionRequest(conceptId = conceptId, studentId = studentId)
+        val res = callWithRetry { service.startWhiteboardSession(req) }
+        if (res.isSuccess) {
+            res.getOrNull()?.threadId?.let { _currentThreadId.value = it }
+        }
+        res
+    }
+
+    suspend fun continueWhiteboardSession(threadId: String, userMessage: String): Result<WbSessionTurnResponse> = withContext(Dispatchers.IO) {
+        val req = WbContinueSessionRequest(threadId = threadId, userMessage = userMessage)
+        val res = callWithRetry { service.continueWhiteboardSession(req) }
+        if (res.isSuccess) {
+            res.getOrNull()?.threadId?.let { if (it != _currentThreadId.value) _currentThreadId.value = it }
+        }
+        res
+    }
+
+    suspend fun fetchWhiteboardSvg(sceneId: String): String? = withContext(Dispatchers.IO) {
+        try {
+            val baseUrl = BuildConfig.AGENTIC_AI_BASE_URL.trimEnd('/')
+            val svgUrl = "$baseUrl/whiteboard-tutor/scenes/$sceneId.svg"
+
+            val token = TokenManager.getIdToken(context)
+            val requestBuilder = Request.Builder().url(svgUrl)
+            if (token != null) {
+                requestBuilder.addHeader("Authorization", "Bearer $token")
+            }
+
+            val response = okHttpClient.newCall(requestBuilder.build()).execute()
+            if (response.isSuccessful) {
+                var svgString = response.body?.string() ?: return@withContext null
+                if (svgString.startsWith("\"") && svgString.endsWith("\"")) {
+                    svgString = svgString.substring(1, svgString.length - 1)
+                        .replace("\\\"", "\"")
+                        .replace("\\n", "\n")
+                }
+                svgString
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
 }
