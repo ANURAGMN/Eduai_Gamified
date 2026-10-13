@@ -145,6 +145,8 @@ fun ChapterScreen(
                     }
 
                     // NEW: Add the Whiteboard entrance button for Science
+                    // TODO: Temporarily hidden from UI. Uncomment the block below to enable it later.
+                    /*
                     if (!isMathSubject) {
                         OutlinedButton(
                             onClick = onOpenWhiteboard,
@@ -158,6 +160,7 @@ fun ChapterScreen(
                             Text("Try Interactive Whiteboard", fontWeight = FontWeight.Bold)
                         }
                     }
+                    */
                 }
             }
         }

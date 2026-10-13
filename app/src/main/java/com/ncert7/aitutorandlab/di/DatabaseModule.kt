@@ -178,4 +178,5 @@ object DatabaseModule {
     fun provideUserId(sharedPreferenceUtils: SharedPreferenceUtils): String {
         return sharedPreferenceUtils.getUserId()?.takeIf { it.isNotBlank() } ?: ""
     }
+    @Provides @Singleton fun provideChapterNoteDao(db: EduAiDatabase) = db.chapterNoteDao()
 }

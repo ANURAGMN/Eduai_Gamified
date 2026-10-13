@@ -37,6 +37,7 @@ import androidx.navigation.navArgument
 import com.ncert7.aitutorandlab.config.GamificationFeatureFlags
 import com.ncert7.aitutorandlab.config.LocalNativeTutorAvatarEnabled
 import com.ncert7.aitutorandlab.config.rememberNativeTutorAvatarEnabled
+import com.ncert7.aitutorandlab.data.local.entities.PlanTrialItemKind
 import com.ncert7.aitutorandlab.debug.DebugLogger
 import com.ncert7.aitutorandlab.service.analytics.ContentClickNavigation
 import com.ncert7.aitutorandlab.service.analytics.NavClickAnalyticsTracker
@@ -92,9 +93,9 @@ import com.ncert7.aitutorandlab.utils.NavTourCopy
 import com.ncert7.aitutorandlab.utils.getCurrentLanguageCode
 import com.ncert7.aitutorandlab.ui.theme.TextSecondary
 
-// NEW IMPORTS
 import com.ncert7.aitutorandlab.ui.screens.whiteboard.WhiteboardConceptsScreen
 import com.ncert7.aitutorandlab.ui.screens.whiteboard.WhiteboardChatbotScreen
+import com.ncert7.aitutorandlab.ui.screens.whiteboard.WhiteboardViewModel
 
 private fun NavHostController.navigateToTab(route: String) {
     NavClickAnalyticsTracker.trackNavTab(route)
@@ -270,6 +271,7 @@ private fun BottomNavBarContent(
                         if (GamificationFeatureFlags.isGamifiedHomeEnabled(context)) {
                             GamifiedHomeRoute(
                                 gated = gated,
+                                onNavigateToNotes = { subjectId -> navController.navigate("notes/$subjectId") },
                                 onNavigateToLearning = { navController.navigate("gamified_subjects") },
                                 onNavigateToChapters = { subjectId ->
                                     navController.navigate("chapters/$subjectId")
@@ -420,6 +422,16 @@ private fun BottomNavBarContent(
                         route = "plan_trial/{dayIndex}",
                         arguments = listOf(navArgument("dayIndex") { type = NavType.IntType }),
                     ) {
+                        val scope = rememberCoroutineScope()
+
+                        // NEW: Inject the WhiteboardViewModel and load its concepts silently
+                        val wbViewModel: WhiteboardViewModel = hiltViewModel()
+                        val wbConcepts by wbViewModel.concepts.collectAsState()
+
+                        LaunchedEffect(Unit) {
+                            wbViewModel.fetchConcepts()
+                        }
+
                         PlanTrialScreen(
                             onNavigateBack = { navController.popBackStack() },
                             onItemClick = { item ->
@@ -429,7 +441,30 @@ private fun BottomNavBarContent(
                                         kind = item.kind,
                                     )
                                 }
-                                PlanTrialNavigation.buildDestination(item)?.let { route ->
+
+                                var finalRoute = PlanTrialNavigation.buildDestination(item)
+
+                                // INTERCEPT ONLY SCIENCE (STUDY) ITEMS
+                                if (item.kind == PlanTrialItemKind.STUDY) {
+                                    val normalizeText: (String) -> String = { text ->
+                                        text.trim().lowercase().replace(Regex("\\s+"), " ")
+                                    }
+
+                                    // Strip "Chapter X · " prefix exactly like the Trial UI does
+                                    val rawTitle = item.title.substringAfterLast(" · ")
+                                    val normalizedItemTitle = normalizeText(rawTitle)
+
+                                    val matchedWb = wbConcepts.find { wbConcept ->
+                                        normalizeText(wbConcept.title) == normalizedItemTitle
+                                    }
+
+                                    if (matchedWb != null) {
+                                        // Reroute to the Whiteboard Chatbot with the correct WB ID
+                                        finalRoute = "whiteboard_chatbot?conceptId=${matchedWb.conceptId}"
+                                    }
+                                }
+
+                                finalRoute?.let { route ->
                                     navController.navigate(route)
                                 }
                             },
@@ -581,6 +616,14 @@ private fun BottomNavBarContent(
                             },
                         )
                     }
+                    composable("notes/{subjectId}") { backStackEntry ->
+                        val subjectId = backStackEntry.arguments?.getString("subjectId") ?: return@composable
+                        val subjectName = if (subjectId == "MATH") "Math - Notes" else "Science - Notes"
+                        com.ncert7.aitutorandlab.ui.screens.notes.NotesScreen(
+                            subjectName = subjectName,
+                            onBackClick = { navController.popBackStack() }
+                        )
+                    }
                     composable("learning") {
                         LearningNavigator(
                             onBackToHome = { navController.popBackStack() },
@@ -633,6 +676,15 @@ private fun BottomNavBarContent(
                         arguments = listOf(navArgument("chapterId") { type = NavType.StringType }),
                     ) {
                         val scope = rememberCoroutineScope()
+
+                        // NEW: Inject the WhiteboardViewModel and load its concepts silently
+                        val wbViewModel: WhiteboardViewModel = hiltViewModel()
+                        val wbConcepts by wbViewModel.concepts.collectAsState()
+
+                        LaunchedEffect(Unit) {
+                            wbViewModel.fetchConcepts()
+                        }
+
                         PlanTrialScreen(
                             onNavigateBack = { navController.popBackStack() },
                             onItemClick = { item ->
@@ -642,7 +694,30 @@ private fun BottomNavBarContent(
                                         kind = item.kind,
                                     )
                                 }
-                                PlanTrialNavigation.buildDestination(item)?.let { route ->
+
+                                var finalRoute = PlanTrialNavigation.buildDestination(item)
+
+                                // INTERCEPT ONLY SCIENCE (STUDY) ITEMS
+                                if (item.kind == PlanTrialItemKind.STUDY) {
+                                    val normalizeText: (String) -> String = { text ->
+                                        text.trim().lowercase().replace(Regex("\\s+"), " ")
+                                    }
+
+                                    // Strip "Chapter X · " prefix exactly like the Trial UI does
+                                    val rawTitle = item.title.substringAfterLast(" · ")
+                                    val normalizedItemTitle = normalizeText(rawTitle)
+
+                                    val matchedWb = wbConcepts.find { wbConcept ->
+                                        normalizeText(wbConcept.title) == normalizedItemTitle
+                                    }
+
+                                    if (matchedWb != null) {
+                                        // Reroute to the Whiteboard Chatbot with the correct WB ID
+                                        finalRoute = "whiteboard_chatbot?conceptId=${matchedWb.conceptId}"
+                                    }
+                                }
+
+                                finalRoute?.let { route ->
                                     navController.navigate(route)
                                 }
                             },

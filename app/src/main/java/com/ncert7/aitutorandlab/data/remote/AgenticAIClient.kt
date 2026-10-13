@@ -198,6 +198,7 @@ class AgenticAIClient(
             is ProblemsListResponse -> body.success
             is WbConceptsResponse -> body.success
             is WbSessionTurnResponse -> body.success
+            is DoubtResponse -> body.success
             else -> true
         }
     }
@@ -657,4 +658,13 @@ class AgenticAIClient(
             null
         }
     }
+
+    suspend fun askGeneralDoubt(question: String, context: String): Result<DoubtResponse> =
+        withContext(Dispatchers.IO) {
+            val req = DoubtRequest(
+                question = question,
+                context = context
+            )
+            callWithRetry { service.askDoubt(req) }
+        }
 }

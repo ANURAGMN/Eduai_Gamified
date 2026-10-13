@@ -88,6 +88,7 @@ fun PlanTrialPath(
     dayIndex: Int = 0,
     onChestClick: (Int) -> Unit = {},
     onDayCompleteClick: () -> Unit = {},
+    onAskDoubtClick: () -> Unit = {} // NEW
 ) {
     val colors = EduAiTheme.colors
     val chapterAccents = listOf(colors.accent, colors.pro, colors.warning, colors.success)
@@ -133,6 +134,20 @@ fun PlanTrialPath(
             label = if (allDone) "Day complete!" else "Finish the day",
             onClick = onDayCompleteClick,
         )
+        Spacer(modifier = Modifier.height(16.dp))
+        androidx.compose.material3.OutlinedButton(
+            onClick = onAskDoubtClick,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp)
+                .padding(horizontal = 20.dp),
+            colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                contentColor = EduAiTheme.colors.accent
+            ),
+            border = androidx.compose.foundation.BorderStroke(2.dp, EduAiTheme.colors.accent)
+        ) {
+            androidx.compose.material3.Text("Ask AI a Doubt", fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, fontSize = 16.sp)
+        }
         Spacer(modifier = Modifier.height(48.dp))
     }
 }

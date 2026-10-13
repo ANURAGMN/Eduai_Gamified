@@ -137,6 +137,9 @@ interface AgenticAIService {
 
     @GET("/whiteboard-tutor/scenes/manifest")
     suspend fun getWhiteboardSceneManifest(): Response<WbSceneManifestResponse>
+
+    @POST("/doubts")
+    suspend fun askDoubt(@Body request: DoubtRequest): Response<DoubtResponse>
 }
 
 //All Data Classes
@@ -627,4 +630,14 @@ data class WbSceneManifestResponse(
     val scenes: List<Map<String, Any>>,
     val total: Int,
     val message: String? = null
+)
+
+data class DoubtRequest(
+    @SerializedName("question") val question: String,
+    @SerializedName("context") val context: String
+)
+
+data class DoubtResponse(
+    val success: Boolean = false,
+    val answer: String? = null
 )

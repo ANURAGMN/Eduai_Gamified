@@ -1,0 +1,409 @@
+<resources>
+    <string name="app_name">NCERT Class 7 AI Tutor &amp; Labs</string>
+
+    <!--   Login Screen -->
+    <string name="choose_your_language">Choose Your Language</string>
+    <string name="welcome_message">Welcome Back</string>
+    <string name="welcome_message_secondary">Sign in to continue your learning journey\n</string>
+    <string name="enter_email">Enter your email</string>
+    <string name="enter_password">Enter your password</string>
+    <string name="sign_in">Sign In</string>
+    <string name="sign_up">Sign Up</string>
+    <string name="create_account">Create Account</string>
+    <string name="forget_password">Forgot Password?</string>
+    <string name="policy_msg">By signing up, you agree to our Terms of Service and Privacy Policy</string>
+    <string name="policy_msg_prefix">By signing up, you agree to our </string>
+    <string name="policy_msg_suffix"> and </string>
+    <string name="terms_of_service_label">Terms of Service</string>
+    <string name="privacy_policy_label">Privacy Policy</string>
+    <string name="terms_of_service_url">https://anuragmn.github.io/terms-of-service.html</string>
+    <string name="privacy_policy_url">https://anuragmn.github.io/privacy-policy.html</string>
+    <string name="legal_section_title">Legal</string>
+    <string name="continue_with_google">Continue with Gmail</string>
+    <string name="padaams_sign_in">Institutional sign in</string>
+    <string name="padaams_sign_in_subtitle">For @padaams.in accounts only. Use Continue with Gmail for personal Google accounts.</string>
+    <string name="padaams_email_label">Padaams email</string>
+    <string name="padaams_email_hint">you@padaams.in</string>
+    <string name="padaams_email_helper">Not for Gmail — use the button above for Google sign-in</string>
+    <string name="password_label">Password</string>
+    <string name="sign_in_with_email">Sign in with Email</string>
+    <string name="full_name">Full Name</string>
+    <string name="confirm_password">Confirm Password</string>
+    <string name="day_streak">Day Streak</string>
+    <string name="current_subject">Current Subject</string>
+    <string name="change">Change</string>
+    <string name="view_ll_chapter">View All Chapters</string>
+    <string name="welcome_emoji">👋</string>
+    <string name="app_logo_desc">App Logo</string>
+
+    <!-- Language Selector -->
+    <string name="language_english">English</string>
+    <string name="language_kannada">ಕನ್ನಡ</string>
+    <string name="language_icon_desc">Language Selection Icon</string>
+
+    <!-- Google Sign In -->
+    <string name="google_icon_desc">Google Icon</string>
+
+    <!-- User Detail Entry -->
+    <string name="person_icon_desc">Person Icon</string>
+    <string name="phone_icon_desc">Phone Icon</string>
+    <string name="school_icon_desc">School Icon</string>
+    <string name="class_icon_desc">Class Icon</string>
+
+    <!-- Class Selection -->
+    <string name="class_format">Class %d</string>
+    <string name="class_prefix">Class </string>
+
+    <!-- Error Messages -->
+    <string name="error_phone_empty">Phone number cannot be empty</string>
+    <string name="error_phone_start_digit">Phone number should start from 6 to 9</string>
+    <string name="error_phone_invalid">Enter a valid 10-digit number</string>
+
+    <string name="error_school_empty">School name cannot be empty</string>
+    <string name="error_school_min_length">School name must be at least 3 characters</string>
+    <string name="error_school_invalid_chars">School name should only contain letters, numbers, and basic punctuation</string>
+    <string name="image_too_large">Image size should be less than 5 MB</string>
+
+    <!-- Success Messages -->
+    <string name="login_successful">Login Successful</string>
+    <!--    login screen footer-->
+    <string name="complete_ncert">Complete NCERT</string>
+    <string name="language_number">2 Languages</string>
+    <string name="ai_title">AI-Powered</string>
+    <string name="smart_learning">Smart Learning</string>
+    <string name="login_footer_labs_title">Interactive Labs</string>
+    <string name="login_footer_labs_subtitle">Math &amp; Science</string>
+    <string name="lets_go_to_know_you_message">Let\'s get to know you better to personalize your learning experience</string>
+    <string name="full_name_label">Full Name</string>
+    <string name="phone_number_label">Phone Number</string>
+    <string name="your_ambition_label">Your Ambition</string>
+    <string name="school_name_label">School Name</string>
+    <string name="full_name_hint">Enter your full name</string>
+    <string name="phone_number_hint">Enter your phone number</string>
+    <string name="school_name_hint">Enter your school name</string>
+    <string name="get_started">Get Started</string>
+    <string name="class_selection">Select your class</string>
+
+    <!--    Home Screen-->
+    <string name="today_progress">"Today's Progress"</string>
+    <string name="concept">Concept</string>
+    <string name="simulation">Simulation</string>
+    <string name="pending">Pending</string>
+    <string name="practice_simulation">Practice Simulations</string>
+    <string name="no_progress_msg">No Progress\nPlease start learning by selecting subject</string>
+    <string name="good_morning">Good Morning</string>
+    <string name="good_afternoon">Good Afternoon</string>
+    <string name="good_evening">Good Evening</string>
+    <string name="good_night">Good Night</string>
+    <string name="unknown_concept">Unknown Concept</string>
+    <string name="status_label">Status: %1$s</string>
+    <string name="loading">Loading.....</string>
+
+    <!--    Progress Screen-->
+    <string name="your_progress">Your Progress</string>
+    <string name="last_seven_days">Last 7 days</string>
+    <string name="start_learning">Start Learning</string>
+    <string name="concepts_to_master">Concepts to Master</string>
+    <string name="completed">Completed</string>
+    <string name="in_progress_continue_learning">In Progress - Continue Learning</string>
+    <string name="complete_previous_concepts">Complete previous concepts</string>
+    <string name="open_concept">Open concept</string>
+    <string name="locked">Locked</string>
+    <string name="revision">revision</string>
+    <string name="no_active_revision_session">ಇದಕ್ಕಾಗಿ ಯಾವುದೇ ಸಕ್ರಿಯ ಪರಿಷ್ಕರಣಾ ಅವಧಿ ಇಲ್ಲ ಪರಿಷ್ಕರಣೆ ಐಡಿ: %1$s</string>
+    <string name="in_progress">In Progress</string>
+    <string name="not_started">Not Started</string>
+    <string name="back">Back</string>
+    <string name="home">Home</string>
+    <string name="listening">Listening...</string>
+    <string name="welcome_msg">Hi there! How can I assist you today?</string>
+    <string name="select_avatar">Select Avatar</string>
+    <string name="select_concept">Select Concept</string>
+    <string name="select_student_level">Select Student Level</string>
+    <string name="select_voice">Select Voice</string>
+    <string name="select_speed">Select Speed</string>
+    <string name="select_chat_font_size">Text size (XS = ultra small)</string>
+
+    <!--    Settings tab-->
+    <string name="select_language">Select Language</string>
+    <string name="language">Language</string>
+    <string name="settings_theme">Appearance</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="option_english">English</string>
+    <string name="option_kannada">Kannada</string>
+    <string name="avatar">Avatar</string>
+    <string name="boy">boy</string>
+    <string name="girl">girl</string>
+    <string name="voice">Voice</string>
+    <string name="loading_topics">Loading topics...</string>
+    <string name="select_concepts">Select Concepts</string>
+    <string name="tap_to_choose_topic">Tap to choose a topic…</string>
+    <string name="agent_state">agent_state</string>
+    <string name="ask_Sarah_a_question">Ask Sarah a question...</string>
+    <string name="no_internet_connection">No internet connection</string>
+    <string name="sending">Sending...</string>
+    <string name="tap_to_send">Tap to send</string>
+    <string name="previous_conversation">Previous Conversation</string>
+    <string name="no_conversation_yet">No conversation yet...</string>
+    <string name="speed">Speed</string>
+    <string name="settings">Settings</string>
+    <string name="start_msg">Hi! I\'m ready to help you learn. What would you like to work on today?</string>
+    <string name="learning">Your learning</string>
+    <string name="existing_session_found">Existing Session Found</string>
+    <string name="resume_or_start_fresh">You have a previous session for this topic. Would you like to continue where you left off or start new?</string>
+    <string name="continue_session">Continue</string>
+    <string name="start_new">Start New</string>
+    <string name="logout">Logout</string>
+    <string name="logout_confirmation">Are you sure you want to logout?</string>
+    <string name="disable">disable</string>
+    <string name="level_low">low</string>
+    <string name="level_medium">medium</string>
+    <string name="level_advanced">advanced</string>
+    <string name="student_level">Student Level</string>
+    <string name="no_response">No response</string>
+    <string name="sorry_i_couldn_t_process_that_please_try_again">Sorry, I couldn\'t process that. Please try again.</string>
+    <string name="close_settings">Close Setting\n</string>
+    <string name="thinking">Thinking...</string>
+    <string name="teacher_thinking">Teacher is thinking...</string>
+    <string name="loading_insight_label">While you wait</string>
+
+    <!--    Setting Screen-->
+    <string name="profile_photo">Profile Photo</string>
+    <string name="change_photo">Change Photo</string>
+    <string name="name">Name</string>
+    <string name="enter_your_name">Enter your name</string>
+    <string name="class_label">Class</string>
+    <string name="class_placeholder">e.g., Class 7</string>
+    <string name="school">School</string>
+    <string name="enter_school_name">Enter school name</string>
+    <string name="phone_number">Phone Number</string>
+    <string name="enter_phone_number">Enter phone number</string>
+    <string name="save_changes">Save Changes</string>
+    <string name="profile">Profile</string>
+    <string name="class_title">Class %s</string>
+    <string name="ncert_curriculum">NCERT Curriculum</string>
+    <string name="choose_subjects_to_continue">Choose subjects to continue</string>
+    <string name="choose_a_subject_to_continue">Choose a subject to continue</string>
+    <string name="science_emoji">👩🏻‍🔬</string>
+
+    <plurals name="chapter_count">
+        <item quantity="one">%d Chapter</item>
+        <item quantity="other">%d Chapters</item>
+    </plurals>
+
+    <plurals name="concept_count">
+        <item quantity="one">%d main concept</item>
+        <item quantity="other">%d main concepts</item>
+    </plurals>
+
+    <!--    Contact Details-->
+    <string name="contact_email">contact@padaams.in</string>
+    <string name="contact_number">+91 94495 31117</string>
+    <string name="contact_website">https://padaams.in/</string>
+    <string name="error_open_link">Unable to open link. Please install a browser and try again.</string>
+    <string name="error_no_email_app">No email app found on this device.</string>
+    <string name="send_us_mail_msg">Send us an email</string>
+    <string name="we_would_love_msg">We\'d love to hear from you</string>
+    <string name="open_email_app_msg">Open Email App</string>
+    <string name="unable_to_load_subjects">Unable to load subjects</string>
+    <string name="unable_to_load_chapters">Unable to load chapters</string>
+    <string name="unable_to_load_concepts">Unable to load concepts</string>
+    <string name="unable_to_load_concept_details">Unable to load concept details</string>
+    <string name="class_and_subject">Class %1$d - %2$s</string>
+    <string name="ncert">NCERT Curriculum</string>
+    <string name="my_progress">My Progress</string>
+    <string name="chapter_progress">Chapter Progress</string>
+    <string name="progress_status">%1$d of %2$d • %3$d left</string>
+    <string name="progress">Progress</string>
+    <string name="study">Study</string>
+    <string name="select_chapter">Select Chapter</string>
+    <string name="chapter">Chapter</string>
+    <string name="loading_chapters">Loading chapters…</string>
+    <string name="status_completed">Completed</string>
+    <string name="status_in_progress">In Progress</string>
+    <string name="status_not_started">Not Started</string>
+    <string name="type_or_speak">Type or speak...</string>
+    <string name="attach_image">Attach Image</string>
+    <string name="send_message">Send message</string>
+    <string name="start_listening">Start listening</string>
+    <string name="stop_listening">Stop listening</string>
+    <string name="kannada_enabled">Kannada Enabled</string>
+    <string name="kannada_disabled">Kannada Disabled</string>
+    <string name="stop">Stop</string>
+    <string name="play">Play</string>
+    <string name="close">Close</string>
+
+    <!--    Simulation Screen-->
+    <string name="sim_title">Simulation AI</string>
+    <string name="agent">Tutor</string>
+    <string name="sim_type_or_speak">Type or speak...</string>
+    <string name="sim_send_message">Send message</string>
+    <string name="sim_start_listening">Start listening</string>
+    <string name="sim_stop_listening">Stop listening</string>
+    <string name="sim_teacher_thinking">Teacher is thinking...</string>
+    <string name="sim_session_complete">🎉 Session Complete! 🎉</string>
+    <string name="sim_no_simulation">No simulation to display</string>
+    <string name="sim_before_label">Before</string>
+    <string name="sim_after_label">After</string>
+    <string name="sim_close_simulation">Close simulation</string>
+    <string name="sim_ai_title">Simulation AI</string>
+    <string name="sim_teacher_label">Teacher 👨‍🏫</string>
+    <string name="sim_you_label">You 👤</string>
+    <string name="sim_loading_simulation">Loading simulation...</string>
+    <string name="sim_error_loading">Error loading simulation</string>
+    <string name="load_stall_title">Still loading</string>
+    <string name="load_stall_message">While we figure out the issue, you can continue to the next section without waiting longer.</string>
+    <string name="load_stall_continue">Continue to next</string>
+    <string name="load_stall_keep_waiting">Keep waiting</string>
+    <string name="load_stall_error_title">Something went wrong</string>
+    <string name="load_stall_dismiss_error">Stay here</string>
+
+    <!-- TTS/STT Common Strings -->
+    <string name="ready_for_speech">Ready for speech…</string>
+    <string name="processing_speech">Processing speech…</string>
+    <string name="no_speech_detected">No speech detected</string>
+    <string name="audio_permission_required">Audio permission required</string>
+    <string name="speech_stopped">Speech stopped</string>
+    <string name="tts_ready">TTS Ready</string>
+    <string name="playing">Playing</string>
+    <string name="playback_finished">Playback finished</string>
+    <string name="playback_error">Playback error</string>
+
+    <!-- Simulation Screen Strings -->
+    <string name="simulations">Simulations</string>
+    <string name="launch_simulation">Launch Simulation</string>
+    <string name="unable_to_load_simulations">Unable to load simulations</string>
+    <string name="no_simulations_available">No simulations available for this chapter</string>
+    <string name="reset">Reset</string>
+    <string name="fullscreen">Fullscreen</string>
+    <string name="exit_fullscreen">Exit Fullscreen</string>
+
+    <string name="average_score">Average Score</string>
+
+    <!-- Weekly Activity -->
+    <string name="weekly_activity">Weekly Activity</string>
+
+    <!-- Skills Progress -->
+    <string name="subject_progress">Subject Progress</string>
+    <string name="select_subject">Select Subject</string>
+    <string name="no_progress_data">No progress data available</string>
+    <string name="show_more">Show More</string>
+    <string name="show_less">Show Less</string>
+    <string name="show_more_count">Show More (%1$d more)</string>
+
+    <!-- Content Descriptions -->
+    <string name="home_icon">Home Icon</string>
+    <string name="setting_icon">Setting Icon</string>
+    <string name="show_more_icon">Show More</string>
+    <string name="show_less_icon">Show Less</string>
+    <string name="fire_icon">Fire Icon</string>
+    <string name="book_icon">Book Icon</string>
+    <string name="simulation_icon">Simulation Icon</string>
+    <string name="score_icon">Star Icon</string>
+    <string name="graph_icon">Graph Icon</string>
+    <string name="remove_image">Remove Image</string>
+
+    <!-- Progress Text -->
+    <string name="completed_concepts_format">%1$d/%2$d</string>
+    <string name="percentage_format">%1$d%%</string>
+    <string name="score">Score</string>
+    <string name="loading_concept_map">Loading concept map...</string>
+    <string name="image_is_loading">Image is loading...</string>
+    <string name="zoom_in">Zoom In</string>
+    <string name="zoom_out">Zoom Out</string>
+    <string name="simulations_to_explore">Simulation To Explore</string>
+    <string name="lessons_to_master">Lessons To Master</string>
+
+    <string name="loading_profile">Loading profile…</string>
+    <string name="account">Account</string>
+    <string name="edit_profile">Edit Profile</string>
+    <string name="notifications">Notifications</string>
+    <string name="notification_action_cancel">Cancel</string>
+    <string name="support">Support</string>
+    <string name="contact_us">Contact Us</string>
+
+    <!-- Profile -->
+    <string name="email">Email</string>
+    <string name="phone">Phone</string>
+    <string name="class_level">Class</string>
+
+    <!-- Edit Profile -->
+    <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
+    <string name="updating_profile">Updating profile…</string>
+    <string name="profile_updated">Profile updated successfully</string>
+    <string name="profile_update_failed">Failed to update profile</string>
+
+    <!-- Validation Messages -->
+    <string name="name_required">Name is required</string>
+    <string name="phone_required">Phone number is required</string>
+    <string name="invalid_phone">Invalid phone number</string>
+    <string name="school_required">School name is required</string>
+    <string name="class_required">Class is required</string>
+
+    <!-- Logout -->
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
+
+    <!-- General -->
+    <string name="error">Error</string>
+    <string name="success">Success</string>
+    <string name="retry">Retry</string>
+    <string name="ok">OK</string>
+
+    <!-- Math Agent Strings -->
+    <string name="math_session_missing_problem">Could not open this problem. Please go back and try again.</string>
+    <string name="math_session_failed_start">Failed to start session</string>
+    <string name="math_session_failed_continue">Failed to continue session</string>
+    <string name="math_session_resumed">Session resumed</string>
+    <string name="math_session_failed_resume">Failed to resume session</string>
+    <string name="math_error_prefix">Error: %1$s</string>
+    <string name="problem_to_solve">Problems to Solve</string>
+    <string name="image_processing_may_take_time">Image response may take 2–3 minutes. Please wait…</string>
+
+
+    <!-- Progress Status Strings -->
+    <string name="progress_status_completed">Completed</string>
+    <string name="progress_status_in_progress">In Progress</string>
+    <string name="progress_status_not_started">Not Started</string>
+    <string name="progress_status_locked">Locked</string>
+    <string name="authentication_failed_please_log_in_again">Authentication failed. Please log in again.</string>
+    <string name="access_denied_you_don_t_have_permission_to_access_this_resource">Access denied. You don\'t have permission to access this resource.</string>
+    <string name="resource_not_found">Resource not found.</string>
+    <string name="please_try_after_some_time">Please try after some time.</string>
+    <string name="please_try_tomorrow">Please try tomorrow.</string>
+    <string name="an_unexpected_error_occurred_please_try_again">An unexpected error occurred. Please try again.</string>
+
+    <!-- ErrorHandler Strings -->
+    <string name="error_connection_timeout">Connection timed out. Please check your internet connection.</string>
+    <string name="error_unable_to_reach_server">Unable to reach server. Please check your internet connection.</string>
+    <string name="error_server_try_later">Server error. Please try again later.</string>
+    <string name="error_please_sign_in_again">Please sign in again.</string>
+    <string name="error_service_busy_try_again_shortly">Service busy, try again shortly.</string>
+    <string name="error_server_error">Server error.</string>
+    <string name="error_request_error">Request error. Please try again.</string>
+    <string name="error_network_error_with_code">Network error (%1$d). Please try again.</string>
+    <string name="error_connection_error">Connection error. Please check your internet and try again.</string>
+    <string name="error_unknown">An error occurred. Please try again.</string>
+
+    <!-- Chapter Notes -->
+    v<string name="action_notes">Notes</string>
+    <string name="action_practice">Practice</string>
+    <string name="state_download">Download</string>
+    <string name="state_downloading">Downloading…</string>
+    <string name="state_downloaded">Downloaded</string>
+    <string name="no_pdf_available">No Kannada PDF available</string>
+    <string name="science_notes">Science - Notes</string>
+    <string name="math_notes">Math - Notes</string>
+
+    <!-- Mathematics PDFs -->
+    <string name="math_ch1_large_numbers_around_us_url">https://drive.google.com/uc?export=download&amp;id=1r5H77UpFD0kmmpsYaN0xSaInA2uH3eHL</string>
+    <string name="math_ch2_arithmetic_expressions_url">https://drive.google.com/uc?export=download&amp;id=1GOfjkxjylB4oIKpRM8Wq4D8rYInF0MJv</string>
+    <string name="math_ch3_a_peek_beyond_the_point_url">https://drive.google.com/uc?export=download&amp;id=1SmFWRmLLXPhIUtn_zQ6aWKLJra3JA0_O</string>
+
+    <!-- Science PDFs -->
+    <string name="science_ch2_acid_basic_neutral_url">https://drive.google.com/uc?export=download&amp;id=1h_tTs60HiG7rj0Muxa-_PS_bWV0CBlQl</string>
+    <string name="science_ch9_respiratory_system_url">https://drive.google.com/uc?export=download&amp;id=1VdVIkXeFpNY0mH_8ZaNI-LAqB-J1yOxy</string>
+    <string name="science_ch10_photosynthesis_url">https://drive.google.com/uc?export=download&amp;id=1k8wjXjoih4PP_VCjcM1-bEO8ZDHzpKfz</string>
+</resources>

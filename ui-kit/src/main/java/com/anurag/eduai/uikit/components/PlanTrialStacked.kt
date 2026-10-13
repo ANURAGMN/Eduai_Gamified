@@ -46,6 +46,7 @@ fun PlanTrialStacked(
     chapters: List<TrialPathChapter>,
     onNodeClick: (TrialPathNode) -> Unit,
     modifier: Modifier = Modifier,
+    onAskDoubtClick: () -> Unit = {} // NEW
 ) {
     val colors = EduAiTheme.colors
     Column(
@@ -72,6 +73,19 @@ fun PlanTrialStacked(
                 Spacer(modifier = Modifier.height(8.dp))
             }
             Spacer(modifier = Modifier.height(14.dp))
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+        androidx.compose.material3.OutlinedButton(
+            onClick = onAskDoubtClick,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
+            colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                contentColor = EduAiTheme.colors.accent
+            ),
+            border = androidx.compose.foundation.BorderStroke(2.dp, EduAiTheme.colors.accent)
+        ) {
+            androidx.compose.material3.Text("Ask AI a Doubt", fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, fontSize = 16.sp)
         }
         Spacer(modifier = Modifier.height(40.dp))
     }

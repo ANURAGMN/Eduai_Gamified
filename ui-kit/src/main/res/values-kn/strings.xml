@@ -1,0 +1,402 @@
+<resources>
+    <string name="app_name">NCERT ತರಗತಿ 7 AI ಟ್ಯೂಟರ್ &amp; ಲ್ಯಾಬ್‌ಗಳು</string>
+
+    <!--   Login Screen -->
+    <string name="choose_your_language">ನಿಮ್ಮ ಭಾಷೆಯನ್ನು ಆಯ್ಕೆಮಾಡಿ</string>
+    <string name="welcome_message">ಮತ್ತೆ ಸ್ವಾಗತ</string>
+    <string name="welcome_message_secondary">ನಿಮ್ಮ ಕಲಿಕೆ ಪ್ರಯಾಣವನ್ನು ಮುಂದುವರಿಸಲು ಸೈನ್ ಇನ್ ಮಾಡಿ\n</string>
+    <string name="enter_email">ನಿಮ್ಮ ಇಮೇಲ್ ನಮೂದಿಸಿ</string>
+    <string name="enter_password">ನಿಮ್ಮ ಪಾಸ್ವರ್ಡ್ ನಮೂದಿಸಿ</string>
+    <string name="sign_in">ಸೈನ್ ಇನ್</string>
+    <string name="sign_up">ಸೈನ್ ಅಪ್</string>
+    <string name="create_account">ಖಾತೆ ರಚಿಸಿ</string>
+    <string name="forget_password">ಪಾಸ್ವರ್ಡ್ ಮರೆತಿರಾ?</string>
+    <string name="policy_msg">ಸೈನ್ ಅಪ್ ಮಾಡುವ ಮೂಲಕ, ನೀವು ನಮ್ಮ ಸೇವಾ ನಿಯಮಗಳು ಮತ್ತು ಗೌಪ್ಯತಾ ನೀತಿಗೆ ಒಪ್ಪುತ್ತೀರಿ</string>
+    <string name="continue_with_google">Gmail ಮೂಲಕ ಮುಂದುವರಿಸಿ</string>
+    <string name="full_name">ಪೂರ್ಣ ಹೆಸರು</string>
+    <string name="confirm_password">ಪಾಸ್ವರ್ಡ್ ದೃಢೀಕರಿಸಿ</string>
+    <string name="day_streak">ದಿನಗಳ ಸರಣಿ</string>
+    <string name="current_subject">ಪ್ರಸ್ತುತ ವಿಷಯ</string>
+    <string name="change">ಬದಲಾಯಿಸಿ</string>
+    <string name="view_ll_chapter">ಎಲ್ಲಾ ಅಧ್ಯಾಯಗಳನ್ನು ನೋಡಿ</string>
+    <string name="welcome_emoji">👋</string>
+    <string name="app_logo_desc">ಆ್ಯಪ್ ಲೋಗೋ</string>
+
+    <!-- Language Selector -->
+    <string name="language_english">English</string>
+    <string name="language_kannada">ಕನ್ನಡ</string>
+    <string name="language_icon_desc">ಭಾಷೆ ಆಯ್ಕೆ ಐಕಾನ್</string>
+
+    <!-- Google Sign In -->
+    <string name="google_icon_desc">ಗೂಗಲ್ ಐಕಾನ್</string>
+
+    <!-- User Detail Entry -->
+    <string name="person_icon_desc">ವ್ಯಕ್ತಿ ಐಕಾನ್</string>
+    <string name="phone_icon_desc">ಫೋನ್ ಐಕಾನ್</string>
+    <string name="school_icon_desc">ಶಾಲೆ ಐಕಾನ್</string>
+    <string name="class_icon_desc">ತರಗತಿ ಐಕಾನ್</string>
+
+    <!-- Class Selection -->
+    <string name="class_format">ತರಗತಿ %d</string>
+    <string name="class_prefix">ತರಗತಿ </string>
+
+    <!-- Error Messages -->
+    <string name="error_phone_empty">ಫೋನ್ ಸಂಖ್ಯೆ ಖಾಲಿ ಇರಬಾರದು</string>
+    <string name="error_phone_start_digit">ಫೋನ್ ಸಂಖ್ಯೆ 6 ರಿಂದ 9 ರ ನಡುವೆ ಪ್ರಾರಂಭವಾಗಬೇಕು</string>
+    <string name="error_phone_invalid">ಮಾನ್ಯವಾದ 10 ಅಂಕಿಯ ಸಂಖ್ಯೆಯನ್ನು ನಮೂದಿಸಿ</string>
+
+    <string name="error_school_empty">ಶಾಲೆಯ ಹೆಸರು ಖಾಲಿ ಇರಬಾರದು</string>
+    <string name="error_school_min_length">ಶಾಲೆಯ ಹೆಸರು ಕನಿಷ್ಠ 3 ಅಕ್ಷರಗಳಿರಬೇಕು</string>
+    <string name="error_school_invalid_chars">ಶಾಲೆಯ ಹೆಸರಿನಲ್ಲಿ ಅಕ್ಷರಗಳು, ಸಂಖ್ಯೆಗಳು ಮತ್ತು ಸರಳ ಚಿಹ್ನೆಗಳು ಮಾತ್ರ ಇರಬೇಕು</string>
+    <string name="image_too_large">ಚಿತ್ರದ ಗಾತ್ರವು 5 MB ಕ್ಕಿಂತ ಕಡಿಮೆ ಇರಬೇಕು</string>
+
+    <!-- Success Messages -->
+    <string name="login_successful">ಲಾಗಿನ್ ಯಶಸ್ವಿಯಾಗಿದೆ</string>
+
+    <!--    login screen footer-->
+    <string name="complete_ncert">ಪೂರ್ಣ NCERT</string>
+    <string name="language_number">2 ಭಾಷೆಗಳು</string>
+    <string name="ai_title">AI ಆಧಾರಿತ</string>
+    <string name="smart_learning">ಸ್ಮಾರ್ಟ್ ಕಲಿಕೆ</string>
+    <string name="login_footer_labs_title">ಸಿಮ್ಯುಲೇಶನ್ ಲ್ಯಾಬ್ಸ್</string>
+    <string name="login_footer_labs_subtitle">ಗಣಿತ ಮತ್ತು ವಿಜ್ಞಾನ</string>
+    <string name="lets_go_to_know_you_message">ನಿಮ್ಮ ಕಲಿಕೆ ಅನುಭವವನ್ನು ವೈಯಕ್ತಿಕಗೊಳಿಸಲು ನಿಮ್ಮ ಬಗ್ಗೆ ಸ್ವಲ್ಪ ತಿಳಿದುಕೊಳ್ಳೋಣ</string>
+    <string name="full_name_label">ಪೂರ್ಣ ಹೆಸರು</string>
+    <string name="phone_number_label">ಫೋನ್ ಸಂಖ್ಯೆ</string>
+    <string name="your_ambition_label">ನಿಮ್ಮ ಗುರಿ</string>
+    <string name="school_name_label">ಶಾಲೆಯ ಹೆಸರು</string>
+    <string name="full_name_hint">ನಿಮ್ಮ ಪೂರ್ಣ ಹೆಸರನ್ನು ನಮೂದಿಸಿ</string>
+    <string name="phone_number_hint">ನಿಮ್ಮ ಫೋನ್ ಸಂಖ್ಯೆಯನ್ನು ನಮೂದಿಸಿ</string>
+    <string name="school_name_hint">ನಿಮ್ಮ ಶಾಲೆಯ ಹೆಸರನ್ನು ನಮೂದಿಸಿ</string>
+    <string name="get_started">ಪ್ರಾರಂಭಿಸೋಣ</string>
+    <string name="class_selection">ನಿಮ್ಮ ತರಗತಿಯನ್ನು ಆಯ್ಕೆಮಾಡಿ</string>
+
+    <!--    Home Screen-->
+    <string name="today_progress">ಇಂದಿನ ಪ್ರಗತಿ</string>
+    <string name="concept">ಸಂಕಲ್ಪ</string>
+    <string name="simulation">ಸಿಮ್ಯುಲೇಶನ್</string>
+    <string name="pending">ಬಾಕಿ</string>
+    <string name="practice_simulation">ಸಿಮ್ಯುಲೇಶನ್ ಅಭ್ಯಾಸ</string>
+    <string name="no_progress_msg">ಯಾವುದೇ ಪ್ರಗತಿ ಇಲ್ಲ\nವಿಷಯವನ್ನು ಆಯ್ಕೆಮಾಡಿ ಕಲಿಕೆಯನ್ನು ಪ್ರಾರಂಭಿಸಿ</string>
+    <string name="good_morning">ಶುಭೋದಯ</string>
+    <string name="good_afternoon">ಶುಭ ಮಧ್ಯಾಹ್ನ</string>
+    <string name="good_evening">ಶುಭ ಸಂಜೆ</string>
+    <string name="good_night">ಶುಭ ರಾತ್ರಿ</string>
+    <string name="unknown_concept">ಅಜ್ಞಾತ ಸಂಕಲ್ಪ</string>
+    <string name="status_label">ಸ್ಥಿತಿ: %1$s</string>
+    <string name="loading">ಲೋಡ್ ಆಗುತ್ತಿದೆ.....</string>
+
+    <!--    Progress Screen-->
+    <string name="your_progress">ನಿಮ್ಮ ಪ್ರಗತಿ</string>
+    <string name="last_seven_days">ಕಳೆದ 7 ದಿನಗಳು</string>
+    <string name="start_learning">ಕಲಿಕೆ ಪ್ರಾರಂಭಿಸಿ</string>
+    <string name="concepts_to_master">ಪರಿಪೂರ್ಣಗೊಳಿಸಬೇಕಾದ ಸಂಕಲ್ಪಗಳು</string>
+    <string name="completed">ಪೂರ್ಣಗೊಂಡಿದೆ</string>
+    <string name="in_progress_continue_learning">ಪ್ರಗತಿಯಲ್ಲಿ - ಕಲಿಕೆಯನ್ನು ಮುಂದುವರಿಸಿ</string>
+    <string name="complete_previous_concepts">ಹಿಂದಿನ ಸಂಕಲ್ಪಗಳನ್ನು ಪೂರ್ಣಗೊಳಿಸಿ</string>
+    <string name="open_concept">ಸಂಕಲ್ಪ ತೆರೆಯಿರಿ</string>
+    <string name="locked">ಲಾಕ್ ಮಾಡಲಾಗಿದೆ</string>
+    <string name="in_progress">ಪ್ರಗತಿಯಲ್ಲಿ</string>
+    <string name="not_started">ಪ್ರಾರಂಭಿಸಿಲ್ಲ</string>
+    <string name="back">ಹಿಂದೆ</string>
+    <string name="home">ಮುಖಪುಟ</string>
+    <string name="listening">ಕೇಳುತ್ತಿದೆ...</string>
+    <string name="welcome_msg">ನಮಸ್ಕಾರ! ಇಂದು ನಾನು ನಿಮಗೆ ಹೇಗೆ ಸಹಾಯ ಮಾಡಬಹುದು?</string>
+    <string name="select_avatar">ಅವತಾರ ಆಯ್ಕೆಮಾಡಿ</string>
+    <string name="select_concept">ಸಂಕಲ್ಪ ಆಯ್ಕೆಮಾಡಿ</string>
+    <string name="select_student_level">ವಿದ್ಯಾರ್ಥಿ ಮಟ್ಟವನ್ನು ಆಯ್ಕೆಮಾಡಿ</string>
+    <string name="select_voice">ಧ್ವನಿಯನ್ನು ಆಯ್ಕೆಮಾಡಿ</string>
+    <string name="select_speed">ವೇಗವನ್ನು ಆಯ್ಕೆಮಾಡಿ</string>
+    <string name="select_chat_font_size">ಪಠ್ಯ ಗಾತ್ರ (XS = ಅತಿ ಚಿಕ್ಕದು)</string>
+
+    <!--    Settings tab-->
+    <string name="select_language">ಭಾಷೆ ಆಯ್ಕೆಮಾಡಿ</string>
+    <string name="language">ಭಾಷೆ</string>
+    <string name="settings_theme">ಸ್ವರೂಪ</string>
+    <string name="theme_light">ಬೆಳಕು</string>
+    <string name="theme_dark">ಗಾಢ</string>
+    <string name="option_english">ಇಂಗ್ಲಿಷ್</string>
+    <string name="option_kannada">ಕನ್ನಡ</string>
+    <string name="avatar">ಅವತಾರ</string>
+    <string name="boy">ಗಂಡು</string>
+    <string name="girl">ಹೆಣ್ಣು</string>
+    <string name="voice">ಧ್ವನಿ</string>
+    <string name="loading_topics">ವಿಷಯಗಳನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ...</string>
+    <string name="select_concepts">ಸಂಕಲ್ಪಗಳನ್ನು ಆಯ್ಕೆಮಾಡಿ</string>
+    <string name="tap_to_choose_topic">ವಿಷಯ ಆಯ್ಕೆ ಮಾಡಲು ಟ್ಯಾಪ್ ಮಾಡಿ…</string>
+    <string name="agent_state">ಏಜೆಂಟ್ ಸ್ಥಿತಿ</string>
+    <string name="ask_Sarah_a_question">ಸಾರಾಗೆ ಪ್ರಶ್ನೆ ಕೇಳಿ...</string>
+    <string name="no_internet_connection">ಇಂಟರ್ನೆಟ್ ಸಂಪರ್ಕ ಇಲ್ಲ</string>
+    <string name="sending">ಕಳುಹಿಸಲಾಗುತ್ತಿದೆ...</string>
+    <string name="tap_to_send">ಕಳುಹಿಸಲು ಟ್ಯಾಪ್ ಮಾಡಿ</string>
+    <string name="previous_conversation">ಹಿಂದಿನ ಸಂಭಾಷಣೆ</string>
+    <string name="no_conversation_yet">ಇನ್ನೂ ಯಾವುದೇ ಸಂಭಾಷಣೆ ಇಲ್ಲ...</string>
+    <string name="speed">ವೇಗ</string>
+    <string name="settings">ಸೆಟ್ಟಿಂಗ್‌ಗಳು</string>
+    <string name="start_msg">ನಮಸ್ಕಾರ! ನಾನು ನಿಮಗೆ ಕಲಿಕೆಯಲ್ಲಿ ಸಹಾಯ ಮಾಡಲು ಸಿದ್ಧನಿದ್ದೇನೆ. ಇಂದು ನೀವು ಏನು ಕಲಿಯಲು ಬಯಸುತ್ತೀರಿ?</string>
+    <string name="learning">ನಿಮ್ಮ ಕಲಿಕೆ</string>
+    <string name="existing_session_found">ಈಗಾಗಲೇ ಸೆಷನ್ ಕಂಡುಬಂದಿದೆ</string>
+    <string name="resume_or_start_fresh">ಈ ವಿಷಯಕ್ಕೆ ನಿಮ್ಮ ಹಿಂದಿನ ಸೆಷನ್ ಇದೆ. ನೀವು ಅದನ್ನು ಮುಂದುವರಿಸಲು ಬಯಸುವಿರಾ ಅಥವಾ ಹೊಸದಾಗಿ ಪ್ರಾರಂಭಿಸಬೇಕೆ?</string>
+    <string name="continue_session">ಮುಂದುವರಿಸಿ</string>
+    <string name="start_new">ಹೊಸದಾಗಿ ಪ್ರಾರಂಭಿಸಿ</string>
+    <string name="logout">ಲಾಗ್ ಔಟ್</string>
+    <string name="logout_confirmation">ನೀವು ಖಚಿತವಾಗಿ ಲಾಗ್ ಔಟ್ ಮಾಡಬೇಕೆ?</string>
+    <string name="disable">ನಿಷ್ಕ್ರಿಯಗೊಳಿಸಿ</string>
+    <string name="level_low">ಕಡಿಮೆ</string>
+    <string name="level_medium">ಮಧ್ಯಮ</string>
+    <string name="level_advanced">ಉನ್ನತ</string>
+    <string name="student_level">ವಿದ್ಯಾರ್ಥಿ ಮಟ್ಟ</string>
+    <string name="agent">ಶಿಕ್ಷಕ</string>
+    <string name="no_response">ಯಾವುದೇ ಪ್ರತಿಕ್ರಿಯೆ ಇಲ್ಲ</string>
+    <string name="sorry_i_couldn_t_process_that_please_try_again">ಕ್ಷಮಿಸಿ, ಅದನ್ನು ಪ್ರಕ್ರಿಯೆಗೊಳಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.</string>
+    <string name="close_settings">ಸೆಟ್ಟಿಂಗ್‌ಗಳನ್ನು ಮುಚ್ಚಿ\n</string>
+    <string name="thinking">ಯೋಚಿಸಲಾಗುತ್ತಿದೆ...</string>
+    <string name="teacher_thinking">ಗುರು ಯೋಚಿಸುತ್ತಿದ್ದಾರೆ...</string>
+    <string name="loading_insight_label">ನಿರೀಕ್ಷಿಸುವಾಗ</string>
+
+    <!--    Setting Screen-->
+    <string name="profile_photo">ಪ್ರೊಫೈಲ್ ಫೋಟೋ</string>
+    <string name="change_photo">ಫೋಟೋ ಬದಲಾಯಿಸಿ</string>
+    <string name="name">ಹೆಸರು</string>
+    <string name="enter_your_name">ನಿಮ್ಮ ಹೆಸರನ್ನು ನಮೂದಿಸಿ</string>
+    <string name="class_label">ತರಗತಿ</string>
+    <string name="class_placeholder">ಉದಾ., ತರಗತಿ 7</string>
+    <string name="school">ಶಾಲೆ</string>
+    <string name="enter_school_name">ಶಾಲೆಯ ಹೆಸರನ್ನು ನಮೂದಿಸಿ</string>
+    <string name="phone_number">ಫೋನ್ ಸಂಖ್ಯೆ</string>
+    <string name="enter_phone_number">ಫೋನ್ ಸಂಖ್ಯೆಯನ್ನು ನಮೂದಿಸಿ</string>
+    <string name="save_changes">ಬದಲಾವಣೆಗಳನ್ನು ಉಳಿಸಿ</string>
+    <string name="profile">ಪ್ರೊಫೈಲ್</string>
+    <string name="class_title">ತರಗತಿ %s</string>
+    <string name="ncert_curriculum">NCERT ಪಠ್ಯಕ್ರಮ</string>
+    <string name="choose_subjects_to_continue">ಮುಂದುವರಿಸಲು ವಿಷಯಗಳನ್ನು ಆಯ್ಕೆಮಾಡಿ</string>
+    <string name="choose_a_subject_to_continue">ಮುಂದುವರಿಸಲು ಒಂದು ವಿಷಯವನ್ನು ಆಯ್ಕೆಮಾಡಿ</string>
+    <string name="science_emoji">👩🏻‍🔬</string>
+
+    <plurals name="chapter_count">
+        <item quantity="one">%d ಅಧ್ಯಾಯ</item>
+        <item quantity="other">%d ಅಧ್ಯಾಯಗಳು</item>
+    </plurals>
+
+    <plurals name="concept_count">
+        <item quantity="one">%d ಮುಖ್ಯ ಸಂಕಲ್ಪ</item>
+        <item quantity="other">%d ಮುಖ್ಯ ಸಂಕಲ್ಪಗಳು</item>
+    </plurals>
+
+    <!--    Contact Details-->
+    <string name="contact_email">contact@padaams.in</string>
+    <string name="contact_number">+91 94495 31117</string>
+    <string name="contact_website">https://padaams.in/</string>
+    <string name="error_open_link">ಲಿಂಕ್ ತೆರೆಯಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಬ್ರೌಸರ್ ಅನ್ನು ಪ್ರಯತ್ನಿಸಿ.</string>
+    <string name="error_no_email_app">ಈ ಸಾಧನದಲ್ಲಿ ಇಮೇಲ್ ಅಪ್ಲಿಕೇಶನ್ ಕಂಡುಬಂದಿಲ್ಲ.</string>
+    <string name="send_us_mail_msg">ನಮಗೆ ಇಮೇಲ್ ಕಳುಹಿಸಿ</string>
+    <string name="we_would_love_msg">ನಿಮ್ಮಿಂದ ಕೇಳಲು ನಾವು ಸಂತೋಷಪಡುತ್ತೇವೆ</string>
+    <string name="open_email_app_msg">ಇಮೇಲ್ ಆ್ಯಪ್ ತೆರೆಯಿರಿ</string>
+    <string name="unable_to_load_subjects">ವಿಷಯಗಳನ್ನು ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ</string>
+    <string name="unable_to_load_chapters">ಅಧ್ಯಾಯಗಳನ್ನು ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ</string>
+    <string name="unable_to_load_concepts">ಸಂಕಲ್ಪಗಳನ್ನು ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ</string>
+    <string name="unable_to_load_concept_details">ಸಂಕಲ್ಪದ ವಿವರಗಳನ್ನು ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ</string>
+    <string name="class_and_subject">ತರಗತಿ %1$d - %2$s</string>
+    <string name="ncert">NCERT ಪಠ್ಯಕ್ರಮ</string>
+    <string name="my_progress">ನನ್ನ ಪ್ರಗತಿ</string>
+    <string name="chapter_progress">ಅಧ್ಯಾಯ ಪ್ರಗತಿ</string>
+    <string name="progress_status">%1$d ನಲ್ಲಿ %2$d • %3$d ಉಳಿದಿವೆ</string>
+    <string name="progress">ಪ್ರಗತಿ</string>
+    <string name="study">ಅಧ್ಯಯನ</string>
+    <string name="revision">ಪುನರಾವರ್ತನೆ</string>
+    <string name="no_active_revision_session">ಸಕ್ರಿಯ ಪರಿಷ್ಕರಣೆ ಅಧಿವೇಶನವಿಲ್ಲ: %1$s</string>
+    <string name="select_chapter">ಅಧ್ಯಾಯವನ್ನು ಆಯ್ಕೆಮಾಡಿ</string>
+    <string name="chapter">ಅಧ್ಯಾಯ</string>
+    <string name="loading_chapters">ಅಧ್ಯಾಯಗಳನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ…</string>
+    <string name="status_completed">ಪೂರ್ಣಗೊಂಡಿದೆ</string>
+    <string name="status_in_progress">ಪ್ರಗತಿಯಲ್ಲಿ</string>
+    <string name="status_not_started">ಪ್ರಾರಂಭಿಸಿಲ್ಲ</string>
+    <string name="type_or_speak">ಟೈಪ್ ಮಾಡಿ ಅಥವಾ ಮಾತನಾಡಿ...</string>
+    <string name="attach_image">ಚಿತ್ರವನ್ನು ಲಗತ್ತಿಸಿ</string>
+    <string name="send_message">ಸಂದೇಶ ಕಳುಹಿಸಿ</string>
+    <string name="start_listening">ಕೇಳಲು ಪ್ರಾರಂಭಿಸಿ</string>
+    <string name="stop_listening">ಕೇಳುವುದನ್ನು ನಿಲ್ಲಿಸಿ</string>
+    <string name="kannada_enabled">ಕನ್ನಡ ಸಕ್ರಿಯವಾಗಿದೆ</string>
+    <string name="kannada_disabled">ಕನ್ನಡ ನಿಷ್ಕ್ರಿಯವಾಗಿದೆ</string>
+    <string name="stop">ನಿಲ್ಲಿಸಿ</string>
+    <string name="play">ಆಡಿಸಿ</string>
+    <string name="close">ಮುಚ್ಚಿ</string>
+
+    <!--    Simulation Screen-->
+    <string name="sim_title">ಸಿಮ್ಯುಲೇಶನ್ AI</string>
+    <string name="sim_type_or_speak">ಟೈಪ್ ಮಾಡಿ ಅಥವಾ ಮಾತನಾಡಿ...</string>
+    <string name="sim_send_message">ಸಂದೇಶ ಕಳುಹಿಸಿ</string>
+    <string name="sim_start_listening">ಕೇಳಲು ಪ್ರಾರಂಭಿಸಿ</string>
+    <string name="sim_stop_listening">ಕೇಳುವುದನ್ನು ನಿಲ್ಲಿಸಿ</string>
+    <string name="sim_teacher_thinking">ಗುರು ಯೋಚಿಸುತ್ತಿದ್ದಾರೆ...</string>
+    <string name="sim_session_complete">🎉 ಸೆಷನ್ ಪೂರ್ಣಗೊಂಡಿದೆ! 🎉</string>
+    <string name="sim_no_simulation">ತೋರಿಸಲು ಯಾವುದೇ ಸಿಮ್ಯುಲೇಶನ್ ಇಲ್ಲ</string>
+    <string name="sim_before_label">ಮೊದಲು</string>
+    <string name="sim_after_label">ನಂತರ</string>
+    <string name="sim_close_simulation">ಸಿಮ್ಯುಲೇಶನ್ ಮುಚ್ಚಿ</string>
+    <string name="sim_ai_title">ಸಿಮ್ಯುಲೇಶನ್ AI</string>
+    <string name="sim_teacher_label">ಗುರು 👨‍🏫</string>
+    <string name="sim_you_label">ನೀವು 👤</string>
+    <string name="sim_loading_simulation">ಸಿಮ್ಯುಲೇಶನ್ ಲೋಡ್ ಆಗುತ್ತಿದೆ...</string>
+    <string name="sim_error_loading">ಸಿಮ್ಯುಲೇಶನ್ ಲೋಡ್ ಮಾಡುವಲ್ಲಿ ದೋಷ</string>
+    <string name="load_stall_title">ಇನ್ನೂ ಲೋಡ್ ಆಗುತ್ತಿದೆ</string>
+    <string name="load_stall_message">ನಾವು ಸಮಸ್ಯೆಯನ್ನು ಪರಿಶೀಲಿಸುತ್ತಿರುವಾಗ, ಇನ್ನಷ್ಟು ಕಾಯದೆ ಮುಂದಿನ ವಿಭಾಗಕ್ಕೆ ಮುಂದುವರಿಯಬಹುದು.</string>
+    <string name="load_stall_continue">ಮುಂದಿನಕ್ಕೆ ಮುಂದುವರಿ</string>
+    <string name="load_stall_keep_waiting">ಕಾಯಿರಿ</string>
+    <string name="load_stall_error_title">ಏನೋ ತಪ್ಪಾಗಿದೆ</string>
+    <string name="load_stall_dismiss_error">ಇಲ್ಲೇ ಇರಿ</string>
+
+    <!-- TTS/STT Common Strings -->
+    <string name="ready_for_speech">ಮಾತಿನಿಗಾಗಿ ಸಿದ್ಧ…</string>
+    <string name="processing_speech">ಮಾತನ್ನು ಪ್ರಕ್ರಿಯೆಗೊಳಿಸಲಾಗುತ್ತಿದೆ…</string>
+    <string name="no_speech_detected">ಯಾವುದೇ ಮಾತು ಕಂಡುಬಂದಿಲ್ಲ</string>
+    <string name="audio_permission_required">ಆಡಿಯೋ ಅನುಮತಿ ಅಗತ್ಯವಿದೆ</string>
+    <string name="speech_stopped">ಮಾತು ನಿಂತಿದೆ</string>
+    <string name="tts_ready">TTS ಸಿದ್ಧ</string>
+    <string name="playing">ಆಡುತ್ತಿದೆ</string>
+    <string name="playback_finished">ಪ್ಲೇಬ್ಯಾಕ್ ಮುಗಿದಿದೆ</string>
+    <string name="playback_error">ಪ್ಲೇಬ್ಯಾಕ್ ದೋಷ</string>
+
+    <!-- Simulation Screen Strings -->
+    <string name="simulations">ಸಿಮ್ಯುಲೇಶನ್‌ಗಳು</string>
+    <string name="launch_simulation">ಸಿಮ್ಯುಲೇಶನ್ ಪ್ರಾರಂಭಿಸಿ</string>
+    <string name="unable_to_load_simulations">ಸಿಮ್ಯುಲೇಶನ್‌ಗಳನ್ನು ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ</string>
+    <string name="no_simulations_available">ಈ ಅಧ್ಯಾಯಕ್ಕೆ ಯಾವುದೇ ಸಿಮ್ಯುಲೇಶನ್ ಲಭ್ಯವಿಲ್ಲ</string>
+    <string name="reset">ಮರುಹೊಂದಿಸಿ</string>
+    <string name="fullscreen">ಪೂರ್ಣ ಪರದೆ</string>
+    <string name="exit_fullscreen">ಪೂರ್ಣ ಪರದೆಯಿಂದ ಹೊರಬನ್ನಿ</string>
+    <string name="average_score">ಸರಾಸರಿ ಅಂಕ</string>
+    <string name="score">ಅಂಕ</string>
+    <string name="score_icon">ಸ್ಟಾರ್ ಐಕಾನ್</string>
+
+
+    <!-- Weekly Activity -->
+    <string name="weekly_activity">ವಾರದ ಚಟುವಟಿಕೆ</string>
+
+    <!-- Skills Progress -->
+    <string name="subject_progress">ವಿಷಯ ಪ್ರಗತಿ</string>
+    <string name="select_subject">ವಿಷಯ ಆಯ್ಕೆಮಾಡಿ</string>
+    <string name="no_progress_data">ಯಾವುದೇ ಪ್ರಗತಿ ಡೇಟಾ ಲಭ್ಯವಿಲ್ಲ</string>
+    <string name="show_more">ಇನ್ನಷ್ಟು ತೋರಿಸಿ</string>
+    <string name="show_less">ಕಡಿಮೆ ತೋರಿಸಿ</string>
+    <string name="show_more_count">ಇನ್ನಷ್ಟು ತೋರಿಸಿ (%1$d ಇನ್ನಷ್ಟು)</string>
+
+    <!-- Content Descriptions -->
+    <string name="home_icon">ಮುಖಪುಟ ಐಕಾನ್</string>
+    <string name="setting_icon">ಸೆಟ್ಟಿಂಗ್ ಐಕಾನ್</string>
+    <string name="show_more_icon">ಇನ್ನಷ್ಟು ತೋರಿಸಿ</string>
+    <string name="show_less_icon">ಕಡಿಮೆ ತೋರಿಸಿ</string>
+    <string name="fire_icon">ಬೆಂಕಿ ಐಕಾನ್</string>
+    <string name="book_icon">ಪುಸ್ತಕ ಐಕಾನ್</string>
+    <string name="simulation_icon">ಸಿಮ್ಯುಲೇಶನ್ ಐಕಾನ್</string>
+    <string name="graph_icon">ಗ್ರಾಫ್ ಐಕಾನ್</string>
+    <string name="remove_image">ಚಿತ್ರವನ್ನು ತೆಗೆದುಹಾಕಿ</string>
+
+    <!-- Progress Text -->
+    <string name="completed_concepts_format">%1$d/%2$d</string>
+    <string name="percentage_format">%1$d%%</string>
+    <string name="loading_concept_map">ಸಂಕಲ್ಪ ನಕ್ಷೆ ಲೋಡ್ ಆಗುತ್ತಿದೆ...</string>
+    <string name="image_is_loading">ಚಿತ್ರ ಲೋಡ್ ಆಗುತ್ತಿದೆ...</string>
+    <string name="zoom_in">ಜೂಮ್ ಇನ್</string>
+    <string name="zoom_out">ಜೂಮ್ ಔಟ್</string>
+    <string name="simulations_to_explore">ಅನ್ವೇಷಿಸಲು ಸಿಮ್ಯುಲೇಶನ್‌ಗಳು</string>
+    <string name="lessons_to_master">ಪರಿಪೂರ್ಣಗೊಳಿಸಬೇಕಾದ ಪಾಠಗಳು</string>
+
+    <string name="loading_profile">ಪ್ರೊಫೈಲ್ ಲೋಡ್ ಆಗುತ್ತಿದೆ…</string>
+    <string name="account">ಖಾತೆ</string>
+    <string name="edit_profile">ಪ್ರೊಫೈಲ್ ಸಂಪಾದಿಸಿ</string>
+    <string name="notifications">ಅಧಿಸೂಚನೆಗಳು</string>
+    <string name="support">ಬೆಂಬಲ</string>
+    <string name="contact_us">ನಮ್ಮನ್ನು ಸಂಪರ್ಕಿಸಿ</string>
+
+    <string name="email">ಇಮೇಲ್</string>
+    <string name="phone">ಫೋನ್</string>
+    <string name="class_level">ತರಗತಿ</string>
+
+    <!-- Edit Profile -->
+    <string name="save">ಉಳಿಸಿ</string>
+    <string name="cancel">ರದ್ದುಮಾಡಿ</string>
+    <string name="updating_profile">ಪ್ರೊಫೈಲ್ ನವೀಕರಿಸಲಾಗುತ್ತಿದೆ…</string>
+    <string name="profile_updated">ಪ್ರೊಫೈಲ್ ಯಶಸ್ವಿಯಾಗಿ ನವೀಕರಿಸಲಾಗಿದೆ</string>
+    <string name="profile_update_failed">ಪ್ರೊಫೈಲ್ ನವೀಕರಿಸಲು ವಿಫಲವಾಗಿದೆ</string>
+
+    <!-- Validation Messages -->
+    <string name="name_required">ಹೆಸರು ಅಗತ್ಯವಿದೆ</string>
+    <string name="phone_required">ಫೋನ್ ಸಂಖ್ಯೆ ಅಗತ್ಯವಿದೆ</string>
+    <string name="invalid_phone">ಅಮಾನ್ಯ ಫೋನ್ ಸಂಖ್ಯೆ</string>
+    <string name="school_required">ಶಾಲೆಯ ಹೆಸರು ಅಗತ್ಯವಿದೆ</string>
+    <string name="class_required">ತರಗತಿ ಅಗತ್ಯವಿದೆ</string>
+
+    <!-- Logout -->
+    <string name="yes">ಹೌದು</string>
+    <string name="no">ಇಲ್ಲ</string>
+
+    <string name="error">ದೋಷ</string>
+    <string name="success">ಯಶಸ್ಸು</string>
+    <string name="retry">ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ</string>
+    <string name="ok">ಸರಿ</string>
+
+    <!-- Math Agent Strings -->
+    <string name="math_session_missing_problem">ಈ ಸಮಸ್ಯೆಯನ್ನು ತೆರೆಯಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ಹಿಂದಕ್ಕೆ ಹೋಗಿ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.</string>
+    <string name="math_session_failed_start">ಸೆಶನ್ ಪ್ರಾರಂಭಿಸಲು ವಿಫಲವಾಗಿದೆ</string>
+    <string name="math_session_failed_continue">ಸೆಶನ್ ಮುಂದುವರಿಸಲು ವಿಫಲವಾಗಿದೆ</string>
+    <string name="math_session_resumed">ಸೆಶನ್ ಪುನರಾರಂಭ ಮಾಡಲಾಯಿತು</string>
+    <string name="math_session_failed_resume">ಸೆಶನ್ ಪುನರಾರಂಭಿಸಲು ವಿಫಲವಾಗಿದೆ</string>
+    <string name="math_error_prefix">ದೋಷ: %1$s</string>
+    <string name="problem_to_solve">ಪರಿಹರಿಸಲು ಸಮಸ್ಯೆಗಳು</string>
+    <string name="image_processing_may_take_time">ಚಿತ್ರದ ಉತ್ತರ 2–3 ನಿಮಿಷ ತೆಗೆದುಕೊಳ್ಳಬಹುದು. ದಯವಿಟ್ಟು ನಿರೀಕ್ಷಿಸಿ…</string>
+
+    <!-- Progress Status Strings -->
+    <string name="progress_status_completed">ಪೂರ್ಣಗೊಂಡಿದೆ</string>
+    <string name="progress_status_in_progress">ಪ್ರಗತಿಯಲ್ಲಿದೆ</string>
+    <string name="progress_status_not_started">ಪ್ರಾರಂಭಿಸಿಲ್ಲ</string>
+    <string name="progress_status_locked">ಲಾಕ್ ಮಾಡಲಾಗಿದೆ</string>
+    
+    <!-- ErrorHandler Strings -->
+    <string name="authentication_failed_please_log_in_again">ದೃಢೀಕರಣ ವಿಫಲವಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಲಾಗ್ ಇನ್ ಮಾಡಿ.</string>
+    <string name="access_denied_you_don_t_have_permission_to_access_this_resource">ಪ್ರವೇಶ ನಿರಾಕರಿಸಲಾಗಿದೆ. ಈ ಸಂಪನ್ಮೂಲವನ್ನು ಪ್ರವೇಶಿಸಲು ನಿಮಗೆ ಅನುಮತಿ ಇಲ್ಲ.</string>
+    <string name="resource_not_found">ಸಂಪನ್ಮೂಲ ಕಂಡುಬಂದಿಲ್ಲ.</string>
+    <string name="please_try_after_some_time">ದಯವಿಟ್ಟು ಸ್ವಲ್ಪ ಸಮಯದ ನಂತರ ಪ್ರಯತ್ನಿಸಿ.</string>
+    <string name="please_try_tomorrow">ದಯವಿಟ್ಟು ನಾಳೆ ಪ್ರಯತ್ನಿಸಿ.</string>
+    <string name="an_unexpected_error_occurred_please_try_again">ನಿರೀಕ್ಷಿತವಲ್ಲದ ದೋಷ ಸಂಭವಿಸಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.</string>
+    
+    <string name="error_connection_timeout">ಸಂಪರ್ಕ ಕಾಲಮಿತಿ ಮೀರಿದೆ. ದಯವಿಟ್ಟು ನಿಮ್ಮ ಇಂಟರ್ನೆಟ್ ಸಂಪರ್ಕವನ್ನು ಪರಿಶೀಲಿಸಿ.</string>
+    <string name="error_unable_to_reach_server">ಸರ್ವರ್ ತಲುಪಲು ಸಾಧ್ಯವಾಗುತ್ತಿಲ್ಲ. ದಯವಿಟ್ಟು ನಿಮ್ಮ ಇಂಟರ್ನೆಟ್ ಸಂಪರ್ಕವನ್ನು ಪರಿಶೀಲಿಸಿ.</string>
+    <string name="error_server_try_later">ಸರ್ವರ್ ದೋಷ. ದಯವಿಟ್ಟು ಸ್ವಲ್ಪ ಸಮಯದ ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.</string>
+    <string name="error_please_sign_in_again">ದಯವಿಟ್ಟು ಮತ್ತೆ ಸೈನ್ ಇನ್ ಮಾಡಿ.</string>
+    <string name="error_service_busy_try_again_shortly">ಸೇವೆ ಕಾರ್ಯನಿರತವಾಗಿದೆ, ಸ್ವಲ್ಪ ಸಮಯದ ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.</string>
+    <string name="error_server_error">ಸರ್ವರ್ ದೋಷ.</string>
+    <string name="error_request_error">ವಿನಂತಿ ದೋಷ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.</string>
+    <string name="error_network_error_with_code">ನೆಟ್‌ವರ್ಕ್ ದೋಷ (%1$d). ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.</string>
+    <string name="error_connection_error">ಸಂಪರ್ಕ ದೋಷ. ದಯವಿಟ್ಟು ನಿಮ್ಮ ಇಂಟರ್ನೆಟ್ ಪರಿಶೀಲಿಸಿ ಮತ್ತು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.</string>
+    <string name="error_unknown">ದೋಷ ಸಂಭವಿಸಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.</string>
+
+    <!-- Legal / auth (parity with values/strings.xml) -->
+    <string name="legal_section_title">ಕಾನೂನು</string>
+    <string name="terms_of_service_label">ಸೇವಾ ನಿಯಮಗಳು</string>
+    <string name="terms_of_service_url">https://anuragmn.github.io/terms-of-service.html</string>
+    <string name="privacy_policy_label">ಗೌಪ್ಯತಾ ನೀತಿ</string>
+    <string name="privacy_policy_url">https://anuragmn.github.io/privacy-policy.html</string>
+    <string name="policy_msg_prefix">ಸೈನ್ ಅಪ್ ಮಾಡುವ ಮೂಲಕ, ನೀವು ನಮ್ಮ </string>
+    <string name="policy_msg_suffix"> ಮತ್ತು </string>
+    <string name="sign_in_with_email">ಇಮೇಲ್‌ನೊಂದಿಗೆ ಸೈನ್ ಇನ್</string>
+    <string name="password_label">ಪಾಸ್‌ವರ್ಡ್</string>
+    <string name="notification_action_cancel">ರದ್ದುಮಾಡಿ</string>
+
+    <!-- Padaams institutional sign-in -->
+    <string name="padaams_sign_in">ಸಂಸ್ಥೆಯ ಸೈನ್ ಇನ್</string>
+    <string name="padaams_sign_in_subtitle">@padaams.in ಖಾತೆಗಳಿಗೆ ಮಾತ್ರ. ವೈಯಕ್ತಿಕ Google ಖಾತೆಗಳಿಗೆ ಮೇಲಿನ Gmail ಬಟನ್ ಬಳಸಿ.</string>
+    <string name="padaams_email_label">Padaams ಇಮೇಲ್</string>
+    <string name="padaams_email_hint">you@padaams.in</string>
+    <string name="padaams_email_helper">Gmail ಗಾಗಿ ಅಲ್ಲ — Google ಸೈನ್-ಇನ್‌ಗೆ ಮೇಲಿನ ಬಟನ್ ಬಳಸಿ</string>
+
+    <!-- Chapter Notes -->
+    <string name="action_notes">ಟಿಪ್ಪಣಿಗಳು (Notes)</string>
+    <string name="action_practice">ಅಭ್ಯಾಸ (Practice)</string>
+    <string name="state_download">ಡೌನ್‌ಲೋಡ್</string>
+    <string name="state_downloading">ಡೌನ್‌ಲೋಡ್ ಆಗುತ್ತಿದೆ…</string>
+    <string name="state_downloaded">ಡೌನ್‌ಲೋಡ್ ಆಗಿದೆ</string>
+    <string name="no_pdf_available">ಕನ್ನಡ PDF ಲಭ್ಯವಿಲ್ಲ</string>
+    <string name="science_notes">ವಿಜ್ಞಾನ - ಟಿಪ್ಪಣಿಗಳು</string>
+    <string name="math_notes">ಗಣಿತ - ಟಿಪ್ಪಣಿಗಳು</string>
+</resources>
