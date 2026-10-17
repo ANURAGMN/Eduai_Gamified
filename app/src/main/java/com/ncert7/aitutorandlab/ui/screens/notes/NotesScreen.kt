@@ -28,6 +28,7 @@ import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.anurag.eduai.uikit.theme.EduAiTheme
 import com.ncert7.aitutorandlab.R
+import com.ncert7.aitutorandlab.data.local.entities.ChapterNoteEntity
 import com.ncert7.aitutorandlab.ui.theme.BrandPrimary
 import com.ncert7.aitutorandlab.ui.theme.ColorError
 import com.ncert7.aitutorandlab.ui.theme.TextOnPrimary
@@ -45,7 +46,6 @@ fun NotesScreen(
     val colors = EduAiTheme.colors
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
-    val noPdfMsg = stringResource(R.string.no_pdf_available)
 
     Scaffold(
         topBar = {
@@ -63,14 +63,16 @@ fun NotesScreen(
         containerColor = colors.surface1
     ) { padding ->
         LazyColumn(
-            modifier = Modifier.padding(padding).padding(16.dp),
+            modifier = Modifier
+                .padding(padding)
+                .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(notesList) { item ->
+            items(notesList, key = { it.chapterId }) { item ->
                 NoteRow(
                     item = item,
                     viewModel = viewModel,
-                    onNoPdf = { scope.launch { snackbarHostState.showSnackbar(noPdfMsg) } }
+                    onNoPdf = { msg -> scope.launch { snackbarHostState.showSnackbar(msg) } }
                 )
             }
         }
@@ -79,25 +81,30 @@ fun NotesScreen(
 
 @Composable
 fun NoteRow(
-    item: StaticNoteItem,
+    item: ChapterNoteEntity,
     viewModel: NotesViewModel,
-    onNoPdf: () -> Unit
+    onNoPdf: (String) -> Unit
 ) {
     val colors = EduAiTheme.colors
-    val noteState by viewModel.getNoteState(item.id).collectAsState(initial = null)
     val context = LocalContext.current
-
     val isKannada = viewModel.isKannada
-    // Force Kannada state to ALWAYS look like "Not Downloaded" (progress 0, isDownloaded false)
-    val progress = if (isKannada) 0 else (noteState?.downloadProgress ?: 0)
-    val isDownloaded = if (isKannada) false else (noteState?.isDownloaded == true)
+
+    val hasLanguagePdf = if (isKannada) {
+        !item.remotePdfUrlKn.isNullOrBlank()
+    } else {
+        !item.remotePdfUrl.isNullOrBlank()
+    }
+
+    val progress = if (isKannada && !hasLanguagePdf) 0 else item.downloadProgress
+    val isDownloaded = if (isKannada && !hasLanguagePdf) false else item.isDownloaded
 
     val onCardClick = {
-        if (isKannada) {
-            onNoPdf()
-        } else {
-            if (isDownloaded) {
-                val file = File(noteState!!.localFilePath!!)
+        if (!hasLanguagePdf) {
+            val msg = if (isKannada) "Kannada PDF not available" else "PDF link missing in database"
+            onNoPdf(msg)
+        } else if (isDownloaded && !item.localFilePath.isNullOrBlank()) {
+            val file = File(item.localFilePath)
+            if (file.exists()) {
                 val uri = FileProvider.getUriForFile(context, "${context.packageName}.provider", file)
                 val intent = Intent(Intent.ACTION_VIEW).apply {
                     setDataAndType(uri, "application/pdf")
@@ -107,6 +114,8 @@ fun NoteRow(
             } else {
                 viewModel.startDownload(item)
             }
+        } else {
+            viewModel.startDownload(item)
         }
     }
 
@@ -119,7 +128,6 @@ fun NoteRow(
             .padding(14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-
         Box(
             modifier = Modifier
                 .size(44.dp)
@@ -129,7 +137,7 @@ fun NoteRow(
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text("Ch", color = colors.textSecondary, fontSize = 11.sp, fontWeight = FontWeight.Medium)
-                Text("${item.chapterNum}", color = colors.text, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                Text("${item.chapterNumber}", color = colors.text, fontSize = 14.sp, fontWeight = FontWeight.Bold)
             }
         }
 
@@ -137,7 +145,7 @@ fun NoteRow(
 
         Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
             Text(
-                text = item.title,
+                text = item.conceptName.orEmpty().ifBlank { "Chapter ${item.chapterNumber}" },
                 color = colors.text,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.SemiBold,
@@ -145,12 +153,22 @@ fun NoteRow(
                 overflow = TextOverflow.Ellipsis,
                 lineHeight = 20.sp
             )
-            // Never show state subtitles if it is Kannada
-            if (!isKannada) {
+
+            if (hasLanguagePdf) {
                 if (isDownloaded) {
-                    Text("Saved · tap to open", color = colors.textSecondary, fontSize = 12.sp, modifier = Modifier.padding(top = 2.dp))
+                    Text(
+                        "Saved · tap to open",
+                        color = colors.textSecondary,
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(top = 2.dp)
+                    )
                 } else if (progress in 1..99) {
-                    Text("Tap to restart if stuck", color = colors.textSecondary, fontSize = 12.sp, modifier = Modifier.padding(top = 2.dp))
+                    Text(
+                        "Tap to restart if stuck",
+                        color = colors.textSecondary,
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(top = 2.dp)
+                    )
                 }
             }
         }

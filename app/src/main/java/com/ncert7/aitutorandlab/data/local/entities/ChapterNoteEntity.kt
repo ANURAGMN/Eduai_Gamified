@@ -7,6 +7,11 @@ import androidx.room.PrimaryKey
 data class ChapterNoteEntity(
     @PrimaryKey
     val chapterId: String,
+    val subjectId: String? = null,
+    val chapterNumber: Int = 0,
+    val conceptName: String? = null,
+    val remotePdfUrl: String? = null,
+    val remotePdfUrlKn: String? = null,
     val localFilePath: String? = null,
     val downloadProgress: Int = 0,
     val isDownloaded: Boolean = false

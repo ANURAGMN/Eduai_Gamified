@@ -442,3 +442,13 @@ val MIGRATION_15_16 = object : Migration(15, 16) {
         )
     }
 }
+
+val MIGRATION_16_17 = object : Migration(16, 17) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `chapter_notes` ADD COLUMN `subjectId` TEXT")
+        db.execSQL("ALTER TABLE `chapter_notes` ADD COLUMN `chapterNumber` INTEGER NOT NULL DEFAULT 0")
+        db.execSQL("ALTER TABLE `chapter_notes` ADD COLUMN `conceptName` TEXT")
+        db.execSQL("ALTER TABLE `chapter_notes` ADD COLUMN `remotePdfUrl` TEXT")
+        db.execSQL("ALTER TABLE `chapter_notes` ADD COLUMN `remotePdfUrlKn` TEXT")
+    }
+}

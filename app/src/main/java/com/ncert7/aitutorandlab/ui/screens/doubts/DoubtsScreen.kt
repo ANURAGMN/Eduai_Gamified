@@ -48,7 +48,6 @@ fun DoubtsBottomSheet(
                 .padding(horizontal = 16.dp)
                 .padding(bottom = 32.dp, top = 8.dp)
         ) {
-            // Reduced title size for better visual hierarchy
             Text("Ask AI a Doubt", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Text("From: $subjectName - $chapterName", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
@@ -61,7 +60,6 @@ fun DoubtsBottomSheet(
                 placeholder = {
                     Text(
                         "E.g., How do plants eat without mouths?",
-                        // Faded placeholder text
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
                     )
                 },
@@ -103,8 +101,8 @@ fun DoubtsBottomSheet(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = state.answer!!,
-                            style = MaterialTheme.typography.bodyLarge, // Increased text size
+                            text = cleanAiText(state.answer!!), // Apply the cleaning function here
+                            style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
@@ -119,7 +117,7 @@ fun DoubtsBottomSheet(
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Text(
-                        text = state.error!!,
+                        text = cleanAiText(state.error!!),
                         color = MaterialTheme.colorScheme.onErrorContainer,
                         style = MaterialTheme.typography.bodyLarge,
                         modifier = Modifier.padding(16.dp)
@@ -131,4 +129,21 @@ fun DoubtsBottomSheet(
             Spacer(modifier = Modifier.height(24.dp))
         }
     }
+}
+
+/**
+ * A lightweight helper function to strip raw Markdown and LaTeX symbols from the AI's response
+ * so it renders cleanly in a standard Compose Text field.
+ */
+private fun cleanAiText(input: String): String {
+    return input
+        .replace("**", "") // Remove bold markdown markers
+        .replace("`", "") // Remove code block backticks
+        .replace("$", "") // Remove LaTeX math delimiters
+        .replace(Regex("(?m)^###\\s*"), "") // Remove H3 headers
+        .replace(Regex("(?m)^##\\s*"), "") // Remove H2 headers
+        .replace(Regex("(?m)^#\\s*"), "") // Remove H1 headers
+        .replace(Regex("(?m)^\\*\\s"), "• ") // Convert markdown asterisks to proper bullet points
+        .replace(Regex("(?m)^-\\s"), "• ") // Convert markdown dashes to proper bullet points
+        .trim()
 }

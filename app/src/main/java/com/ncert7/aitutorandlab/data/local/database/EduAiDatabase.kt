@@ -86,7 +86,7 @@ import com.ncert7.aitutorandlab.data.local.dao.ChapterNoteDao
         GardenStateEntity::class,
         ChapterNoteEntity::class
     ],
-    version = 16,
+    version = 17,
     exportSchema = false
 )
 abstract class EduAiDatabase : RoomDatabase() {
@@ -141,7 +141,8 @@ abstract class EduAiDatabase : RoomDatabase() {
                         MIGRATION_12_13,
                         MIGRATION_13_14,
                         MIGRATION_14_15,
-                        MIGRATION_15_16
+                        MIGRATION_15_16,
+                        MIGRATION_16_17
                     )
                     .fallbackToDestructiveMigration(false)
                     .build()

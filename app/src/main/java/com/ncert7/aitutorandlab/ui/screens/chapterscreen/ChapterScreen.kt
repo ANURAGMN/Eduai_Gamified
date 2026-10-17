@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -23,6 +24,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.anurag.eduai.uikit.components.EduChapterPicker
 import com.anurag.eduai.uikit.components.EduChapterPickerItem
@@ -60,6 +62,9 @@ fun ChapterScreen(
 
     var selectedChapterId by remember { mutableStateOf("") }
 
+    // NEW: Manage bottom sheet state for Doubts
+    var showDoubtsSheet by remember { mutableStateOf(false) }
+
     LaunchedEffect(subjectId, currentLanguage) {
         viewModel.loadChapters(subjectId, currentLanguage)
     }
@@ -95,7 +100,7 @@ fun ChapterScreen(
             else -> {
                 val anyProgress = state.chapters.any { (it.progressUiModel?.completed ?: 0) > 0 }
 
-                // Wrap in a Column to add our new Whiteboard button at the bottom
+                // Wrap in a Column to add our new buttons at the bottom
                 Column(modifier = Modifier.fillMaxSize()) {
                     Box(modifier = Modifier.weight(1f)) {
                         EduChapterPicker(
@@ -161,6 +166,31 @@ fun ChapterScreen(
                         }
                     }
                     */
+
+                    // NEW: Ask AI a Doubt button docked below the chapter picker[cite: 30, 31]
+                    OutlinedButton(
+                        onClick = { showDoubtsSheet = true },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                            .padding(bottom = 16.dp, top = 8.dp)
+                            .height(56.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = BrandPrimary
+                        ),
+                        border = androidx.compose.foundation.BorderStroke(2.dp, BrandPrimary)
+                    ) {
+                        Text("Ask AI a Doubt", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    }
+                }
+
+                // NEW: Render the Doubts Sheet on top of the screen
+                if (showDoubtsSheet) {
+                    com.ncert7.aitutorandlab.ui.screens.doubts.DoubtsBottomSheet(
+                        subjectName = "Class 7 ${state.subjectName}",
+                        chapterName = "General Concepts",
+                        onDismiss = { showDoubtsSheet = false }
+                    )
                 }
             }
         }

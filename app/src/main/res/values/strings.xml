@@ -396,14 +396,4 @@
     <string name="no_pdf_available">No Kannada PDF available</string>
     <string name="science_notes">Science - Notes</string>
     <string name="math_notes">Math - Notes</string>
-
-    <!-- Mathematics PDFs -->
-    <string name="math_ch1_large_numbers_around_us_url">https://drive.google.com/uc?export=download&amp;id=1r5H77UpFD0kmmpsYaN0xSaInA2uH3eHL</string>
-    <string name="math_ch2_arithmetic_expressions_url">https://drive.google.com/uc?export=download&amp;id=1GOfjkxjylB4oIKpRM8Wq4D8rYInF0MJv</string>
-    <string name="math_ch3_a_peek_beyond_the_point_url">https://drive.google.com/uc?export=download&amp;id=1SmFWRmLLXPhIUtn_zQ6aWKLJra3JA0_O</string>
-
-    <!-- Science PDFs -->
-    <string name="science_ch2_acid_basic_neutral_url">https://drive.google.com/uc?export=download&amp;id=1h_tTs60HiG7rj0Muxa-_PS_bWV0CBlQl</string>
-    <string name="science_ch9_respiratory_system_url">https://drive.google.com/uc?export=download&amp;id=1VdVIkXeFpNY0mH_8ZaNI-LAqB-J1yOxy</string>
-    <string name="science_ch10_photosynthesis_url">https://drive.google.com/uc?export=download&amp;id=1k8wjXjoih4PP_VCjcM1-bEO8ZDHzpKfz</string>
 </resources>
