@@ -444,8 +444,8 @@ private fun BottomNavBarContent(
 
                                 var finalRoute = PlanTrialNavigation.buildDestination(item)
 
-                                // INTERCEPT ONLY SCIENCE (STUDY) ITEMS
-                                if (item.kind == PlanTrialItemKind.STUDY) {
+                                // INTERCEPT BOTH SCIENCE (STUDY) AND MATH (MATH) ITEMS
+                                if (item.kind == PlanTrialItemKind.STUDY || item.kind == PlanTrialItemKind.MATH) {
                                     val normalizeText: (String) -> String = { text ->
                                         text.trim().lowercase().replace(Regex("\\s+"), " ")
                                     }
@@ -697,8 +697,8 @@ private fun BottomNavBarContent(
 
                                 var finalRoute = PlanTrialNavigation.buildDestination(item)
 
-                                // INTERCEPT ONLY SCIENCE (STUDY) ITEMS
-                                if (item.kind == PlanTrialItemKind.STUDY) {
+                                // INTERCEPT BOTH SCIENCE (STUDY) AND MATH (MATH) ITEMS
+                                if (item.kind == PlanTrialItemKind.STUDY || item.kind == PlanTrialItemKind.MATH) {
                                     val normalizeText: (String) -> String = { text ->
                                         text.trim().lowercase().replace(Regex("\\s+"), " ")
                                     }

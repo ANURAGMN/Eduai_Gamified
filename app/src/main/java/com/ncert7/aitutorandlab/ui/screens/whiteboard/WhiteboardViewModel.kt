@@ -24,7 +24,7 @@ class WhiteboardViewModel @Inject constructor(
     private val _concepts = MutableStateFlow<List<WbConceptInfo>>(emptyList())
     val concepts = _concepts.asStateFlow()
 
-    private val _conceptTitle = MutableStateFlow("Science Tutor")
+    private val _conceptTitle = MutableStateFlow("Whiteboard Tutor")
     val conceptTitle = _conceptTitle.asStateFlow()
 
     private val _isLoading = MutableStateFlow(false)
