@@ -197,7 +197,8 @@ fun EduHomeScreen(
     onBookmarksSeeAll: () -> Unit = {},
     onBookmarkOpen: (BookmarkItem) -> Unit = {},
     onRevisionOpen: (RevisionItem) -> Unit = {},
-    onSubjectOpen: (SubjectTile) -> Unit = {},
+    onPracticeClick: (SubjectTile) -> Unit = {},
+    onNotesClick: (SubjectTile) -> Unit = {},
     subjectIconContent: @Composable (SubjectTile, Color) -> Unit = { subject, tint ->
         Icon(
             imageVector = subjectMaterialIcon(subject.name),
@@ -258,174 +259,175 @@ fun EduHomeScreen(
                     .padding(horizontal = 16.dp, vertical = 14.dp)
                     .padding(bottom = 48.dp),
         ) {
-        Box(Modifier.fillMaxWidth().onGloballyPositioned { railBounds = railBounds + (0 to it.boundsInRoot()) }) {
-        Entrance(delayMillis = 0) {
-            TopBarChips(
-                greeting = state.greeting,
-                userName = state.userName,
-                streak = state.streak,
-                gems = state.gems,
-                leagueName = state.leagueName,
-                leagueRank = state.leagueRank,
-                streakCaption = state.streakCaption,
-                gemsCaption = state.gemsCaption,
-                showFriendDot = showFriendDot,
-                showGemsDot = false,
-                showLeagueDot = false,
-                onProfileClick = onProfileClick,
-                onStreakClick = onStreakClick,
-                onGemsClick = onGemsClick,
-                onLeagueClick = onLeagueClick,
-            )
-        }
-        } // end rail-0 bounds
+            Box(Modifier.fillMaxWidth().onGloballyPositioned { railBounds = railBounds + (0 to it.boundsInRoot()) }) {
+                Entrance(delayMillis = 0) {
+                    TopBarChips(
+                        greeting = state.greeting,
+                        userName = state.userName,
+                        streak = state.streak,
+                        gems = state.gems,
+                        leagueName = state.leagueName,
+                        leagueRank = state.leagueRank,
+                        streakCaption = state.streakCaption,
+                        gemsCaption = state.gemsCaption,
+                        showFriendDot = showFriendDot,
+                        showGemsDot = false,
+                        showLeagueDot = false,
+                        onProfileClick = onProfileClick,
+                        onStreakClick = onStreakClick,
+                        onGemsClick = onGemsClick,
+                        onLeagueClick = onLeagueClick,
+                    )
+                }
+            } // end rail-0 bounds
 
-        // Tutor + today's focus in one compact strip (avatar · task · Start).
-        Box(Modifier.fillMaxWidth().onGloballyPositioned { railBounds = railBounds + (1 to it.boundsInRoot()) }) {
-            Entrance(delayMillis = 80) {
-                if (state.todayDone) {
-                    HomeFocusStrip(
-                        eyebrow = "",
-                        title = state.heroDoneTitle,
-                        subtitle = state.heroDoneSubtitle,
-                        buttonLabel = state.heroDoneButtonLabel,
-                        onStartClick = onStartToday,
-                        onTutorClick = onTutorClick,
-                        todayDone = true,
-                        xpEarned = state.heroXpEarned,
+            // Tutor + today's focus in one compact strip (avatar · task · Start).
+            Box(Modifier.fillMaxWidth().onGloballyPositioned { railBounds = railBounds + (1 to it.boundsInRoot()) }) {
+                Entrance(delayMillis = 80) {
+                    if (state.todayDone) {
+                        HomeFocusStrip(
+                            eyebrow = "",
+                            title = state.heroDoneTitle,
+                            subtitle = state.heroDoneSubtitle,
+                            buttonLabel = state.heroDoneButtonLabel,
+                            onStartClick = onStartToday,
+                            onTutorClick = onTutorClick,
+                            todayDone = true,
+                            xpEarned = state.heroXpEarned,
+                        )
+                    } else {
+                        HomeFocusStrip(
+                            eyebrow = state.heroEyebrow,
+                            title = state.heroTitle,
+                            subtitle = state.heroSubtitle.ifBlank { state.tutorMessage },
+                            buttonLabel = state.heroButtonLabel,
+                            onStartClick = onStartToday,
+                            onTutorClick = onTutorClick,
+                        )
+                    }
+                }
+            } // end rail-1 bounds (focus + tutor merged)
+
+            // Subjects sits above the garden so browsing by subject is the first thing after
+            // the focus strip.
+            Entrance(delayMillis = 150) {
+                SubjectsRail(
+                    title = state.subjectsSectionTitle,
+                    subjects = state.subjects,
+                    onPracticeClick = onPracticeClick,
+                    onNotesClick = onNotesClick,
+                    iconContent = subjectIconContent,
+                )
+            }
+
+            // Space / garden colony — above video lessons.
+            Box(Modifier.fillMaxWidth().onGloballyPositioned { railBounds = railBounds + (2 to it.boundsInRoot()) }) {
+                Entrance(delayMillis = 158) {
+                    when {
+                        state.garden != null ->
+                            GrowRail(
+                                state = state.garden,
+                                onOpenWorld = onOpenGarden,
+                                onRailClick = onGardenRailClick,
+                            )
+                        state.collectionShelf != null -> {
+                            val shelf = state.collectionShelf
+                            SectionHeader(
+                                title = shelf.sectionTitle,
+                                seeAllLabel = shelf.seeAllLabel,
+                                onSeeAllClick = onOpenGarden,
+                            )
+                            CollectionShelf(
+                                state = shelf,
+                                onOpenCollection = onOpenGarden,
+                            )
+                        }
+                        state.quests.simsTotal > 0 || state.quests.studyTotal > 0 ->
+                            QuestTrail(
+                                state = state.quests,
+                                onSeeAll = onQuestsSeeAll,
+                                onSimsClick = onSimsQuestClick,
+                                onStudyClick = onStudyQuestClick,
+                                onBonusClick = onBonusQuestClick,
+                                sectionTitle = state.questsSectionTitle,
+                                seeAllLabel = state.seeAllLabel,
+                            )
+                    }
+                }
+            } // end rail-2 bounds
+
+            // Video lessons (+ textbooks from the app slot) — below the colony.
+            Entrance(delayMillis = 165) {
+                belowSubjectsContent()
+            }
+
+            Entrance(delayMillis = 220) {
+                if (state.friendCount == 0 && state.friends.isEmpty()) {
+                    FriendsInviteRail(
+                        onAddFriend = onAddFriend,
+                        onInviteShare = onInviteShare,
+                        sectionTitle = state.friendsSectionTitle,
+                        addLabel = state.friendsAddLabel,
+                        addCardTitle = state.friendsAddCardTitle,
+                        addCardBody = state.friendsAddCardBody,
+                        inviteTitle = state.inviteFriendsTitle,
+                        inviteSubtitle = state.inviteFriendsSubtitle,
+                        shareLabel = state.shareLabel,
                     )
                 } else {
-                    HomeFocusStrip(
-                        eyebrow = state.heroEyebrow,
-                        title = state.heroTitle,
-                        subtitle = state.heroSubtitle.ifBlank { state.tutorMessage },
-                        buttonLabel = state.heroButtonLabel,
-                        onStartClick = onStartToday,
-                        onTutorClick = onTutorClick,
-                    )
-                }
-            }
-        } // end rail-1 bounds (focus + tutor merged)
-
-        // Subjects sits above the garden so browsing by subject is the first thing after
-        // the focus strip.
-        Entrance(delayMillis = 150) {
-            SubjectsRail(
-                title = state.subjectsSectionTitle,
-                subjects = state.subjects,
-                onOpen = onSubjectOpen,
-                iconContent = subjectIconContent,
-            )
-        }
-
-        // Space / garden colony — above video lessons.
-        Box(Modifier.fillMaxWidth().onGloballyPositioned { railBounds = railBounds + (2 to it.boundsInRoot()) }) {
-        Entrance(delayMillis = 158) {
-            when {
-                state.garden != null ->
-                    GrowRail(
-                        state = state.garden,
-                        onOpenWorld = onOpenGarden,
-                        onRailClick = onGardenRailClick,
-                    )
-                state.collectionShelf != null -> {
-                    val shelf = state.collectionShelf
-                    SectionHeader(
-                        title = shelf.sectionTitle,
-                        seeAllLabel = shelf.seeAllLabel,
-                        onSeeAllClick = onOpenGarden,
-                    )
-                    CollectionShelf(
-                        state = shelf,
-                        onOpenCollection = onOpenGarden,
-                    )
-                }
-                state.quests.simsTotal > 0 || state.quests.studyTotal > 0 ->
-                    QuestTrail(
-                        state = state.quests,
-                        onSeeAll = onQuestsSeeAll,
-                        onSimsClick = onSimsQuestClick,
-                        onStudyClick = onStudyQuestClick,
-                        onBonusClick = onBonusQuestClick,
-                        sectionTitle = state.questsSectionTitle,
+                    FriendsUpdatesRail(
+                        friends = state.friends,
+                        onSeeAll = onFriendsSeeAll,
+                        onCheer = onCheerFriend,
+                        sectionTitle = state.friendsSectionTitle,
                         seeAllLabel = state.seeAllLabel,
+                        acceptLabel = state.acceptLabel,
                     )
+                }
             }
-        }
-        } // end rail-2 bounds
 
-        // Video lessons (+ textbooks from the app slot) — below the colony.
-        Entrance(delayMillis = 165) {
-            belowSubjectsContent()
-        }
+            Box(Modifier.fillMaxWidth().onGloballyPositioned { railBounds = railBounds + (3 to it.boundsInRoot()) }) {
+                Entrance(delayMillis = 320) {
+                    PlanTrail(
+                        days = state.planDays,
+                        onSeeAll = onPlanSeeAll,
+                        onAddPlan = onPlanAdd,
+                        onDayClick = onPlanDayClick,
+                        sectionTitle = state.planSectionTitle,
+                        seeAllLabel = state.seeAllLabel,
+                        addPlanLabel = state.planAddLabel,
+                        emptyTitle = state.planEmptyTitle,
+                        emptyBody = state.planEmptyBody,
+                        todayLabel = state.planTodayLabel,
+                        dayLabelFor = { day -> "${state.planDayPrefix}$day" },
+                        growHint = state.planGrowHint,
+                    )
+                }
+            } // end rail-3 bounds
 
-        Entrance(delayMillis = 220) {
-            if (state.friendCount == 0 && state.friends.isEmpty()) {
-                FriendsInviteRail(
-                    onAddFriend = onAddFriend,
-                    onInviteShare = onInviteShare,
-                    sectionTitle = state.friendsSectionTitle,
-                    addLabel = state.friendsAddLabel,
-                    addCardTitle = state.friendsAddCardTitle,
-                    addCardBody = state.friendsAddCardBody,
-                    inviteTitle = state.inviteFriendsTitle,
-                    inviteSubtitle = state.inviteFriendsSubtitle,
-                    shareLabel = state.shareLabel,
-                )
-            } else {
-                FriendsUpdatesRail(
-                    friends = state.friends,
-                    onSeeAll = onFriendsSeeAll,
-                    onCheer = onCheerFriend,
-                    sectionTitle = state.friendsSectionTitle,
-                    seeAllLabel = state.seeAllLabel,
-                    acceptLabel = state.acceptLabel,
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Entrance(delayMillis = 480) {
+                RevisionRail(
+                    items = state.revision,
+                    onOpen = onRevisionOpen,
+                    sectionTitle = state.revisionSectionTitle,
+                    scoreLabelFor = { score ->
+                        state.revisionLastQuizTemplate.replace("%d", score.toString())
+                    },
                 )
             }
-        }
 
-        Box(Modifier.fillMaxWidth().onGloballyPositioned { railBounds = railBounds + (3 to it.boundsInRoot()) }) {
-        Entrance(delayMillis = 320) {
-            PlanTrail(
-                days = state.planDays,
-                onSeeAll = onPlanSeeAll,
-                onAddPlan = onPlanAdd,
-                onDayClick = onPlanDayClick,
-                sectionTitle = state.planSectionTitle,
-                seeAllLabel = state.seeAllLabel,
-                addPlanLabel = state.planAddLabel,
-                emptyTitle = state.planEmptyTitle,
-                emptyBody = state.planEmptyBody,
-                todayLabel = state.planTodayLabel,
-                dayLabelFor = { day -> "${state.planDayPrefix} $day" },
-                growHint = state.planGrowHint,
-            )
-        }
-        } // end rail-3 bounds
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Entrance(delayMillis = 480) {
-            RevisionRail(
-                items = state.revision,
-                onOpen = onRevisionOpen,
-                sectionTitle = state.revisionSectionTitle,
-                scoreLabelFor = { score ->
-                    state.revisionLastQuizTemplate.replace("%d", score.toString())
-                },
-            )
-        }
-
-        // Bookmarks.
-        Entrance(delayMillis = 640) {
-            BookmarksRail(
-                bookmarks = state.bookmarks,
-                onSeeAll = onBookmarksSeeAll,
-                onOpen = onBookmarkOpen,
-                sectionTitle = state.bookmarksSectionTitle,
-                seeAllLabel = "${state.seeAllLabel} (${state.bookmarks.size})",
-            )
-        }
+            // Bookmarks.
+            Entrance(delayMillis = 640) {
+                BookmarksRail(
+                    bookmarks = state.bookmarks,
+                    onSeeAll = onBookmarksSeeAll,
+                    onOpen = onBookmarkOpen,
+                    sectionTitle = state.bookmarksSectionTitle,
+                    seeAllLabel = "${state.seeAllLabel} (${state.bookmarks.size})",
+                )
+            }
         } // end scrolling Column
 
         if (showIntroTour && coachStep < homeTourSteps.size) {
@@ -467,4 +469,3 @@ private val homeTourSteps =
             "Every task you finish plants something new here. Come back daily and watch it fill in.",
         ),
     )
-

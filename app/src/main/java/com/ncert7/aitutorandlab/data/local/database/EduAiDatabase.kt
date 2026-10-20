@@ -50,6 +50,8 @@ import com.ncert7.aitutorandlab.data.local.entities.StreakEntity
 import com.ncert7.aitutorandlab.data.local.entities.StudentEntity
 import com.ncert7.aitutorandlab.data.local.entities.SubjectEntity
 import com.ncert7.aitutorandlab.data.local.entities.TutorConfigEntity
+import com.ncert7.aitutorandlab.data.local.entities.ChapterNoteEntity
+import com.ncert7.aitutorandlab.data.local.dao.ChapterNoteDao
 
 /**
  * Main Room Database for EduAi App
@@ -82,8 +84,9 @@ import com.ncert7.aitutorandlab.data.local.entities.TutorConfigEntity
         NotificationBudgetEntity::class,
         GrownItemEntity::class,
         GardenStateEntity::class,
+        ChapterNoteEntity::class
     ],
-    version = 15,
+    version = 17,
     exportSchema = false
 )
 abstract class EduAiDatabase : RoomDatabase() {
@@ -108,6 +111,7 @@ abstract class EduAiDatabase : RoomDatabase() {
     abstract fun notificationLogDao(): NotificationLogDao
     abstract fun notificationBudgetDao(): NotificationBudgetDao
     abstract fun gardenDao(): GardenDao
+    abstract fun chapterNoteDao(): ChapterNoteDao
 
     companion object {
         @Volatile
@@ -137,6 +141,8 @@ abstract class EduAiDatabase : RoomDatabase() {
                         MIGRATION_12_13,
                         MIGRATION_13_14,
                         MIGRATION_14_15,
+                        MIGRATION_15_16,
+                        MIGRATION_16_17
                     )
                     .fallbackToDestructiveMigration(false)
                     .build()

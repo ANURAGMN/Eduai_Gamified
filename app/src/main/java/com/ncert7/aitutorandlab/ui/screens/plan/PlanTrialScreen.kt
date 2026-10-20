@@ -22,6 +22,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.foundation.clickable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
@@ -83,7 +84,9 @@ fun PlanTrialScreen(
     val exitHook by viewModel.exitHook.collectAsState()
     val moment by viewModel.moment.collectAsState()
     val gardenPlacePicker by viewModel.gardenPlacePicker.collectAsState()
+
     var pathView by rememberSaveable { mutableStateOf(true) }
+    var showDoubtsSheet by remember { mutableStateOf(false) } // NEW: Doubts sheet state
 
     LifecycleResumeEffect(Unit) {
         viewModel.onTrialScreenVisible()
@@ -129,7 +132,7 @@ fun PlanTrialScreen(
                         planDay?.let { day ->
                             TrialCopy.trialDayTitle(languageCode, day.dayIndex, planDayTitle)
                         } ?: planDayTitle?.takeIf { it.isNotBlank() }
-                            ?: TrialCopy.trialScreenTitle(languageCode),
+                        ?: TrialCopy.trialScreenTitle(languageCode),
                     showBack = true,
                     onBack = { viewModel.requestExit(onNavigateBack) },
                 )
@@ -190,6 +193,7 @@ fun PlanTrialScreen(
                                         ).show()
                                     },
                                     modifier = Modifier.fillMaxSize(),
+                                    onAskDoubtClick = { showDoubtsSheet = true } // NEW: Open sheet
                                 )
                             } else {
                                 PlanTrialStacked(
@@ -201,6 +205,7 @@ fun PlanTrialScreen(
                                         }
                                     },
                                     modifier = Modifier.fillMaxSize(),
+                                    onAskDoubtClick = { showDoubtsSheet = true } // NEW: Open sheet
                                 )
                             }
                         }
@@ -267,6 +272,15 @@ fun PlanTrialScreen(
             onConfirm = { zoneIndex -> viewModel.confirmGardenPlacePicker(zoneIndex) },
             onDismiss = { viewModel.dismissGardenPlacePicker() },
         )
+
+        // NEW: Render the Doubts Sheet on top of the trial screen
+        if (showDoubtsSheet) {
+            com.ncert7.aitutorandlab.ui.screens.doubts.DoubtsBottomSheet(
+                subjectName = "Learning Plan",
+                chapterName = planDayTitle ?: "Current Topic",
+                onDismiss = { showDoubtsSheet = false }
+            )
+        }
     }
 }
 
@@ -280,43 +294,43 @@ private fun buildTrialChapters(items: List<PlanTrialItemUi>): List<TrialPathChap
     val chapterOrder = items.map { it.chapterId }.distinct()
     return chapterOrder.map { chapterId ->
         val chapterItems = items.filter { it.chapterId == chapterId }
-            val chapterTitle =
-                chapterItems.first().title.substringBefore(" · ").trim().ifBlank { "Chapter" }
-            TrialPathChapter(
-                title = chapterTitle,
-                nodes =
-                    chapterItems.map { item ->
-                        val type =
-                            when (item.kind) {
-                                PlanTrialItemKind.SIM_URL -> TrialNodeType.Simulation
-                                PlanTrialItemKind.SIM_AGENT -> TrialNodeType.SimAgent
-                                PlanTrialItemKind.STUDY -> TrialNodeType.Study
-                                PlanTrialItemKind.MATH -> TrialNodeType.Math
-                                PlanTrialItemKind.REVISION -> TrialNodeType.Revision
-                                else -> TrialNodeType.Study
-                            }
-                        val state =
-                            when {
-                                item.status == PlanTrialItemStatus.DONE -> TrialNodeState.Done
-                                item.id == activeId -> TrialNodeState.Active
-                                else -> TrialNodeState.Upcoming
-                            }
-                        val concept = item.title.substringAfterLast(" · ").trim()
-                        val progress =
-                            if (item.requiredCount > 0) {
-                                item.completedCount.toFloat() / item.requiredCount
-                            } else {
-                                0f
-                            }
-                        TrialPathNode(
-                            id = item.id,
-                            type = type,
-                            state = state,
-                            title = concept.ifBlank { item.title },
-                            progress = progress,
-                        )
-                    },
-            )
+        val chapterTitle =
+            chapterItems.first().title.substringBefore(" · ").trim().ifBlank { "Chapter" }
+        TrialPathChapter(
+            title = chapterTitle,
+            nodes =
+                chapterItems.map { item ->
+                    val type =
+                        when (item.kind) {
+                            PlanTrialItemKind.SIM_URL -> TrialNodeType.Simulation
+                            PlanTrialItemKind.SIM_AGENT -> TrialNodeType.SimAgent
+                            PlanTrialItemKind.STUDY -> TrialNodeType.Study
+                            PlanTrialItemKind.MATH -> TrialNodeType.Math
+                            PlanTrialItemKind.REVISION -> TrialNodeType.Revision
+                            else -> TrialNodeType.Study
+                        }
+                    val state =
+                        when {
+                            item.status == PlanTrialItemStatus.DONE -> TrialNodeState.Done
+                            item.id == activeId -> TrialNodeState.Active
+                            else -> TrialNodeState.Upcoming
+                        }
+                    val concept = item.title.substringAfterLast(" · ").trim()
+                    val progress =
+                        if (item.requiredCount > 0) {
+                            item.completedCount.toFloat() / item.requiredCount
+                        } else {
+                            0f
+                        }
+                    TrialPathNode(
+                        id = item.id,
+                        type = type,
+                        state = state,
+                        title = concept.ifBlank { item.title },
+                        progress = progress,
+                    )
+                },
+        )
     }
 }
 

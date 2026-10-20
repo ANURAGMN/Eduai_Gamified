@@ -3,7 +3,11 @@ package com.ncert7.aitutorandlab.ui.navigation
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import kotlinx.coroutines.launch
 import androidx.navigation.NavType
@@ -11,6 +15,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.ncert7.aitutorandlab.data.local.entities.PlanTrialItemKind
 import com.ncert7.aitutorandlab.debug.DebugLogger
 import com.ncert7.aitutorandlab.service.analytics.ContentClickNavigation
 import com.ncert7.aitutorandlab.service.analytics.SimulationAnalyticsTracker
@@ -29,6 +34,9 @@ import com.ncert7.aitutorandlab.ui.screens.simulation_agent.SimulationAgentScree
 import com.ncert7.aitutorandlab.ui.screens.subjectscreen.SubjectScreen
 import com.ncert7.aitutorandlab.ui.screens.textbook.TextbookWebScreen
 import com.ncert7.aitutorandlab.ui.screens.textbook.TextbooksScreen
+import com.ncert7.aitutorandlab.ui.screens.whiteboard.WhiteboardConceptsScreen
+import com.ncert7.aitutorandlab.ui.screens.whiteboard.WhiteboardChatbotScreen
+import com.ncert7.aitutorandlab.ui.screens.whiteboard.WhiteboardViewModel
 
 object LearningRoutes {
     const val HOME = "home"
@@ -40,6 +48,10 @@ object LearningRoutes {
     const val SIMULATION_AGENT = "simulation_agent/{simulationId}?conceptId={conceptId}"
     const val CONCEPT_SIM_VIEW = "concept_sim_view/{url}/{title}/{conceptId}/{subjectName}/{chapterName}"
     const val REVISION = "revision/{chapterId}"
+    const val NOTES = "notes/{subjectId}"
+
+    const val WHITEBOARD_CONCEPTS = "whiteboard_concepts"
+    const val WHITEBOARD_CHATBOT = "whiteboard_chatbot?conceptId={conceptId}"
 }
 
 @Composable
@@ -97,7 +109,6 @@ fun LearningNavigator(
                             },
                             navigate = {
                                 val encodedUrl = java.net.URLEncoder.encode(url, "UTF-8")
-                                // Titles with `?` (e.g. "Are They Equal?") break unencoded path routes.
                                 val encodedTitle = java.net.URLEncoder.encode(
                                     title.replace("/", "-"),
                                     "UTF-8",
@@ -135,6 +146,7 @@ fun LearningNavigator(
                 ChapterScreen(
                     subjectId = subjectId,
                     onBackClick = { navController.popBackStack() },
+                    onOpenWhiteboard = { navController.navigate(LearningRoutes.WHITEBOARD_CONCEPTS) },
                     onOpenChapterTrial = { chapterId ->
                         gated.run(
                             trackClick = { ContentClickNavigation.trackChapterListClick(chapterId, "TRIAL") },
@@ -149,11 +161,21 @@ fun LearningNavigator(
                     },
                 )
             }
+
             composable(
                 route = "chapter_trial/{chapterId}",
                 arguments = listOf(navArgument("chapterId") { type = NavType.StringType }),
             ) {
                 val scope = rememberCoroutineScope()
+
+                // Inject the WhiteboardViewModel and load its concepts silently
+                val wbViewModel: WhiteboardViewModel = hiltViewModel()
+                val wbConcepts by wbViewModel.concepts.collectAsState()
+
+                LaunchedEffect(Unit) {
+                    wbViewModel.fetchConcepts()
+                }
+
                 PlanTrialScreen(
                     onNavigateBack = { navController.popBackStack() },
                     onItemClick = { item ->
@@ -163,7 +185,31 @@ fun LearningNavigator(
                                 kind = item.kind,
                             )
                         }
-                        PlanTrialNavigation.buildDestination(item)?.let { route ->
+
+                        var finalRoute = PlanTrialNavigation.buildDestination(item)
+
+                        // INTERCEPT BOTH SCIENCE (STUDY) AND MATH (MATH) ITEMS
+                        if (item.kind == PlanTrialItemKind.STUDY || item.kind == PlanTrialItemKind.MATH) {
+                            val normalizeText: (String) -> String = { text ->
+                                text.trim().lowercase().replace(Regex("\\s+"), " ")
+                            }
+
+                            // Strip "Chapter X · " prefix exactly like the Trial UI does
+                            val rawTitle = item.title.substringAfterLast(" · ")
+                            val normalizedItemTitle = normalizeText(rawTitle)
+
+                            // Match the clean title against the Whiteboard API titles
+                            val matchedWb = wbConcepts.find { wbConcept ->
+                                normalizeText(wbConcept.title) == normalizedItemTitle
+                            }
+
+                            if (matchedWb != null) {
+                                // Reroute to the Whiteboard Chatbot using whatever complex ID the API provided
+                                finalRoute = "whiteboard_chatbot?conceptId=${matchedWb.conceptId}"
+                            }
+                        }
+
+                        finalRoute?.let { route ->
                             navController.navigate(route)
                         }
                     },
@@ -195,7 +241,6 @@ fun LearningNavigator(
                     },
                     onSimulationClick = { title, url, conceptId, subjectName, chapterName ->
                         val encodedUrl = java.net.URLEncoder.encode(url, "UTF-8")
-                        // Titles with `?` (e.g. "Are They Equal?") break unencoded path routes.
                         val encodedTitle = java.net.URLEncoder.encode(
                             title.replace("/", "-"),
                             "UTF-8",
@@ -333,6 +378,35 @@ fun LearningNavigator(
                     url = url,
                     title = title,
                     onBack = { navController.popBackStack() },
+                )
+            }
+
+            composable(LearningRoutes.WHITEBOARD_CONCEPTS) {
+                WhiteboardConceptsScreen(
+                    onBackClick = { navController.popBackStack() },
+                    onConceptClick = { conceptId ->
+                        navController.navigate("whiteboard_chatbot?conceptId=$conceptId")
+                    }
+                )
+            }
+
+            composable(
+                route = LearningRoutes.WHITEBOARD_CHATBOT,
+                arguments = listOf(navArgument("conceptId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val conceptId = backStackEntry.arguments?.getString("conceptId") ?: ""
+                WhiteboardChatbotScreen(
+                    conceptId = conceptId,
+                    onBackClick = { navController.popBackStack() }
+                )
+            }
+
+            composable(LearningRoutes.NOTES) { backStackEntry ->
+                val subjectId = backStackEntry.arguments?.getString("subjectId") ?: return@composable
+                val subjectName = if (subjectId == "MATH") "Math - Notes" else "Science - Notes"
+                com.ncert7.aitutorandlab.ui.screens.notes.NotesScreen(
+                    subjectName = subjectName,
+                    onBackClick = { navController.popBackStack() }
                 )
             }
         }

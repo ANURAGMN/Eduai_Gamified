@@ -107,6 +107,7 @@ private fun rememberGamifiedTimeBasedGreeting(): String {
 @Composable
 fun GamifiedHomeRoute(
     gated: GatedNavigationAction,
+    onNavigateToNotes: (String) -> Unit,
     onNavigateToLearning: () -> Unit,
     onNavigateToChapters: (String) -> Unit,
     onNavigateToSettings: () -> Unit,
@@ -428,260 +429,267 @@ fun GamifiedHomeRoute(
         )
 
         Box(modifier = Modifier.fillMaxSize()) {
-        // When Reels is on, Home taps go to the nocookie Reels player route (passed by parent).
-        // Legacy dialog stays for the flag-off path.
-        if (!ReelsFeatureFlags.isReelsEnabled()) {
-            selectedYoutubeVideo?.let { video ->
-                val startIndex =
-                    youtubeItems.indexOfFirst { it.videoId == video.videoId }.coerceAtLeast(0)
-                YoutubePlayerDialog(
-                    videos = youtubeItems.ifEmpty { listOf(video) },
-                    startIndex = startIndex,
-                    languageCode = currentLanguage,
-                    onDismiss = { selectedYoutubeVideo = null },
-                )
+            // When Reels is on, Home taps go to the nocookie Reels player route (passed by parent).
+            // Legacy dialog stays for the flag-off path.
+            if (!ReelsFeatureFlags.isReelsEnabled()) {
+                selectedYoutubeVideo?.let { video ->
+                    val startIndex =
+                        youtubeItems.indexOfFirst { it.videoId == video.videoId }.coerceAtLeast(0)
+                    YoutubePlayerDialog(
+                        videos = youtubeItems.ifEmpty { listOf(video) },
+                        startIndex = startIndex,
+                        languageCode = currentLanguage,
+                        onDismiss = { selectedYoutubeVideo = null },
+                    )
+                }
             }
-        }
-        if (student == null && !studentLoaded) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-            }
-        } else {
-            EduHomeScreen(
-                state = homeState,
-                showIntroTour = showIntroTour,
-                onIntroTourFinished = onIntroTourFinished,
-                onTourStep = { step ->
-                    if (step == 0) EngagementAnalyticsTracker.homeTourStart()
-                    EngagementAnalyticsTracker.homeTourStep(step)
-                },
-                onProfileClick = onNavigateToSettings,
-                onStreakClick = onNavigateToProgress,
-                onGemsClick = { showGemsInfoDialog = true },
-                onLeagueClick = {
-                    viewModel.refreshHomeLeagueRank()
-                    onNavigateToLeagues()
-                },
-                showFriendDot = unseenFriendFeed > 0,
-                onFriendsSeeAll = {
-                    viewModel.markFriendFeedSeen()
-                    onNavigateToFriends()
-                },
-                onAddFriend = {
-                    viewModel.markFriendFeedSeen()
-                    onNavigateToFriends()
-                },
-                onInviteShare = {
-                    scope.launch {
-                        val code = viewModel.getMyFriendCode().ifBlank {
-                            gamificationProfile?.friendCode.orEmpty()
+            if (student == null && !studentLoaded) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            } else {
+                EduHomeScreen(
+                    state = homeState,
+                    showIntroTour = showIntroTour,
+                    onIntroTourFinished = onIntroTourFinished,
+                    onTourStep = { step ->
+                        if (step == 0) EngagementAnalyticsTracker.homeTourStart()
+                        EngagementAnalyticsTracker.homeTourStep(step)
+                    },
+                    onProfileClick = onNavigateToSettings,
+                    onStreakClick = onNavigateToProgress,
+                    onGemsClick = { showGemsInfoDialog = true },
+                    onLeagueClick = {
+                        viewModel.refreshHomeLeagueRank()
+                        onNavigateToLeagues()
+                    },
+                    showFriendDot = unseenFriendFeed > 0,
+                    onFriendsSeeAll = {
+                        viewModel.markFriendFeedSeen()
+                        onNavigateToFriends()
+                    },
+                    onAddFriend = {
+                        viewModel.markFriendFeedSeen()
+                        onNavigateToFriends()
+                    },
+                    onInviteShare = {
+                        scope.launch {
+                            val code = viewModel.getMyFriendCode().ifBlank {
+                                gamificationProfile?.friendCode.orEmpty()
+                            }
+                            if (code.isBlank()) {
+                                snackbarHostState.showSnackbar("Friend code not ready yet.")
+                            } else {
+                                GamificationAnalyticsTracker.inviteSent(InviteChannel.SHARE_SHEET)
+                                shareFriendCodeFromHome(code)
+                            }
                         }
-                        if (code.isBlank()) {
-                            snackbarHostState.showSnackbar("Friend code not ready yet.")
-                        } else {
-                            GamificationAnalyticsTracker.inviteSent(InviteChannel.SHARE_SHEET)
-                            shareFriendCodeFromHome(code)
+                    },
+                    onCheerFriend = { index -> viewModel.cheerFriendAtIndex(index) },
+                    onStartToday = navigateTodayTrial,
+                    onQuestsSeeAll = onNavigateToQuests,
+                    onOpenGarden = {
+                        viewModel.acknowledgeGardenStarterHighlight()
+                        AvatarTabNavigation.openScene()
+                        onNavigateToAvatar()
+                    },
+                    onGardenRailClick = {
+                        viewModel.acknowledgeGardenStarterHighlight()
+                        AvatarTabNavigation.openScene()
+                        onNavigateToAvatar()
+                    },
+                    onSimsQuestClick = {
+                        TrialQuestClickActions.handleSimsClick(
+                            quest = todayQuest,
+                            focus = focus,
+                            todayPlanDay = todayPlanDay,
+                            onClaim = { pendingQuestClaim = QuestClaimType.SIMS },
+                            onNavigateToRoute = onNavigateToRoute,
+                            onNavigateToTrial = onNavigateToTrial,
+                            onLegacyClick = {
+                                val simulationId = focus.simulationId
+                                val conceptId = focus.simulationConceptId
+                                if (simulationId != null && conceptId != null) {
+                                    gated.run(
+                                        trackClick = {
+                                            SimulationAnalyticsTracker.trackSimulationClickAndWait(
+                                                conceptId = conceptId,
+                                                interaction = SimulationInteraction.AGENT,
+                                                source = SimulationSource.HOME,
+                                            )
+                                        },
+                                        navigate = { onSimulationClick(simulationId, conceptId) },
+                                    )
+                                } else {
+                                    onNavigateToChapters(selectedSubjectId)
+                                }
+                            },
+                        )
+                    },
+                    onStudyQuestClick = {
+                        TrialQuestClickActions.handleStudyClick(
+                            quest = todayQuest,
+                            focus = focus,
+                            todayPlanDay = todayPlanDay,
+                            onClaim = { pendingQuestClaim = QuestClaimType.STUDY },
+                            onNavigateToRoute = onNavigateToRoute,
+                            onNavigateToTrial = onNavigateToTrial,
+                            onLegacyClick = {
+                                PlanDayActions.navigateForTodayPlanDay(
+                                    todayPlanDay = todayPlanDay,
+                                    planDays = planDays,
+                                    gated = gated,
+                                    selectedSubjectId = selectedSubjectId,
+                                    scope = scope,
+                                    resolveChapterId = resolveChapterId,
+                                    onNavigateToPlan = onNavigateToPlan,
+                                    onNavigateToChapters = onNavigateToChapters,
+                                    onNavigateToRevision = onNavigateToRevision,
+                                    onLessonClick = onLessonClick,
+                                    fallbackConceptId = focus.conceptId,
+                                    onNavigateToTrial = onNavigateToTrial,
+                                    focus = focus,
+                                    onNavigateToRoute = onNavigateToRoute,
+                                )
+                            },
+                        )
+                    },
+                    onBonusQuestClick = {
+                        val quest = todayQuest
+                        when {
+                            quest != null &&
+                                    quest.simsTotal > 0 &&
+                                    quest.studyTotal > 0 &&
+                                    quest.simsDone >= quest.simsTotal &&
+                                    quest.studyDone >= quest.studyTotal &&
+                                    !quest.bonusClaimed -> {
+                                pendingQuestClaim = QuestClaimType.BONUS
+                            }
+                            quest?.bonusClaimed == true -> {
+                                scope.launch {
+                                    snackbarHostState.showSnackbar("Bonus already claimed today.")
+                                }
+                            }
+                            else -> {
+                                scope.launch {
+                                    snackbarHostState.showSnackbar(
+                                        "Complete both daily quests (sims + plan task) to unlock the bonus.",
+                                    )
+                                }
+                            }
                         }
-                    }
-                },
-                onCheerFriend = { index -> viewModel.cheerFriendAtIndex(index) },
-                onStartToday = navigateTodayTrial,
-                onQuestsSeeAll = onNavigateToQuests,
-                onOpenGarden = {
-                    viewModel.acknowledgeGardenStarterHighlight()
-                    AvatarTabNavigation.openScene()
-                    onNavigateToAvatar()
-                },
-                onGardenRailClick = {
-                    viewModel.acknowledgeGardenStarterHighlight()
-                    AvatarTabNavigation.openScene()
-                    onNavigateToAvatar()
-                },
-                onSimsQuestClick = {
-                    TrialQuestClickActions.handleSimsClick(
-                        quest = todayQuest,
-                        focus = focus,
-                        todayPlanDay = todayPlanDay,
-                        onClaim = { pendingQuestClaim = QuestClaimType.SIMS },
-                        onNavigateToRoute = onNavigateToRoute,
-                        onNavigateToTrial = onNavigateToTrial,
-                        onLegacyClick = {
-                            val simulationId = focus.simulationId
-                            val conceptId = focus.simulationConceptId
-                            if (simulationId != null && conceptId != null) {
+                    },
+                    onPlanSeeAll = onNavigateToPlan,
+                    onPlanAdd = {
+                        viewModel.requestOpenPlanSetup()
+                        onNavigateToPlan()
+                    },
+                    onPlanDayClick = navigatePlanDay,
+                    onTutorClick = navigateTodayTrial,
+                    onBookmarksSeeAll = onNavigateToLearning,
+                    onBookmarkOpen = { item ->
+                        when {
+                            item.isPlaceholder -> onNavigateToLearning()
+                            item.simulationId.isNotBlank() && item.conceptId.isNotBlank() -> {
                                 gated.run(
                                     trackClick = {
                                         SimulationAnalyticsTracker.trackSimulationClickAndWait(
-                                            conceptId = conceptId,
+                                            conceptId = item.conceptId,
                                             interaction = SimulationInteraction.AGENT,
                                             source = SimulationSource.HOME,
                                         )
                                     },
-                                    navigate = { onSimulationClick(simulationId, conceptId) },
-                                )
-                            } else {
-                                onNavigateToChapters(selectedSubjectId)
-                            }
-                        },
-                    )
-                },
-                onStudyQuestClick = {
-                    TrialQuestClickActions.handleStudyClick(
-                        quest = todayQuest,
-                        focus = focus,
-                        todayPlanDay = todayPlanDay,
-                        onClaim = { pendingQuestClaim = QuestClaimType.STUDY },
-                        onNavigateToRoute = onNavigateToRoute,
-                        onNavigateToTrial = onNavigateToTrial,
-                        onLegacyClick = {
-                            PlanDayActions.navigateForTodayPlanDay(
-                                todayPlanDay = todayPlanDay,
-                                planDays = planDays,
-                                gated = gated,
-                                selectedSubjectId = selectedSubjectId,
-                                scope = scope,
-                                resolveChapterId = resolveChapterId,
-                                onNavigateToPlan = onNavigateToPlan,
-                                onNavigateToChapters = onNavigateToChapters,
-                                onNavigateToRevision = onNavigateToRevision,
-                                onLessonClick = onLessonClick,
-                                fallbackConceptId = focus.conceptId,
-                                onNavigateToTrial = onNavigateToTrial,
-                                focus = focus,
-                                onNavigateToRoute = onNavigateToRoute,
-                            )
-                        },
-                    )
-                },
-                onBonusQuestClick = {
-                    val quest = todayQuest
-                    when {
-                        quest != null &&
-                            quest.simsTotal > 0 &&
-                            quest.studyTotal > 0 &&
-                            quest.simsDone >= quest.simsTotal &&
-                            quest.studyDone >= quest.studyTotal &&
-                            !quest.bonusClaimed -> {
-                            pendingQuestClaim = QuestClaimType.BONUS
-                        }
-                        quest?.bonusClaimed == true -> {
-                            scope.launch {
-                                snackbarHostState.showSnackbar("Bonus already claimed today.")
-                            }
-                        }
-                        else -> {
-                            scope.launch {
-                                snackbarHostState.showSnackbar(
-                                    "Complete both daily quests (sims + plan task) to unlock the bonus.",
+                                    navigate = { onSimulationClick(item.simulationId, item.conceptId) },
                                 )
                             }
-                        }
-                    }
-                },
-                onPlanSeeAll = onNavigateToPlan,
-                onPlanAdd = {
-                    viewModel.requestOpenPlanSetup()
-                    onNavigateToPlan()
-                },
-                onPlanDayClick = navigatePlanDay,
-                onTutorClick = navigateTodayTrial,
-                onBookmarksSeeAll = onNavigateToLearning,
-                onBookmarkOpen = { item ->
-                    when {
-                        item.isPlaceholder -> onNavigateToLearning()
-                        item.simulationId.isNotBlank() && item.conceptId.isNotBlank() -> {
-                            gated.run(
-                                trackClick = {
-                                    SimulationAnalyticsTracker.trackSimulationClickAndWait(
-                                        conceptId = item.conceptId,
-                                        interaction = SimulationInteraction.AGENT,
-                                        source = SimulationSource.HOME,
-                                    )
-                                },
-                                navigate = { onSimulationClick(item.simulationId, item.conceptId) },
-                            )
-                        }
-                        item.conceptId.isNotBlank() -> {
-                            gated.run(
-                                trackClick = { ContentClickNavigation.trackHomeLessonClick(item.conceptId) },
-                                navigate = { onLessonClick(item.conceptId) },
-                            )
-                        }
-                        else -> onNavigateToLearning()
-                    }
-                },
-                onRevisionOpen = { item ->
-                    if (item.chapterId.isNotBlank()) {
-                        gated.run(
-                            trackClick = { ContentClickNavigation.trackRevisionClick(item.chapterId) },
-                            navigate = { onNavigateToRevision(item.chapterId) },
-                        )
-                    } else if (item.conceptId.isNotBlank()) {
-                        scope.launch {
-                            val chapterId = resolveChapterId(item.conceptId)
-                            if (chapterId != null) {
+                            item.conceptId.isNotBlank() -> {
                                 gated.run(
-                                    trackClick = { ContentClickNavigation.trackRevisionClick(chapterId) },
-                                    navigate = { onNavigateToRevision(chapterId) },
+                                    trackClick = { ContentClickNavigation.trackHomeLessonClick(item.conceptId) },
+                                    navigate = { onLessonClick(item.conceptId) },
                                 )
-                            } else {
-                                onNavigateToChapters(selectedSubjectId)
                             }
+                            else -> onNavigateToLearning()
                         }
-                    } else {
-                        onNavigateToChapters(selectedSubjectId)
-                    }
-                },
-                onSubjectOpen = { subject ->
-                    val subjectId = subject.subjectId
-                    if (subjectId.isBlank()) {
-                        onNavigateToLearning()
-                        return@EduHomeScreen
-                    }
-                    gated.run(
-                        trackClick = { ContentClickNavigation.trackSubjectClick(subjectId) },
-                        navigate = {
-                            sharedPreferenceUtils.setSubjectSelectionId(subjectId)
-                            viewModel.refreshSelectedSubjectName()
-                            viewModel.refreshExamPlanStatuses()
-                            onNavigateToChapters(subjectId)
-                        },
-                    )
-                },
-                subjectIconContent = { subject, tint ->
-                    SubjectRailIcon(subject = subject, tint = tint)
-                },
-                belowSubjectsContent = {
-                    Column {
-                        YoutubeVideosSection(
-                            title = HomeCopy.youtubeSectionTitle(currentLanguage),
-                            videos = youtubeItems,
-                            onVideoClick = { video ->
-                                if (ReelsFeatureFlags.isReelsEnabled()) {
-                                    onNavigateToRoute("reels_player/${video.videoId}")
+                    },
+                    onRevisionOpen = { item ->
+                        if (item.chapterId.isNotBlank()) {
+                            gated.run(
+                                trackClick = { ContentClickNavigation.trackRevisionClick(item.chapterId) },
+                                navigate = { onNavigateToRevision(item.chapterId) },
+                            )
+                        } else if (item.conceptId.isNotBlank()) {
+                            scope.launch {
+                                val chapterId = resolveChapterId(item.conceptId)
+                                if (chapterId != null) {
+                                    gated.run(
+                                        trackClick = { ContentClickNavigation.trackRevisionClick(chapterId) },
+                                        navigate = { onNavigateToRevision(chapterId) },
+                                    )
                                 } else {
-                                    selectedYoutubeVideo = video
+                                    onNavigateToChapters(selectedSubjectId)
                                 }
-                            },
-                            seeAllLabel =
-                                if (ReelsFeatureFlags.isReelsEnabled()) {
-                                    ReelsCopy.seeAll(currentLanguage)
-                                } else {
-                                    null
+                            }
+                        } else {
+                            onNavigateToChapters(selectedSubjectId)
+                        }
+                    },
+                    onPracticeClick = { subject ->
+                        val subjectId = subject.subjectId
+                        if (subjectId.isNotBlank()) {
+                            gated.run(
+                                trackClick = { ContentClickNavigation.trackSubjectClick(subjectId) },
+                                navigate = {
+                                    sharedPreferenceUtils.setSubjectSelectionId(subjectId)
+                                    viewModel.refreshSelectedSubjectName()
+                                    viewModel.refreshExamPlanStatuses()
+                                    onNavigateToChapters(subjectId)
                                 },
-                            onSeeAll =
-                                if (ReelsFeatureFlags.isReelsEnabled()) {
-                                    onNavigateToReels
-                                } else {
-                                    null
+                            )
+                        } else {
+                            onNavigateToLearning()
+                        }
+                    },
+                    onNotesClick = { subject ->
+                        // Fix: We must pass the name ("Math") to the Notes screen, not the UUID
+                        val subjectName = subject.name
+                        if (subjectName.isNotBlank()) {
+                            onNavigateToNotes(subjectName)
+                        }
+                    },
+                    subjectIconContent = { subject, tint ->
+                        SubjectRailIcon(subject = subject, tint = tint)
+                    },
+                    belowSubjectsContent = {
+                        Column {
+                            YoutubeVideosSection(
+                                title = HomeCopy.youtubeSectionTitle(currentLanguage),
+                                videos = youtubeItems,
+                                onVideoClick = { video ->
+                                    if (ReelsFeatureFlags.isReelsEnabled()) {
+                                        onNavigateToRoute("reels_player/${video.videoId}")
+                                    } else {
+                                        selectedYoutubeVideo = video
+                                    }
                                 },
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                        TextbookEntryCard(onClick = onOpenTextbooks)
-                    }
-                },
-            )
-        }
+                                seeAllLabel =
+                                    if (ReelsFeatureFlags.isReelsEnabled()) {
+                                        ReelsCopy.seeAll(currentLanguage)
+                                    } else {
+                                        null
+                                    },
+                                onSeeAll =
+                                    if (ReelsFeatureFlags.isReelsEnabled()) {
+                                        onNavigateToReels
+                                    } else {
+                                        null
+                                    },
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            TextbookEntryCard(onClick = onOpenTextbooks)
+                        }
+                    },
+                )
+            }
             SnackbarHost(
                 hostState = snackbarHostState,
                 modifier = Modifier.align(Alignment.BottomCenter),

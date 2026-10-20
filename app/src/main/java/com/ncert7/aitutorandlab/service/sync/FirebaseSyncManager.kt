@@ -4,6 +4,7 @@ import android.content.Context
 import com.ncert7.aitutorandlab.data.local.dao.AppAnalyticsDao
 import com.ncert7.aitutorandlab.data.local.dao.ChapterAgentProgressDao
 import com.ncert7.aitutorandlab.data.local.dao.ChapterDao
+import com.ncert7.aitutorandlab.data.local.dao.ChapterNoteDao
 import com.ncert7.aitutorandlab.data.local.dao.ConceptDao
 import com.ncert7.aitutorandlab.data.local.dao.ProgressDao
 import com.ncert7.aitutorandlab.data.local.dao.SessionDao
@@ -29,10 +30,12 @@ class FirebaseSyncManager(
     private val progressDao: ProgressDao? = null,
     private val streakDao: StreakDao? = null,
     private val chapterProgressDao: ChapterAgentProgressDao? = null,
+    private val chapterNoteDao: ChapterNoteDao? = null,
     private val context: Context? = null
 ) {
     companion object {
         private const val CONCEPTS_COLLECTION = "Concept"
+        private const val PDF_NOTES_COLLECTION = "PdfNotes"
         private const val PROGRESS_COLLECTION = "progress"
         private const val STREAK_COLLECTION = "streak"
         private const val CHAPTER_PROGRESS_COLLECTION = "chapterprogress"
@@ -41,6 +44,39 @@ class FirebaseSyncManager(
         // Skip the full Concept catalog read if content exists and we pulled within this window.
         // (Empty DB / first install always pulls; bounds staleness without a backend version doc.)
         private const val CONTENT_REFRESH_TTL_MS = 3L * 24 * 60 * 60 * 1000
+    }
+
+    /**
+     * Syncs PDF notes metadata from Firestore.
+     */
+    suspend fun syncPdfNotes(): SyncResult {
+        return try {
+            if (chapterNoteDao == null) return SyncResult(true, "ChapterNoteDao not available")
+
+            val snapshot = firestore.collection(PDF_NOTES_COLLECTION).get().await()
+            if (snapshot.isEmpty) {
+                return SyncResult(true, "No PDF notes found in Firestore")
+            }
+
+            for (doc in snapshot.documents) {
+                try {
+                    val note = FirebasePdfNoteMapper.map(doc)
+                    chapterNoteDao.upsertRemoteMetadata(
+                        chapterId = note.chapterId,
+                        subjectId = note.subjectId,
+                        chapterNumber = note.chapterNumber,
+                        conceptName = note.conceptName,
+                        remotePdfUrl = note.pdfUrl,
+                        remotePdfUrlKn = note.pdfUrlKn
+                    )
+                } catch (e: Exception) {
+                    DebugLogger.errorLog(TAG, "Failed mapping note doc ${doc.id}:${e.message}")
+                }
+            }
+            SyncResult(true, "Successfully synced ${snapshot.size()} PDF notes")
+        } catch (e: Exception) {
+            SyncResult(false, "PDF notes sync failed: ${e.message}")
+        }
     }
 
     /**
@@ -109,10 +145,10 @@ class FirebaseSyncManager(
                         else -> {}
                     }
 
-                    DebugLogger.debugLog(TAG, "✓ Mapped [$conceptType] $conceptName")
+                    DebugLogger.debugLog(TAG, "✓ Mapped [$conceptType]$conceptName")
                 } catch (e: Exception) {
                     val errorMsg = e.message ?: "Unknown error"
-                    DebugLogger.errorLog(TAG, "✗ Failed to map ${document.id}: $errorMsg")
+                    DebugLogger.errorLog(TAG, "✗ Failed to map ${document.id}:$errorMsg")
                     failedConcepts.add(Pair(document.id, errorMsg))
                 }
             }
@@ -131,7 +167,7 @@ class FirebaseSyncManager(
                 NewSimulationNotifier.getNewSimulations(concepts, conceptDao)
             } else emptyList()
 
-            DebugLogger.debugLog(TAG, " Inserting ${concepts.size} concepts (${simulationCount} SIMULATION, ${studyCount} STUDY, ${mathCount} MATH PROBLEM)...")
+            DebugLogger.debugLog(TAG, " Inserting ${concepts.size} concepts (${simulationCount} SIMULATION, ${studyCount} STUDY,${mathCount} MATH PROBLEM)...")
             conceptDao.insertConcepts(concepts)
 
             if (context != null && newSimulations.isNotEmpty()) {
@@ -139,12 +175,12 @@ class FirebaseSyncManager(
             }
 
             val message = buildString {
-                append(" Synced ${subjects.size} subjects, ${chapters.size} chapters, ${concepts.size} concepts")
+                append(" Synced ${subjects.size} subjects, ${chapters.size} chapters,${concepts.size} concepts")
                 append(" [SIMULATION=$simulationCount, STUDY=$studyCount, MATH PROBLEM=$mathCount]")
                 if (failedConcepts.isNotEmpty()) {
                     append(" Failed ${failedConcepts.size} concepts:")
                     failedConcepts.take(3).forEach { (id, error) ->
-                        append("\n  - $id: $error")
+                        append("\n  - $id:$error")
                     }
                     if (failedConcepts.size > 3) {
                         append("\n  ... and ${failedConcepts.size - 3} more")
@@ -222,7 +258,7 @@ class FirebaseSyncManager(
             // re-fetch the same window next time.
             if (maxUpdatedAt > lastSync) prefs?.setProgressLastSync(userId, maxUpdatedAt)
 
-            SyncResult(true, "Synced ${toApply.size} progress entries (delta of ${snapshot.size()})")
+            SyncResult(true, "Synced ${toApply.size} progress entries (delta of${snapshot.size()})")
         } catch (e: Exception) {
             SyncResult(false, "Progress sync failed: ${e.message}")
         }
@@ -299,7 +335,7 @@ class FirebaseSyncManager(
             }
             if (maxUpdatedAt > lastSync) prefs?.setChapterProgressLastSync(userId, maxUpdatedAt)
 
-            SyncResult(true, "Synced ${toApply.size} chapter progress entries (delta of ${snapshot.size()})")
+            SyncResult(true, "Synced ${toApply.size} chapter progress entries (delta of${snapshot.size()})")
         } catch (e: Exception) {
             SyncResult(false, "Chapter progress sync failed: ${e.message}")
         }

@@ -377,7 +377,7 @@ object DataSyncService {
 
             WorkManager.getInstance(applicationContext).enqueueUniqueWork(
                 IMMEDIATE_UPLOAD_WORK,
-                ExistingWorkPolicy.REPLACE,
+                ExistingWorkPolicy.KEEP,
                 request
             )
             DebugLogger.debugLog(TAG, "Immediate upload scheduled (no delay)")
@@ -432,7 +432,7 @@ object DataSyncService {
                 if (completed != null) {
                     DebugLogger.debugLog(
                         TAG,
-                        "User authenticated — garden restore=$completed funnel synced for $studentId",
+                        "User authenticated — garden restore=$completed funnel synced for$studentId",
                     )
                 } else {
                     // Ensure identity is set even if restore timed out mid-flight.
