@@ -18,6 +18,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.Autorenew
 import androidx.compose.material.icons.outlined.Calculate
 import androidx.compose.material.icons.outlined.MenuBook
@@ -46,6 +47,8 @@ fun PlanTrialStacked(
     chapters: List<TrialPathChapter>,
     onNodeClick: (TrialPathNode) -> Unit,
     modifier: Modifier = Modifier,
+    onAskDoubtClick: (() -> Unit)? = null,
+    askDoubtLabel: String = "Ask AI a Doubt",
 ) {
     val colors = EduAiTheme.colors
     Column(
@@ -72,6 +75,27 @@ fun PlanTrialStacked(
                 Spacer(modifier = Modifier.height(8.dp))
             }
             Spacer(modifier = Modifier.height(14.dp))
+        }
+        if (onAskDoubtClick != null) {
+            Spacer(modifier = Modifier.height(16.dp))
+            androidx.compose.material3.OutlinedButton(
+                onClick = onAskDoubtClick,
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                colors =
+                    androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                        contentColor = EduAiTheme.colors.accent,
+                    ),
+                border = androidx.compose.foundation.BorderStroke(2.dp, EduAiTheme.colors.accent),
+            ) {
+                androidx.compose.material3.Text(
+                    text = askDoubtLabel,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                    fontSize = 16.sp,
+                )
+            }
         }
         Spacer(modifier = Modifier.height(40.dp))
     }
@@ -196,6 +220,7 @@ private fun typeColor(type: TrialNodeType): Color {
         TrialNodeType.Simulation -> colors.pro
         TrialNodeType.SimAgent -> colors.success
         TrialNodeType.Study -> colors.accent
+        TrialNodeType.Whiteboard -> colors.accent
         TrialNodeType.Math -> colors.warning
         TrialNodeType.Revision -> colors.warning.copy(alpha = 0.85f)
     }
@@ -206,6 +231,7 @@ private fun typeIcon(type: TrialNodeType): ImageVector =
         TrialNodeType.Simulation -> Icons.Outlined.Science
         TrialNodeType.SimAgent -> Icons.Outlined.SmartToy
         TrialNodeType.Study -> Icons.Outlined.MenuBook
+        TrialNodeType.Whiteboard -> Icons.Outlined.AutoAwesome
         TrialNodeType.Math -> Icons.Outlined.Calculate
         TrialNodeType.Revision -> Icons.Outlined.Autorenew
     }
@@ -215,6 +241,7 @@ private fun typeGroupLabel(type: TrialNodeType): String =
         TrialNodeType.Simulation -> "Simulations"
         TrialNodeType.SimAgent -> "Sim agents"
         TrialNodeType.Study -> "Study"
+        TrialNodeType.Whiteboard -> "Whiteboards"
         TrialNodeType.Math -> "Math"
         TrialNodeType.Revision -> "Revision"
     }

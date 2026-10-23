@@ -43,6 +43,7 @@ object EconomyConfig {
     fun xpForTrialKind(kind: String): Int =
         when (kind) {
             "STUDY" -> XP_CONCEPT
+            "WHITEBOARD" -> XP_CONCEPT
             "SIM_URL" -> XP_SIMULATION
             "SIM_AGENT" -> XP_SIMULATION_AGENT
             "REVISION" -> XP_REVISION_AGENT

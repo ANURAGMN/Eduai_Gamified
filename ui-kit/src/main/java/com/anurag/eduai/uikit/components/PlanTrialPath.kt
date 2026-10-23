@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.Autorenew
 import androidx.compose.material.icons.outlined.Calculate
 import androidx.compose.material.icons.outlined.EmojiEvents
@@ -53,7 +54,7 @@ import kotlin.math.sin
  * [Simulation] = URL lab · [SimAgent] = simulation chat agent · [Study] = lesson chat ·
  * [Math] = math problem agent · [Revision] = revise.
  */
-enum class TrialNodeType { Simulation, SimAgent, Study, Math, Revision }
+enum class TrialNodeType { Simulation, SimAgent, Study, Math, Revision, Whiteboard }
 
 /** DONE = cleared · ACTIVE = suggested next (START) · UPCOMING = not attended yet (still tappable). */
 enum class TrialNodeState { Done, Active, Upcoming }
@@ -88,6 +89,8 @@ fun PlanTrialPath(
     dayIndex: Int = 0,
     onChestClick: (Int) -> Unit = {},
     onDayCompleteClick: () -> Unit = {},
+    onAskDoubtClick: (() -> Unit)? = null,
+    askDoubtLabel: String = "Ask AI a Doubt",
 ) {
     val colors = EduAiTheme.colors
     val chapterAccents = listOf(colors.accent, colors.pro, colors.warning, colors.success)
@@ -133,6 +136,28 @@ fun PlanTrialPath(
             label = if (allDone) "Day complete!" else "Finish the day",
             onClick = onDayCompleteClick,
         )
+        if (onAskDoubtClick != null) {
+            Spacer(modifier = Modifier.height(16.dp))
+            androidx.compose.material3.OutlinedButton(
+                onClick = onAskDoubtClick,
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(56.dp)
+                        .padding(horizontal = 20.dp),
+                colors =
+                    androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                        contentColor = EduAiTheme.colors.accent,
+                    ),
+                border = androidx.compose.foundation.BorderStroke(2.dp, EduAiTheme.colors.accent),
+            ) {
+                androidx.compose.material3.Text(
+                    text = askDoubtLabel,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                    fontSize = 16.sp,
+                )
+            }
+        }
         Spacer(modifier = Modifier.height(48.dp))
     }
 }
@@ -186,6 +211,7 @@ private fun TrialNode(
             TrialNodeType.Simulation -> colors.pro
             TrialNodeType.SimAgent -> colors.success
             TrialNodeType.Study -> colors.accent
+            TrialNodeType.Whiteboard -> colors.accent
             TrialNodeType.Math -> colors.warning
             TrialNodeType.Revision -> colors.warning.copy(alpha = 0.85f)
         }
@@ -194,6 +220,7 @@ private fun TrialNode(
             TrialNodeType.Simulation -> Icons.Outlined.Science
             TrialNodeType.SimAgent -> Icons.Outlined.SmartToy
             TrialNodeType.Study -> Icons.Outlined.MenuBook
+            TrialNodeType.Whiteboard -> Icons.Outlined.AutoAwesome
             TrialNodeType.Math -> Icons.Outlined.Calculate
             TrialNodeType.Revision -> Icons.Outlined.Autorenew
         }
@@ -202,6 +229,7 @@ private fun TrialNode(
             TrialNodeType.Simulation -> "Simulation"
             TrialNodeType.SimAgent -> "Sim agent"
             TrialNodeType.Study -> "Study"
+            TrialNodeType.Whiteboard -> "Whiteboard"
             TrialNodeType.Math -> "Math"
             TrialNodeType.Revision -> "Revision"
         }

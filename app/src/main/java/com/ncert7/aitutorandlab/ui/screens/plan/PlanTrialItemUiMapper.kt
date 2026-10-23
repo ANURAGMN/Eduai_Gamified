@@ -12,6 +12,7 @@ object PlanTrialItemUiMapper {
                 PlanTrialItemKind.SIM_AGENT -> "Sim agent"
                 PlanTrialItemKind.SIM_URL -> "Simulation"
                 PlanTrialItemKind.STUDY -> "Study"
+                PlanTrialItemKind.WHITEBOARD -> "Whiteboard"
                 PlanTrialItemKind.REVISION -> "Revision"
                 PlanTrialItemKind.MATH -> "Math problem"
                 else -> entity.kind

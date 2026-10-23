@@ -4,6 +4,7 @@ import android.content.Context
 import com.ncert7.aitutorandlab.data.local.dao.AppAnalyticsDao
 import com.ncert7.aitutorandlab.data.local.dao.ChapterAgentProgressDao
 import com.ncert7.aitutorandlab.data.local.dao.ChapterDao
+import com.ncert7.aitutorandlab.data.local.dao.ChapterNoteDao
 import com.ncert7.aitutorandlab.data.local.dao.ConceptDao
 import com.ncert7.aitutorandlab.data.local.dao.ProgressDao
 import com.ncert7.aitutorandlab.data.local.dao.SessionDao
@@ -29,6 +30,7 @@ class FirebaseSyncManager(
     private val progressDao: ProgressDao? = null,
     private val streakDao: StreakDao? = null,
     private val chapterProgressDao: ChapterAgentProgressDao? = null,
+    private val chapterNoteDao: ChapterNoteDao? = null,
     private val context: Context? = null
 ) {
     companion object {
@@ -36,11 +38,41 @@ class FirebaseSyncManager(
         private const val PROGRESS_COLLECTION = "progress"
         private const val STREAK_COLLECTION = "streak"
         private const val CHAPTER_PROGRESS_COLLECTION = "chapterprogress"
+        private const val PDF_NOTES_COLLECTION = "PdfNotes"
         private const val TAG = "FirebaseSyncManager"
 
         // Skip the full Concept catalog read if content exists and we pulled within this window.
         // (Empty DB / first install always pulls; bounds staleness without a backend version doc.)
         private const val CONTENT_REFRESH_TTL_MS = 3L * 24 * 60 * 60 * 1000
+    }
+
+    /** Syncs PDF notes metadata from Firestore (`PdfNotes`). Preserves local download state. */
+    suspend fun syncPdfNotes(): SyncResult {
+        return try {
+            val dao = chapterNoteDao ?: return SyncResult(true, "ChapterNoteDao not available")
+            val snapshot = firestore.collection(PDF_NOTES_COLLECTION).get().await()
+            if (snapshot.isEmpty) {
+                return SyncResult(true, "No PDF notes found in Firestore")
+            }
+            for (doc in snapshot.documents) {
+                try {
+                    val note = FirebasePdfNoteMapper.map(doc)
+                    dao.upsertRemoteMetadata(
+                        chapterId = note.chapterId,
+                        subjectId = note.subjectId,
+                        chapterNumber = note.chapterNumber,
+                        conceptName = note.conceptName,
+                        remotePdfUrl = note.pdfUrl,
+                        remotePdfUrlKn = note.pdfUrlKn,
+                    )
+                } catch (e: Exception) {
+                    DebugLogger.errorLog(TAG, "Failed mapping note doc ${doc.id}: ${e.message}")
+                }
+            }
+            SyncResult(true, "Successfully synced ${snapshot.size()} PDF notes")
+        } catch (e: Exception) {
+            SyncResult(false, "PDF notes sync failed: ${e.message}")
+        }
     }
 
     /**

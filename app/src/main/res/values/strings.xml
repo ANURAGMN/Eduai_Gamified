@@ -386,4 +386,24 @@
     <string name="error_network_error_with_code">Network error (%1$d). Please try again.</string>
     <string name="error_connection_error">Connection error. Please check your internet and try again.</string>
     <string name="error_unknown">An error occurred. Please try again.</string>
+
+    <!-- Chapter Notes / Whiteboard / Doubts -->
+    <string name="action_notes">Notes</string>
+    <string name="action_practice">Practice</string>
+    <string name="science_notes">Science - Notes</string>
+    <string name="math_notes">Math - Notes</string>
+    <string name="state_download">Download</string>
+    <string name="state_downloading">Downloading…</string>
+    <string name="state_downloaded">Downloaded</string>
+    <string name="no_pdf_available">No Kannada PDF available</string>
+    <string name="try_interactive_whiteboard">Try Interactive Whiteboard</string>
+    <string name="whiteboard_volume_hint">Turn up the volume to hear the teaching clearly</string>
+    <string name="ask_ai_doubt">Ask AI a Doubt</string>
+    <string name="ask_ai_doubt_chapter_general">General</string>
+    <string name="ask_ai_doubt_from">From: %1$s - %2$s</string>
+    <string name="ask_ai_doubt_hint">E.g., How do plants eat without mouths?</string>
+    <string name="ask_ai_doubt_submit">Ask Question</string>
+    <string name="ask_ai_doubt_response">AI Response</string>
+    <string name="ask_ai_doubt_failed">Failed to get a clear answer. Please try again.</string>
+    <string name="ask_ai_doubt_offline">Unable to connect to the server.</string>
 </resources>

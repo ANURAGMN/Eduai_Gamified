@@ -54,6 +54,7 @@ import com.ncert7.aitutorandlab.ui.screens.reels.ReelsExploreScreen
 import com.ncert7.aitutorandlab.ui.screens.reels.ReelsPlayerScreen
 import com.ncert7.aitutorandlab.ui.screens.home.GamifiedHomeRoute
 import com.ncert7.aitutorandlab.ui.screens.home.HomeScreen
+import com.ncert7.aitutorandlab.ui.screens.notes.NotesScreen
 import com.ncert7.aitutorandlab.ui.screens.textbook.TextbookWebScreen
 import com.ncert7.aitutorandlab.ui.screens.textbook.TextbooksScreen
 import com.ncert7.aitutorandlab.ui.screens.leagues.LeaguesScreen
@@ -74,6 +75,9 @@ import com.ncert7.aitutorandlab.ui.screens.subjectscreen.GamifiedSubjectScreen
 import com.ncert7.aitutorandlab.ui.screens.subjectscreen.SubjectScreen
 import com.ncert7.aitutorandlab.ui.screens.mathagentscreen.MathAgentScreen
 import com.ncert7.aitutorandlab.ui.screens.revisionscreen.RevisionScreen
+import com.ncert7.aitutorandlab.ui.screens.whiteboard.WhiteboardChatbotScreen
+import com.ncert7.aitutorandlab.ui.screens.whiteboard.WhiteboardConceptsScreen
+import com.ncert7.aitutorandlab.ui.screens.whiteboard.WhiteboardViewModel
 import com.ncert7.aitutorandlab.ui.theme.BackgroundPrimary
 import com.ncert7.aitutorandlab.ui.theme.TextPrimary
 import androidx.compose.runtime.collectAsState
@@ -311,6 +315,9 @@ private fun BottomNavBarContent(
                         onNavigateToTrial = navigateToTrial,
                         onNavigateToRoute = { route -> navController.navigate(route) },
                         onOpenTextbooks = { navController.navigate("textbooks") },
+                        onNavigateToNotes = { subjectId ->
+                            navController.navigate("notes/$subjectId")
+                        },
                         onSimulationClick = { simulationId, conceptId ->
                             navController.navigate("simulation_agent/$simulationId?conceptId=$conceptId")
                         },
@@ -424,6 +431,9 @@ private fun BottomNavBarContent(
                 route = "plan_trial/{dayIndex}",
                 arguments = listOf(navArgument("dayIndex") { type = NavType.IntType }),
             ) {
+                val wbViewModel: WhiteboardViewModel = hiltViewModel()
+                val wbConcepts by wbViewModel.concepts.collectAsState()
+                LaunchedEffect(Unit) { wbViewModel.fetchConcepts() }
                 PlanTrialScreen(
                     onNavigateBack = { navController.popBackStack() },
                     onItemClick = { item ->
@@ -433,9 +443,12 @@ private fun BottomNavBarContent(
                                 kind = item.kind,
                             )
                         }
-                        PlanTrialNavigation.buildDestination(item)?.let { route ->
-                            navController.navigate(route)
-                        }
+                        PlanTrialNavigation
+                            .buildDestination(
+                                item = item,
+                                whiteboardConceptIds = wbConcepts.map { it.conceptId }.toSet(),
+                            )
+                            ?.let { route -> navController.navigate(route) }
                     },
                 )
             }
@@ -623,6 +636,9 @@ private fun BottomNavBarContent(
                             navigate = { navController.navigate("chapter_trial/$chapterId") },
                         )
                     },
+                    onOpenWhiteboard = {
+                        navController.navigate(LearningRoutes.WHITEBOARD_CONCEPTS)
+                    },
                     onStudyClick = { chapterId, type ->
                         gated.run(
                             trackClick = { ContentClickNavigation.trackChapterListClick(chapterId, type) },
@@ -636,6 +652,9 @@ private fun BottomNavBarContent(
                 arguments = listOf(navArgument("chapterId") { type = NavType.StringType }),
             ) {
                 val scope = rememberCoroutineScope()
+                val wbViewModel: WhiteboardViewModel = hiltViewModel()
+                val wbConcepts by wbViewModel.concepts.collectAsState()
+                LaunchedEffect(Unit) { wbViewModel.fetchConcepts() }
                 PlanTrialScreen(
                     onNavigateBack = { navController.popBackStack() },
                     onItemClick = { item ->
@@ -645,9 +664,12 @@ private fun BottomNavBarContent(
                                 kind = item.kind,
                             )
                         }
-                        PlanTrialNavigation.buildDestination(item)?.let { route ->
-                            navController.navigate(route)
-                        }
+                        PlanTrialNavigation
+                            .buildDestination(
+                                item = item,
+                                whiteboardConceptIds = wbConcepts.map { it.conceptId }.toSet(),
+                            )
+                            ?.let { route -> navController.navigate(route) }
                     },
                 )
             }
@@ -826,6 +848,34 @@ private fun BottomNavBarContent(
                     chapterName = chapterName,
                     onBackClick = { navController.popBackStack() },
                     onNext = { route -> navController.navigate(route) },
+                )
+            }
+
+            composable(LearningRoutes.NOTES) { backStackEntry ->
+                val subjectId = backStackEntry.arguments?.getString("subjectId") ?: return@composable
+                NotesScreen(
+                    subjectName = subjectId,
+                    onBackClick = { navController.popBackStack() },
+                )
+            }
+
+            composable(LearningRoutes.WHITEBOARD_CONCEPTS) {
+                WhiteboardConceptsScreen(
+                    onBackClick = { navController.popBackStack() },
+                    onConceptClick = { conceptId ->
+                        navController.navigate("whiteboard_chatbot?conceptId=$conceptId")
+                    },
+                )
+            }
+
+            composable(
+                route = LearningRoutes.WHITEBOARD_CHATBOT,
+                arguments = listOf(navArgument("conceptId") { type = NavType.StringType }),
+            ) { backStackEntry ->
+                val conceptId = backStackEntry.arguments?.getString("conceptId") ?: ""
+                WhiteboardChatbotScreen(
+                    conceptId = conceptId,
+                    onBackClick = { navController.popBackStack() },
                 )
             }
 

@@ -22,6 +22,7 @@ import com.ncert7.aitutorandlab.ui.screens.conceptscreen.ConceptScreen
 import com.ncert7.aitutorandlab.ui.screens.conceptscreen.components.ConceptSimulationViewer
 import com.ncert7.aitutorandlab.ui.screens.home.HomeScreen
 import com.ncert7.aitutorandlab.ui.screens.mathagentscreen.MathAgentScreen
+import com.ncert7.aitutorandlab.ui.screens.notes.NotesScreen
 import com.ncert7.aitutorandlab.ui.screens.plan.PlanTrialNavigation
 import com.ncert7.aitutorandlab.ui.screens.plan.PlanTrialScreen
 import com.ncert7.aitutorandlab.ui.screens.revisionscreen.RevisionScreen
@@ -29,6 +30,13 @@ import com.ncert7.aitutorandlab.ui.screens.simulation_agent.SimulationAgentScree
 import com.ncert7.aitutorandlab.ui.screens.subjectscreen.SubjectScreen
 import com.ncert7.aitutorandlab.ui.screens.textbook.TextbookWebScreen
 import com.ncert7.aitutorandlab.ui.screens.textbook.TextbooksScreen
+import com.ncert7.aitutorandlab.ui.screens.whiteboard.WhiteboardChatbotScreen
+import com.ncert7.aitutorandlab.ui.screens.whiteboard.WhiteboardConceptsScreen
+import com.ncert7.aitutorandlab.ui.screens.whiteboard.WhiteboardViewModel
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.hilt.navigation.compose.hiltViewModel
 
 object LearningRoutes {
     const val HOME = "home"
@@ -40,6 +48,9 @@ object LearningRoutes {
     const val SIMULATION_AGENT = "simulation_agent/{simulationId}?conceptId={conceptId}"
     const val CONCEPT_SIM_VIEW = "concept_sim_view/{url}/{title}/{conceptId}/{subjectName}/{chapterName}"
     const val REVISION = "revision/{chapterId}"
+    const val NOTES = "notes/{subjectId}"
+    const val WHITEBOARD_CONCEPTS = "whiteboard_concepts"
+    const val WHITEBOARD_CHATBOT = "whiteboard_chatbot?conceptId={conceptId}"
 }
 
 @Composable
@@ -141,6 +152,9 @@ fun LearningNavigator(
                             navigate = { navController.navigate("chapter_trial/$chapterId") }
                         )
                     },
+                    onOpenWhiteboard = {
+                        navController.navigate(LearningRoutes.WHITEBOARD_CONCEPTS)
+                    },
                     onStudyClick = { chapterId, type ->
                         gated.run(
                             trackClick = { ContentClickNavigation.trackChapterListClick(chapterId, type) },
@@ -154,6 +168,9 @@ fun LearningNavigator(
                 arguments = listOf(navArgument("chapterId") { type = NavType.StringType }),
             ) {
                 val scope = rememberCoroutineScope()
+                val wbViewModel: WhiteboardViewModel = hiltViewModel()
+                val wbConcepts by wbViewModel.concepts.collectAsState()
+                LaunchedEffect(Unit) { wbViewModel.fetchConcepts() }
                 PlanTrialScreen(
                     onNavigateBack = { navController.popBackStack() },
                     onItemClick = { item ->
@@ -163,9 +180,12 @@ fun LearningNavigator(
                                 kind = item.kind,
                             )
                         }
-                        PlanTrialNavigation.buildDestination(item)?.let { route ->
-                            navController.navigate(route)
-                        }
+                        PlanTrialNavigation
+                            .buildDestination(
+                                item = item,
+                                whiteboardConceptIds = wbConcepts.map { it.conceptId }.toSet(),
+                            )
+                            ?.let { navController.navigate(it) }
                     },
                 )
             }
@@ -296,6 +316,34 @@ fun LearningNavigator(
                 RevisionScreen(
                     chapterId = chapterId,
                     onBackClick = { navController.popBackStack() }
+                )
+            }
+
+            composable(LearningRoutes.NOTES) { backStackEntry ->
+                val subjectId = backStackEntry.arguments?.getString("subjectId") ?: return@composable
+                NotesScreen(
+                    subjectName = subjectId,
+                    onBackClick = { navController.popBackStack() },
+                )
+            }
+
+            composable(LearningRoutes.WHITEBOARD_CONCEPTS) {
+                WhiteboardConceptsScreen(
+                    onBackClick = { navController.popBackStack() },
+                    onConceptClick = { conceptId ->
+                        navController.navigate("whiteboard_chatbot?conceptId=$conceptId")
+                    },
+                )
+            }
+
+            composable(
+                route = LearningRoutes.WHITEBOARD_CHATBOT,
+                arguments = listOf(navArgument("conceptId") { type = NavType.StringType }),
+            ) { backStackEntry ->
+                val conceptId = backStackEntry.arguments?.getString("conceptId") ?: ""
+                WhiteboardChatbotScreen(
+                    conceptId = conceptId,
+                    onBackClick = { navController.popBackStack() },
                 )
             }
 

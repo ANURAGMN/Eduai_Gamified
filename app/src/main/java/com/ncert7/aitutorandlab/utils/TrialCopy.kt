@@ -29,6 +29,8 @@ object TrialCopy {
                 if (kn(languageCode)) "ಪರಿಷ್ಕರಣೆ" else "Revision"
             PlanTrialItemKind.MATH ->
                 if (kn(languageCode)) "ಗಣಿತ ಸಮಸ್ಯೆ" else "Math problem"
+            PlanTrialItemKind.WHITEBOARD ->
+                if (kn(languageCode)) "ವೈಟ್‌ಬೋರ್ಡ್" else "Whiteboard"
             else -> kind
         }
 

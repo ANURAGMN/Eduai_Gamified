@@ -389,4 +389,24 @@
     <string name="padaams_email_label">Padaams ಇಮೇಲ್</string>
     <string name="padaams_email_hint">you@padaams.in</string>
     <string name="padaams_email_helper">Gmail ಗಾಗಿ ಅಲ್ಲ — Google ಸೈನ್-ಇನ್‌ಗೆ ಮೇಲಿನ ಬಟನ್ ಬಳಸಿ</string>
+
+    <!-- Chapter Notes / Whiteboard / Doubts -->
+    <string name="action_notes">ಟಿಪ್ಪಣಿಗಳು</string>
+    <string name="action_practice">ಅಭ್ಯಾಸ</string>
+    <string name="science_notes">ವಿಜ್ಞಾನ - ಟಿಪ್ಪಣಿಗಳು</string>
+    <string name="math_notes">ಗಣಿತ - ಟಿಪ್ಪಣಿಗಳು</string>
+    <string name="state_download">ಡೌನ್‌ಲೋಡ್</string>
+    <string name="state_downloading">ಡೌನ್‌ಲೋಡ್ ಆಗುತ್ತಿದೆ…</string>
+    <string name="state_downloaded">ಡೌನ್‌ಲೋಡ್ ಆಗಿದೆ</string>
+    <string name="no_pdf_available">ಕನ್ನಡ PDF ಲಭ್ಯವಿಲ್ಲ</string>
+    <string name="try_interactive_whiteboard">ಇಂಟರಾಕ್ಟಿವ್ ವೈಟ್‌ಬೋರ್ಡ್ ಪ್ರಯತ್ನಿಸಿ</string>
+    <string name="whiteboard_volume_hint">ಬೋಧನೆಯನ್ನು ಸ್ಪಷ್ಟವಾಗಿ ಕೇಳಲು ವಾಲ್ಯೂಮ್ ಹೆಚ್ಚಿಸಿ</string>
+    <string name="ask_ai_doubt">AI ಗೆ ಸಂದೇಹ ಕೇಳಿ</string>
+    <string name="ask_ai_doubt_chapter_general">ಸಾಮಾನ್ಯ</string>
+    <string name="ask_ai_doubt_from">ಇಂದ: %1$s - %2$s</string>
+    <string name="ask_ai_doubt_hint">ಉದಾ., ಸಸ್ಯಗಳು ಬಾಯಿ ಇಲ್ಲದೆ ಹೇಗೆ ತಿನ್ನುತ್ತವೆ?</string>
+    <string name="ask_ai_doubt_submit">ಪ್ರಶ್ನೆ ಕೇಳಿ</string>
+    <string name="ask_ai_doubt_response">AI ಉತ್ತರ</string>
+    <string name="ask_ai_doubt_failed">ಸ್ಪಷ್ಟ ಉತ್ತರ ಸಿಗಲಿಲ್ಲ. ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.</string>
+    <string name="ask_ai_doubt_offline">ಸರ್ವರ್‌ಗೆ ಸಂಪರ್ಕಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.</string>
 </resources>

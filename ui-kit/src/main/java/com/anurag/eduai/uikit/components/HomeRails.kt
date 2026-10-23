@@ -1,7 +1,9 @@
 package com.anurag.eduai.uikit.components
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,7 +36,6 @@ import androidx.compose.material.icons.outlined.SportsEsports
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.foundation.Canvas
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -375,9 +376,11 @@ fun RevisionRail(
 fun SubjectsRail(
     title: String,
     subjects: List<SubjectTile>,
-    onOpen: (SubjectTile) -> Unit = {},
+    onPracticeClick: (SubjectTile) -> Unit = {},
+    onNotesClick: (SubjectTile) -> Unit = {},
+    notesLabel: String = "Notes",
+    practiceLabel: String = "Practice",
     modifier: Modifier = Modifier,
-    ctaLabel: String = "Continue",
     // App fills this to render the live remote icon (ui-kit has no image loader). Default
     // is the built-in subject glyph.
     iconContent: @Composable (SubjectTile, Color) -> Unit = { subject, tint ->
@@ -398,15 +401,15 @@ fun SubjectsRail(
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.padding(bottom = 10.dp),
         )
-        // Full-width list rows: icon chip · name + detail · chevron. Each row is one tap
-        // target → opens the subject's chapters. Role tint only on the icon chip so the
-        // card surface stays theme-safe (no white-on-white in dark mode).
+        // Card per subject: header + Notes / Practice chips (matches whiteboard PR UI).
         subjects.forEachIndexed { index, subject ->
             if (index > 0) Spacer(modifier = Modifier.height(10.dp))
             SubjectRow(
                 subject = subject,
-                ctaLabel = ctaLabel,
-                onOpen = onOpen,
+                onPracticeClick = onPracticeClick,
+                onNotesClick = onNotesClick,
+                notesLabel = notesLabel,
+                practiceLabel = practiceLabel,
                 iconContent = iconContent,
             )
         }
@@ -416,60 +419,111 @@ fun SubjectsRail(
 @Composable
 private fun SubjectRow(
     subject: SubjectTile,
-    ctaLabel: String,
-    onOpen: (SubjectTile) -> Unit,
+    onPracticeClick: (SubjectTile) -> Unit,
+    onNotesClick: (SubjectTile) -> Unit,
+    notesLabel: String,
+    practiceLabel: String,
     iconContent: @Composable (SubjectTile, Color) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = EduAiTheme.colors
     val (fg, bg) = colors.forRole(subject.role)
-    Row(
+
+    Column(
         modifier =
             modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(14.dp))
                 .background(colors.surface2)
                 .border(1.dp, colors.border, RoundedCornerShape(14.dp))
-                .pressScaleClickable(onClick = { onOpen(subject) }, pressedScale = 0.98f)
-                .padding(horizontal = 14.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
+                .padding(14.dp),
     ) {
-        // Role-tinted icon chip, glyph tinted with the role foreground.
-        Box(
-            modifier =
-                Modifier
-                    .size(44.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(bg),
-            contentAlignment = Alignment.Center,
-        ) {
-            iconContent(subject, fg)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier =
+                    Modifier
+                        .size(44.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(bg),
+                contentAlignment = Alignment.Center,
+            ) {
+                iconContent(subject, fg)
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = subject.name,
+                    color = colors.text,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                if (!subject.subtitle.isNullOrBlank()) {
+                    Text(
+                        text = subject.subtitle,
+                        color = colors.textSecondary,
+                        fontSize = 13.sp,
+                        modifier = Modifier.padding(top = 1.dp),
+                    )
+                }
+            }
+            subject.progress?.let { fraction ->
+                SubjectProgressRing(progress = fraction, color = fg)
+            }
         }
-        Spacer(modifier = Modifier.width(12.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = subject.name,
-                color = colors.text,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Text(
-                text = subject.subtitle ?: ctaLabel,
-                color = colors.textSecondary,
-                fontSize = 13.sp,
-                modifier = Modifier.padding(top = 1.dp),
-            )
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(
+                modifier =
+                    Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(colors.accentBg)
+                        .border(1.dp, colors.accent.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                        .clickable { onNotesClick(subject) }
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    Icons.Outlined.MenuBook,
+                    contentDescription = null,
+                    tint = colors.accent,
+                    modifier = Modifier.size(16.dp),
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    notesLabel,
+                    color = colors.accent,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
+
+            Row(
+                modifier =
+                    Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(colors.proBg)
+                        .border(1.dp, colors.pro.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                        .clickable { onPracticeClick(subject) }
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    Icons.Outlined.Bolt,
+                    contentDescription = null,
+                    tint = colors.pro,
+                    modifier = Modifier.size(16.dp),
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    practiceLabel,
+                    color = colors.pro,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
         }
-        subject.progress?.let { fraction ->
-            SubjectProgressRing(progress = fraction, color = fg)
-            Spacer(modifier = Modifier.width(10.dp))
-        }
-        Icon(
-            imageVector = Icons.Outlined.ChevronRight,
-            contentDescription = null,
-            tint = colors.textMuted,
-            modifier = Modifier.size(20.dp),
-        )
     }
 }
 

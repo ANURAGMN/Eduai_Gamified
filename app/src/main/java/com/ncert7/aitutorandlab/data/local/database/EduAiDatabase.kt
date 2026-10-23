@@ -16,6 +16,7 @@ import com.ncert7.aitutorandlab.data.local.dao.QuestDailyDao
 import com.ncert7.aitutorandlab.data.local.dao.AppAnalyticsDao
 import com.ncert7.aitutorandlab.data.local.dao.ChapterAgentProgressDao
 import com.ncert7.aitutorandlab.data.local.dao.ChapterDao
+import com.ncert7.aitutorandlab.data.local.dao.ChapterNoteDao
 import com.ncert7.aitutorandlab.data.local.dao.ConceptDao
 import com.ncert7.aitutorandlab.data.local.dao.ProgressDao
 import com.ncert7.aitutorandlab.data.local.dao.SessionDao
@@ -42,6 +43,7 @@ import com.ncert7.aitutorandlab.data.local.entities.XpEventEntity
 import com.ncert7.aitutorandlab.data.local.entities.AppAnalyticsEntity
 import com.ncert7.aitutorandlab.data.local.entities.ChapterAgentProgressEntity
 import com.ncert7.aitutorandlab.data.local.entities.ChapterEntity
+import com.ncert7.aitutorandlab.data.local.entities.ChapterNoteEntity
 import com.ncert7.aitutorandlab.data.local.entities.ConceptEntity
 import com.ncert7.aitutorandlab.data.local.entities.ProgressEntity
 import com.ncert7.aitutorandlab.data.local.entities.SessionEntity
@@ -82,8 +84,9 @@ import com.ncert7.aitutorandlab.data.local.entities.TutorConfigEntity
         NotificationBudgetEntity::class,
         GrownItemEntity::class,
         GardenStateEntity::class,
+        ChapterNoteEntity::class,
     ],
-    version = 15,
+    version = 17,
     exportSchema = false
 )
 abstract class EduAiDatabase : RoomDatabase() {
@@ -108,6 +111,7 @@ abstract class EduAiDatabase : RoomDatabase() {
     abstract fun notificationLogDao(): NotificationLogDao
     abstract fun notificationBudgetDao(): NotificationBudgetDao
     abstract fun gardenDao(): GardenDao
+    abstract fun chapterNoteDao(): ChapterNoteDao
 
     companion object {
         @Volatile
@@ -137,6 +141,8 @@ abstract class EduAiDatabase : RoomDatabase() {
                         MIGRATION_12_13,
                         MIGRATION_13_14,
                         MIGRATION_14_15,
+                        MIGRATION_15_16,
+                        MIGRATION_16_17,
                     )
                     .fallbackToDestructiveMigration(false)
                     .build()

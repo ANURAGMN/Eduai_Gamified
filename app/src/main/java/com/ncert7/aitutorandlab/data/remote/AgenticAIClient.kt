@@ -16,12 +16,15 @@ import java.io.IOException
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody
 import okhttp3.Headers
+import okhttp3.OkHttpClient
+import okhttp3.Request
 
 class AgenticAIClient(
     agenticAIBaseUrl: String,
     private val context: Context
 ) {
     val service: AgenticAIService
+    private val okHttpClient = OkHttpClient()
 
     private val _currentThreadId = MutableStateFlow<String?>(null)
 
@@ -691,4 +694,67 @@ class AgenticAIClient(
         withContext(Dispatchers.IO) {
             callWithRetry { service.getMathSessionHistory(threadId) }
         }
+
+    // ==================== NEW WHITEBOARD METHODS ====================
+
+    suspend fun getWhiteboardConcepts(): Result<WbConceptsResponse> = withContext(Dispatchers.IO) {
+        callWithRetry { service.getWhiteboardConcepts() }
+    }
+
+    // FIX: Pass studentId dynamically to avoid 500 error on fresh sessions
+    suspend fun startWhiteboardSession(conceptId: String, studentId: String? = null): Result<WbSessionTurnResponse> = withContext(Dispatchers.IO) {
+        val req = WbStartSessionRequest(conceptId = conceptId, studentId = studentId)
+        val res = callWithRetry { service.startWhiteboardSession(req) }
+        if (res.isSuccess) {
+            res.getOrNull()?.threadId?.let { _currentThreadId.value = it }
+        }
+        res
+    }
+
+    suspend fun continueWhiteboardSession(threadId: String, userMessage: String): Result<WbSessionTurnResponse> = withContext(Dispatchers.IO) {
+        val req = WbContinueSessionRequest(threadId = threadId, userMessage = userMessage)
+        val res = callWithRetry { service.continueWhiteboardSession(req) }
+        if (res.isSuccess) {
+            res.getOrNull()?.threadId?.let { if (it != _currentThreadId.value) _currentThreadId.value = it }
+        }
+        res
+    }
+
+    suspend fun fetchWhiteboardSvg(sceneId: String): String? = withContext(Dispatchers.IO) {
+        try {
+            val baseUrl = BuildConfig.AGENTIC_AI_BASE_URL.trimEnd('/')
+            val svgUrl = "$baseUrl/whiteboard-tutor/scenes/$sceneId.svg"
+
+            val token = TokenManager.getIdToken(context)
+            val requestBuilder = Request.Builder().url(svgUrl)
+            if (token != null) {
+                requestBuilder.addHeader("Authorization", "Bearer $token")
+            }
+
+            val response = okHttpClient.newCall(requestBuilder.build()).execute()
+            if (response.isSuccessful) {
+                var svgString = response.body?.string() ?: return@withContext null
+                if (svgString.startsWith("\"") && svgString.endsWith("\"")) {
+                    svgString = svgString.substring(1, svgString.length - 1)
+                        .replace("\\\"", "\"")
+                        .replace("\\n", "\n")
+                }
+                svgString
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    suspend fun askGeneralDoubt(question: String, context: String): Result<DoubtResponse> =
+        withContext(Dispatchers.IO) {
+            val req = DoubtRequest(
+                question = question,
+                context = context
+            )
+            callWithRetry { service.askDoubt(req) }
+        }
+
 }

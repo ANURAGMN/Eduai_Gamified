@@ -8,8 +8,14 @@ object PlanTrialNavigation {
 
     fun routeForDay(dayIndex: Int): String = "plan_trial/$dayIndex"
 
-    fun buildDestination(item: PlanTrialItemUi, titleForUrl: String = "Simulation"): String? =
+    fun buildDestination(
+        item: PlanTrialItemUi,
+        titleForUrl: String = "Simulation",
+        @Suppress("UNUSED_PARAMETER") whiteboardConceptIds: Set<String> = emptySet(),
+    ): String? =
         when (item.kind) {
+            PlanTrialItemKind.WHITEBOARD ->
+                "whiteboard_chatbot?conceptId=${item.conceptId.ifBlank { item.sourceId }}"
             PlanTrialItemKind.STUDY ->
                 "chatbot?conceptId=${item.conceptId}"
             PlanTrialItemKind.SIM_AGENT ->

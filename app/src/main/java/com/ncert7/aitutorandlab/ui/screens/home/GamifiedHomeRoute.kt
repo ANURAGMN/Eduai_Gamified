@@ -67,6 +67,7 @@ import com.ncert7.aitutorandlab.service.analytics.TrackScreenEvent
 import com.ncert7.aitutorandlab.ui.components.QuestClaimDialog
 import com.ncert7.aitutorandlab.ui.navigation.GatedNavigationAction
 import com.anurag.eduai.uikit.screens.YoutubeVideoItem
+import com.ncert7.aitutorandlab.ui.screens.doubts.DoubtsBottomSheet
 import com.ncert7.aitutorandlab.ui.screens.home.components.YoutubeVideosSection
 import com.ncert7.aitutorandlab.ui.screens.textbook.TextbookEntryCard
 import com.ncert7.aitutorandlab.ui.screens.home.viewmodel.HomeViewModel
@@ -122,6 +123,7 @@ fun GamifiedHomeRoute(
     onNavigateToTrial: (Int) -> Unit,
     onNavigateToRoute: (String) -> Unit,
     onOpenTextbooks: () -> Unit = {},
+    onNavigateToNotes: (subjectId: String) -> Unit = {},
     onSimulationClick: (String, String) -> Unit,
     onSessionInvalid: () -> Unit,
     // First-run home-rail tour, driven by the parent (BottomNavBar) which owns both tour phases.
@@ -173,8 +175,13 @@ fun GamifiedHomeRoute(
     var pendingQuestClaim by remember { mutableStateOf<QuestClaimType?>(null) }
     var selectedYoutubeVideo by remember { mutableStateOf<YoutubeVideoItem?>(null) }
     var showGemsInfoDialog by remember { mutableStateOf(false) }
+    var showDoubtsSheet by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val notesLabel = stringResource(R.string.action_notes)
+    val practiceLabel = stringResource(R.string.action_practice)
+    val askDoubtLabel = stringResource(R.string.ask_ai_doubt)
+    val askDoubtChapterGeneral = stringResource(R.string.ask_ai_doubt_chapter_general)
 
     LaunchedEffect(Unit) {
         viewModel.preloadRewardedAd()
@@ -632,7 +639,7 @@ fun GamifiedHomeRoute(
                         onNavigateToChapters(selectedSubjectId)
                     }
                 },
-                onSubjectOpen = { subject ->
+                onPracticeClick = { subject ->
                     val subjectId = subject.subjectId
                     if (subjectId.isBlank()) {
                         onNavigateToLearning()
@@ -648,6 +655,16 @@ fun GamifiedHomeRoute(
                         },
                     )
                 },
+                onNotesClick = { subject ->
+                    // Prefer stable subjectId (not localized name) for notes routing.
+                    val subjectId = subject.subjectId
+                    if (subjectId.isBlank()) return@EduHomeScreen
+                    onNavigateToNotes(subjectId)
+                },
+                notesLabel = notesLabel,
+                practiceLabel = practiceLabel,
+                onAskDoubtClick = { showDoubtsSheet = true },
+                askDoubtLabel = askDoubtLabel,
                 subjectIconContent = { subject, tint ->
                     SubjectRailIcon(subject = subject, tint = tint)
                 },
@@ -682,10 +699,14 @@ fun GamifiedHomeRoute(
                 },
             )
         }
-            SnackbarHost(
-                hostState = snackbarHostState,
-                modifier = Modifier.align(Alignment.BottomCenter),
-            )
+            if (showDoubtsSheet) {
+                DoubtsBottomSheet(
+                    subjectName = selectedSubjectName.ifBlank { stringResource(R.string.app_name) },
+                    chapterName = askDoubtChapterGeneral,
+                    onDismiss = { showDoubtsSheet = false },
+                )
+            }
+
 
             // Full-screen streak celebrations, on top of home. The triumphant "extended" beat wins if
             // both are queued (e.g. the day's first task just extended the streak).

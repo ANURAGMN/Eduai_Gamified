@@ -867,6 +867,7 @@ class PlanTrialViewModel @Inject constructor(
             when (entity.kind) {
                 PlanTrialItemKind.SIM_AGENT -> TrialCopy.partialReturnSim(activeLanguage)
                 PlanTrialItemKind.STUDY,
+                PlanTrialItemKind.WHITEBOARD,
                 PlanTrialItemKind.SIM_URL,
                 PlanTrialItemKind.MATH,
                 ->
@@ -1013,7 +1014,8 @@ class PlanTrialViewModel @Inject constructor(
         val kindMoment =
             when {
                 nextUi == null -> MomentType.DAY_COMPLETED
-                fresh.kind == PlanTrialItemKind.STUDY -> MomentType.STUDY_COMPLETED
+                fresh.kind == PlanTrialItemKind.STUDY ||
+                    fresh.kind == PlanTrialItemKind.WHITEBOARD -> MomentType.STUDY_COMPLETED
                 else -> MomentType.SIM_COMPLETED
             }
         pendingGemMoment =

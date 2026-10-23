@@ -13,6 +13,7 @@ import com.ncert7.aitutorandlab.data.local.dao.GamificationDao
 import com.ncert7.aitutorandlab.data.local.dao.LeagueDao
 import com.ncert7.aitutorandlab.data.local.dao.ChapterAgentProgressDao
 import com.ncert7.aitutorandlab.data.local.dao.ChapterDao
+import com.ncert7.aitutorandlab.data.local.dao.ChapterNoteDao
 import com.ncert7.aitutorandlab.data.local.dao.ConceptDao
 import com.ncert7.aitutorandlab.data.local.dao.ProgressDao
 import com.ncert7.aitutorandlab.data.local.dao.QuestDailyDao
@@ -22,7 +23,9 @@ import com.ncert7.aitutorandlab.data.local.dao.SimulationInteractionDao
 import com.ncert7.aitutorandlab.data.local.dao.StudentDao
 import com.ncert7.aitutorandlab.data.local.dao.SubjectDao
 import com.ncert7.aitutorandlab.repository.StreakRepository
+import com.ncert7.aitutorandlab.service.sync.FirebaseSyncManager
 import com.ncert7.aitutorandlab.utils.StreakManager
+import com.google.firebase.firestore.FirebaseFirestore
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -178,4 +181,32 @@ object DatabaseModule {
     fun provideUserId(sharedPreferenceUtils: SharedPreferenceUtils): String {
         return sharedPreferenceUtils.getUserId()?.takeIf { it.isNotBlank() } ?: ""
     }
+
+    @Provides
+    @Singleton
+    fun provideChapterNoteDao(db: EduAiDatabase): ChapterNoteDao = db.chapterNoteDao()
+
+    @Provides
+    @Singleton
+    fun provideFirebaseSyncManager(
+        subjectDao: SubjectDao,
+        chapterDao: ChapterDao,
+        conceptDao: ConceptDao,
+        progressDao: ProgressDao,
+        streakDao: StreakDao,
+        chapterProgressDao: ChapterAgentProgressDao,
+        chapterNoteDao: ChapterNoteDao,
+        @ApplicationContext context: Context,
+    ): FirebaseSyncManager =
+        FirebaseSyncManager(
+            firestore = FirebaseFirestore.getInstance(),
+            subjectDao = subjectDao,
+            chapterDao = chapterDao,
+            conceptDao = conceptDao,
+            progressDao = progressDao,
+            streakDao = streakDao,
+            chapterProgressDao = chapterProgressDao,
+            chapterNoteDao = chapterNoteDao,
+            context = context,
+        )
 }

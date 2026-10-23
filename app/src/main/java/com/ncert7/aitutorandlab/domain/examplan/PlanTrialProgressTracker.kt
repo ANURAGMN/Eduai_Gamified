@@ -149,7 +149,9 @@ class PlanTrialProgressTracker @Inject constructor(
                     progressEventTracker.markSimulationUrlCompleted(studentId, conceptId)
                 PlanTrialItemKind.SIM_AGENT ->
                     progressEventTracker.markSimulationAgentCompleted(studentId, conceptId)
-                PlanTrialItemKind.STUDY ->
+                PlanTrialItemKind.STUDY,
+                PlanTrialItemKind.WHITEBOARD,
+                ->
                     progressEventTracker.markStudyCompleted(studentId, conceptId)
                 PlanTrialItemKind.MATH ->
                     progressEventTracker.markMathAgentCompleted(studentId, conceptId)

@@ -6,6 +6,63 @@ import org.junit.Test
 
 class TrialItemOrderingTest {
 
+    private fun labels(slots: List<TrialItemOrdering.ChapterSlot<String>>) =
+        slots.map { slot ->
+            when (slot) {
+                is TrialItemOrdering.ChapterSlot.Whiteboard -> "W:${slot.item}"
+                is TrialItemOrdering.ChapterSlot.Sim -> "S:${slot.item}"
+            }
+        }
+
+    @Test
+    fun chapterInterleave_twoWhiteboardsThenOneSim() {
+        val slots =
+            TrialItemOrdering.chapterInterleave(
+                whiteboards = listOf("wb1", "wb2", "wb3", "wb4"),
+                sims = listOf("sim1", "sim2"),
+            )
+        assertEquals(
+            listOf("W:wb1", "W:wb2", "S:sim1", "W:wb3", "W:wb4", "S:sim2"),
+            labels(slots),
+        )
+    }
+
+    @Test
+    fun chapterInterleave_extraWhiteboardsContinueWithoutSims() {
+        val slots =
+            TrialItemOrdering.chapterInterleave(
+                whiteboards = listOf("wb1", "wb2", "wb3", "wb4", "wb5"),
+                sims = listOf("sim1"),
+            )
+        assertEquals(
+            listOf("W:wb1", "W:wb2", "S:sim1", "W:wb3", "W:wb4", "W:wb5"),
+            labels(slots),
+        )
+    }
+
+    @Test
+    fun chapterInterleave_oddWhiteboardCountAndExtraSimsAtEnd() {
+        val slots =
+            TrialItemOrdering.chapterInterleave(
+                whiteboards = listOf("wb1", "wb2", "wb3"),
+                sims = listOf("sim1", "sim2", "sim3", "sim4"),
+            )
+        assertEquals(
+            listOf("W:wb1", "W:wb2", "S:sim1", "W:wb3", "S:sim2", "S:sim3", "S:sim4"),
+            labels(slots),
+        )
+    }
+
+    @Test
+    fun chapterInterleave_noWhiteboardsListsSimsOnly() {
+        val slots =
+            TrialItemOrdering.chapterInterleave(
+                whiteboards = emptyList(),
+                sims = listOf("sim1", "sim2"),
+            )
+        assertEquals(listOf("S:sim1", "S:sim2"), labels(slots))
+    }
+
     @Test
     fun simUrlsForStudy_assignsTwoSimsPerStudyIndex() {
         val studies =

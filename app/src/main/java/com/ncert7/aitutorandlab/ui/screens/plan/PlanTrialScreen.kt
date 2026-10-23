@@ -22,6 +22,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.foundation.clickable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
@@ -30,12 +31,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import android.widget.Toast
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.anurag.eduai.uikit.components.EduScreenTopBar
+import com.ncert7.aitutorandlab.R
 import com.anurag.eduai.uikit.components.PlanTrialAdvanceOverlay
 import com.anurag.eduai.uikit.components.PlanTrialPath
 import com.anurag.eduai.uikit.components.PlanTrialStacked
@@ -53,6 +56,7 @@ import com.ncert7.aitutorandlab.ui.screens.garden.GardenNextPlacePickerOverlay
 import com.ncert7.aitutorandlab.ui.screens.plan.components.TrialMomentHost
 import com.ncert7.aitutorandlab.service.analytics.ScreenName
 import com.ncert7.aitutorandlab.service.analytics.TrackScreenEvent
+import com.ncert7.aitutorandlab.ui.screens.doubts.DoubtsBottomSheet
 import com.ncert7.aitutorandlab.ui.screens.plan.viewmodel.PlanTrialItemUi
 import com.ncert7.aitutorandlab.ui.screens.plan.viewmodel.PlanTrialViewModel
 
@@ -84,6 +88,7 @@ fun PlanTrialScreen(
     val moment by viewModel.moment.collectAsState()
     val gardenPlacePicker by viewModel.gardenPlacePicker.collectAsState()
     var pathView by rememberSaveable { mutableStateOf(true) }
+    var showDoubtsSheet by remember { mutableStateOf(false) }
 
     LifecycleResumeEffect(Unit) {
         viewModel.onTrialScreenVisible()
@@ -189,6 +194,8 @@ fun PlanTrialScreen(
                                             Toast.LENGTH_SHORT,
                                         ).show()
                                     },
+                                    onAskDoubtClick = { showDoubtsSheet = true },
+                                    askDoubtLabel = stringResource(R.string.ask_ai_doubt),
                                     modifier = Modifier.fillMaxSize(),
                                 )
                             } else {
@@ -200,6 +207,8 @@ fun PlanTrialScreen(
                                             onItemClick(item)
                                         }
                                     },
+                                    onAskDoubtClick = { showDoubtsSheet = true },
+                                    askDoubtLabel = stringResource(R.string.ask_ai_doubt),
                                     modifier = Modifier.fillMaxSize(),
                                 )
                             }
@@ -207,6 +216,14 @@ fun PlanTrialScreen(
                     }
                 }
             }
+        }
+
+        if (showDoubtsSheet) {
+            DoubtsBottomSheet(
+                subjectName = planDayTitle ?: "Learning Plan",
+                chapterName = items.firstOrNull()?.title ?: (planDayTitle ?: "Current Topic"),
+                onDismiss = { showDoubtsSheet = false },
+            )
         }
 
         if (partialReturnPrompt == null && moment == null) {
@@ -291,6 +308,7 @@ private fun buildTrialChapters(items: List<PlanTrialItemUi>): List<TrialPathChap
                                 PlanTrialItemKind.SIM_URL -> TrialNodeType.Simulation
                                 PlanTrialItemKind.SIM_AGENT -> TrialNodeType.SimAgent
                                 PlanTrialItemKind.STUDY -> TrialNodeType.Study
+                                PlanTrialItemKind.WHITEBOARD -> TrialNodeType.Whiteboard
                                 PlanTrialItemKind.MATH -> TrialNodeType.Math
                                 PlanTrialItemKind.REVISION -> TrialNodeType.Revision
                                 else -> TrialNodeType.Study

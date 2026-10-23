@@ -48,8 +48,8 @@ class PlanTrialRepository @Inject constructor(
     /**
      * Ensures a standalone chapter trial exists (opened from the chapter picker). Stored
      * under a chapter-scoped [dayIndex]. Rematerializes when the syllabus queue changes
-     * (e.g. older builds only stored SIM_URL and omitted STUDY / MATH / SIM_AGENT), merging
-     * progress by kind+concept+source so done sims stay done.
+     * (e.g. older builds used STUDY/MATH; chapter trials are now WHITEBOARD ×2 then SIM_URL),
+     * merging progress by kind+concept+source so done sims stay done.
      */
     suspend fun ensureChapterTrial(
         studentId: String,
@@ -275,6 +275,6 @@ class PlanTrialRepository @Inject constructor(
 
     // Same stability as progressKey — rematerialize when the concept/kind lineup changes, not when
     // only the sim URL language flips (URLs still update via forceSync / first upsert).
-    private fun trialOrderSignature(items: List<PlanTrialItemEntity>): List<Pair<String, String>> =
-        items.sortedBy { it.sequenceIndex }.map { it.kind to it.conceptId }
+    private fun trialOrderSignature(items: List<PlanTrialItemEntity>): List<Triple<String, String, Int>> =
+        items.sortedBy { it.sequenceIndex }.map { Triple(it.kind, it.conceptId, it.requiredCount) }
 }

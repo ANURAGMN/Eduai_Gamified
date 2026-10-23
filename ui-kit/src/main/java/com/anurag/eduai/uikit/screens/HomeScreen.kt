@@ -197,7 +197,12 @@ fun EduHomeScreen(
     onBookmarksSeeAll: () -> Unit = {},
     onBookmarkOpen: (BookmarkItem) -> Unit = {},
     onRevisionOpen: (RevisionItem) -> Unit = {},
-    onSubjectOpen: (SubjectTile) -> Unit = {},
+    onPracticeClick: (SubjectTile) -> Unit = {},
+    onNotesClick: (SubjectTile) -> Unit = {},
+    notesLabel: String = "Notes",
+    practiceLabel: String = "Practice",
+    onAskDoubtClick: (() -> Unit)? = null,
+    askDoubtLabel: String = "Ask AI a Doubt",
     subjectIconContent: @Composable (SubjectTile, Color) -> Unit = { subject, tint ->
         Icon(
             imageVector = subjectMaterialIcon(subject.name),
@@ -313,30 +318,35 @@ fun EduHomeScreen(
             SubjectsRail(
                 title = state.subjectsSectionTitle,
                 subjects = state.subjects,
-                onOpen = onSubjectOpen,
+                onPracticeClick = onPracticeClick,
+                onNotesClick = onNotesClick,
+                notesLabel = notesLabel,
+                practiceLabel = practiceLabel,
                 iconContent = subjectIconContent,
             )
         }
 
-        // Space / garden colony — above video lessons.
-        Box(Modifier.fillMaxWidth().onGloballyPositioned { railBounds = railBounds + (2 to it.boundsInRoot()) }) {
-        Entrance(delayMillis = 158) {
-            when {
-                state.garden != null ->
-                    GrowRail(
-                        state = state.garden,
-                        onOpenWorld = onOpenGarden,
-                        onRailClick = onGardenRailClick,
+        if (onAskDoubtClick != null) {
+            Entrance(delayMillis = 154) {
+                androidx.compose.material3.OutlinedButton(
+                    onClick = onAskDoubtClick,
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(top = 12.dp)
+                            .height(56.dp),
+                    colors =
+                        androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                            contentColor = EduAiTheme.colors.accent,
+                        ),
+                    border = androidx.compose.foundation.BorderStroke(2.dp, EduAiTheme.colors.accent),
+                ) {
+                    Text(
+                        text = askDoubtLabel,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
                     )
-                state.collectionShelf != null -> {
-                    val shelf = state.collectionShelf
-                    SectionHeader(
-                        title = shelf.sectionTitle,
-                        seeAllLabel = shelf.seeAllLabel,
-                        onSeeAllClick = onOpenGarden,
-                    )
-                    CollectionShelf(
-                        state = shelf,
+                }
                         onOpenCollection = onOpenGarden,
                     )
                 }

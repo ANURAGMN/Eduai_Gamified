@@ -5,13 +5,45 @@ import com.ncert7.aitutorandlab.data.local.entities.ConceptEntity
 /**
  * Pure ordering helpers for exam-trial queues.
  *
- * Lesson / chapter trials: up to [SIMS_PER_STUDY_BLOCK] sim URLs before each study (or math)
- * agent — e.g. sim1, sim2, study1, sim3, sim4, study2, …. Leftover studies stack after the
- * interleaved blocks; revision and simulation agents come after that (agents last).
+ * Plan lesson days: up to [SIMS_PER_STUDY_BLOCK] sim URLs before each study (or math) agent —
+ * sim1, sim2, study1, …. Chapter trials (see [chapterInterleave]):
+ * [WHITEBOARDS_PER_SIM_BLOCK] whiteboards then one sim —
+ * wb1, wb2, sim1, wb3, wb4, sim2, ….
  */
 object TrialItemOrdering {
     /** Sim URLs placed before each study/math agent when the chapter has enough sims. */
     const val SIMS_PER_STUDY_BLOCK = 2
+
+    /** Chapter trials: whiteboard nodes before each sim URL. */
+    const val WHITEBOARDS_PER_SIM_BLOCK = 2
+
+    sealed interface ChapterSlot<out T> {
+        val item: T
+
+        data class Whiteboard<T>(override val item: T) : ChapterSlot<T>
+
+        data class Sim<T>(override val item: T) : ChapterSlot<T>
+    }
+
+    /**
+     * Chapter-trial queue: each block is [whiteboardsPerBlock] whiteboards followed by the next
+     * sim. Whiteboards beyond the sims keep going without sims; leftover sims follow the last
+     * whiteboard block.
+     */
+    fun <T> chapterInterleave(
+        whiteboards: List<T>,
+        sims: List<T>,
+        whiteboardsPerBlock: Int = WHITEBOARDS_PER_SIM_BLOCK,
+    ): List<ChapterSlot<T>> {
+        val blocks = whiteboards.chunked(whiteboardsPerBlock.coerceAtLeast(1))
+        val slots = mutableListOf<ChapterSlot<T>>()
+        blocks.forEachIndexed { index, block ->
+            block.forEach { slots += ChapterSlot.Whiteboard(it) }
+            sims.getOrNull(index)?.let { slots += ChapterSlot.Sim(it) }
+        }
+        sims.drop(blocks.size).forEach { slots += ChapterSlot.Sim(it) }
+        return slots
+    }
 
     private const val MINUTES_PER_SIM_URL = 4
     private const val MINUTES_PER_STUDY = 12

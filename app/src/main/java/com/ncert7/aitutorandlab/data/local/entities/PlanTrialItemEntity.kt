@@ -52,6 +52,9 @@ object PlanTrialItemKind {
 
     /** Math practice problem — opens the math agent. Used for Math-subject chapter trials. */
     const val MATH = "MATH"
+
+    /** Interactive whiteboard tutor — used on chapter trials (wb, wb, sim, …). */
+    const val WHITEBOARD = "WHITEBOARD"
 }
 
 object PlanTrialItemStatus {

@@ -8,7 +8,10 @@ import com.ncert7.aitutorandlab.data.local.entities.ExamPlanDayEntity
 import com.ncert7.aitutorandlab.data.local.entities.PlanTrialItemEntity
 import com.ncert7.aitutorandlab.data.local.entities.PlanTrialItemKind
 import com.ncert7.aitutorandlab.data.local.entities.PlanTrialItemStatus
+import com.ncert7.aitutorandlab.data.remote.AgenticAIClient
+import com.ncert7.aitutorandlab.data.remote.WbConceptInfo
 import com.ncert7.aitutorandlab.utils.SimulationLanguageUrl
+import com.ncert7.aitutorandlab.utils.SubjectIds
 import com.ncert7.aitutorandlab.utils.TrialCopy
 import com.ncert7.aitutorandlab.utils.getLocalizedName
 import com.ncert7.aitutorandlab.utils.isKannadaLanguage
@@ -325,10 +328,8 @@ class PlanTrialMaterializer @Inject constructor(
      * Builds a standalone trial for a single chapter (opened from the chapter picker).
      *
      * Priority (Science-style, also used for Math with math agents in the study slots):
-     * 1. Interleave — up to 2 sim URLs, then a Study (or Math) agent, repeat
-     * 2. Any leftover sims / study-only agents
-     * 3. Revision agent
-     * 4. Simulation agents last (sim + chat agent)
+     * Pattern: 2 whiteboards, then 1 simulation URL, repeat. No study/math/revision/sim-agent
+     * nodes — those stay on plan lesson/revise days only.
      */
     suspend fun materializeChapter(
         studentId: String,
@@ -337,19 +338,25 @@ class PlanTrialMaterializer @Inject constructor(
         planDayId: Long,
         languageCode: String,
     ): List<PlanTrialItemEntity> {
-        val chapterName =
-            chapterDao.getChapter(chapterId)?.getLocalizedName(languageCode) ?: chapterId
+        val chapter = chapterDao.getChapter(chapterId)
+        val chapterName = chapter?.getLocalizedName(languageCode) ?: chapterId
         val items = mutableListOf<PlanTrialItemEntity>()
         var sequence = 0
 
-        fun emit(concept: ConceptEntity, kind: String, sourceId: String, requiredCount: Int) {
+        fun emitItem(
+            conceptId: String,
+            kind: String,
+            sourceId: String,
+            conceptName: String,
+            requiredCount: Int,
+        ) {
             items +=
-                buildItemRaw(
+                PlanTrialItemEntity(
                     studentId = studentId,
                     planDayId = planDayId,
                     dayIndex = dayIndex,
                     chapterId = chapterId,
-                    concept = concept,
+                    conceptId = conceptId,
                     kind = kind,
                     sourceId = sourceId,
                     title =
@@ -357,105 +364,92 @@ class PlanTrialMaterializer @Inject constructor(
                             languageCode = languageCode,
                             chapterName = chapterName,
                             kind = kind,
-                            conceptName = concept.getLocalizedName(languageCode),
+                            conceptName = conceptName,
                         ),
                     sequenceIndex = sequence++,
                     requiredCount = requiredCount,
+                    completedCount = 0,
+                    status = PlanTrialItemStatus.PENDING,
+                    celebrated = false,
                 )
         }
 
+        val whiteboards = whiteboardConceptsForChapter(chapterId)
         val simsWithUrl = simsWithUrlForChapter(chapterId, languageCode)
-        val studies =
-            conceptDao.getStudyConceptsForChapter(chapterId).sortedBy { it.orderIndex }
-        val mathProblems =
-            conceptDao.getConceptsForChapterSync(chapterId, "MATH PROBLEM")
-                .sortedBy { it.orderIndex }
-                .filter { it.problemId.isNotBlank() }
 
-        // Study chat fills the interleaved agent slots for Science; Math problems do so when
-        // there are no STUDY concepts (Math chapters).
-        val interleavedAgents = if (studies.isNotEmpty()) studies else mathProblems
-        val interleavedKind =
-            if (studies.isNotEmpty()) PlanTrialItemKind.STUDY else PlanTrialItemKind.MATH
-
-        val (agentsWithSims, agentsOnly) =
-            TrialItemOrdering.partitionStudiesBySimAvailability(
-                studiesOnDay = interleavedAgents,
-                allStudiesInChapter = interleavedAgents,
-                simsWithUrl = simsWithUrl,
-            )
-
-        // 1. sim, sim, study/math, … for each agent that still has a sim block.
-        agentsWithSims.forEach { agent ->
-            val block =
-                TrialItemOrdering.simUrlsForStudy(
-                    study = agent,
-                    allStudiesInChapter = interleavedAgents,
-                    simsWithUrl = simsWithUrl,
+        // 2 whiteboards → 1 sim, repeat (same rule as TrialItemOrdering.chapterInterleave).
+        val wbBlocks =
+            whiteboards.chunked(TrialItemOrdering.WHITEBOARDS_PER_SIM_BLOCK.coerceAtLeast(1))
+        wbBlocks.forEachIndexed { index, block ->
+            block.forEach { wb ->
+                        emitItem(
+                            conceptId = wb.conceptId,
+                            kind = PlanTrialItemKind.WHITEBOARD,
+                            sourceId = wb.conceptId,
+                            conceptName = wb.title,
+                            requiredCount = WhiteboardTrialThresholds.DEFAULT_GOAL,
+                        )
+            }
+            simsWithUrl.getOrNull(index)?.let { sim ->
+                val url = resolvedSimulationUrl(sim, languageCode) ?: return@let
+                emitItem(
+                    conceptId = sim.conceptId,
+                    kind = PlanTrialItemKind.SIM_URL,
+                    sourceId = url,
+                    conceptName = sim.getLocalizedName(languageCode),
+                    requiredCount = SimulationTrialThresholds.DEFAULT_GOAL,
                 )
-            block.forEach { sim ->
-                val url = resolvedSimulationUrl(sim, languageCode) ?: return@forEach
-                emit(sim, PlanTrialItemKind.SIM_URL, url, requiredCount = SimulationTrialThresholds.DEFAULT_GOAL)
-            }
-            val agentSourceId =
-                if (interleavedKind == PlanTrialItemKind.MATH) {
-                    agent.problemId
-                } else {
-                    agent.conceptId
-                }
-            emit(agent, interleavedKind, agentSourceId, requiredCount = 7)
-        }
-
-        // Leftover sims that did not fit a 2-sim study block (more sims than 2×agents).
-        val consumedSimIds =
-            agentsWithSims
-                .flatMap { agent ->
-                    TrialItemOrdering.simUrlsForStudy(agent, interleavedAgents, simsWithUrl)
-                }
-                .map { it.conceptId }
-                .toSet()
-        simsWithUrl
-            .filter { it.conceptId !in consumedSimIds }
-            .forEach { sim ->
-                val url = resolvedSimulationUrl(sim, languageCode) ?: return@forEach
-                emit(sim, PlanTrialItemKind.SIM_URL, url, requiredCount = SimulationTrialThresholds.DEFAULT_GOAL)
-            }
-
-        // Agents with no remaining sim block — after the interleaved section.
-        agentsOnly.forEach { agent ->
-            val agentSourceId =
-                if (interleavedKind == PlanTrialItemKind.MATH) {
-                    agent.problemId
-                } else {
-                    agent.conceptId
-                }
-            emit(agent, interleavedKind, agentSourceId, requiredCount = 7)
-        }
-
-        // If studies filled the interleaved slots, any math problems still go before revision
-        // so the very end stays reserved for simulation agents.
-        if (studies.isNotEmpty()) {
-            mathProblems.forEach { problem ->
-                emit(problem, PlanTrialItemKind.MATH, problem.problemId, requiredCount = 7)
             }
         }
-
-        // 2. Revision (one per chapter when there is study content to revise).
-        studies.firstOrNull()?.let { rep ->
-            emit(rep, PlanTrialItemKind.REVISION, chapterId, requiredCount = 1)
+        simsWithUrl.drop(wbBlocks.size).forEach { sim ->
+            val url = resolvedSimulationUrl(sim, languageCode) ?: return@forEach
+            emitItem(
+                conceptId = sim.conceptId,
+                kind = PlanTrialItemKind.SIM_URL,
+                sourceId = url,
+                conceptName = sim.getLocalizedName(languageCode),
+                requiredCount = SimulationTrialThresholds.DEFAULT_GOAL,
+            )
         }
-
-        // 3. Simulation agents last.
-        conceptDao.getConceptsForChapterSync(chapterId, "SIMULATION")
-            .sortedBy { it.orderIndex }
-            .filter { isValidSimId(resolvedSimulationId(it, languageCode)) }
-            .forEach { sim ->
-                val simId = resolvedSimulationId(sim, languageCode) ?: return@forEach
-                emit(sim, PlanTrialItemKind.SIM_AGENT, simId, requiredCount = 7)
-            }
 
         return items
     }
+
+    /**
+     * Whiteboard concepts for this chapter from the tutor API (has_scene only).
+     * Matches [ChapterEntity.orderIndex] to [WbConceptInfo.chapter] (1-based in the API);
+     * also accepts orderIndex+1 when local indices are 0-based.
+     */
+    private suspend fun whiteboardConceptsForChapter(chapterId: String): List<WbConceptInfo> {
+        val chapter = chapterDao.getChapter(chapterId) ?: return emptyList()
+        val result = aiClient.getWhiteboardConcepts()
+        val all =
+            result.getOrNull()?.concepts.orEmpty().filter { it.hasScene && it.conceptId.isNotBlank() }
+        if (all.isEmpty()) return emptyList()
+
+        val chapterNums =
+            buildSet {
+                add(chapter.orderIndex)
+                if (chapter.orderIndex >= 0) add(chapter.orderIndex + 1)
+            }.filter { it > 0 }.toSet()
+
+        val byChapter = all.filter { it.chapter in chapterNums }
+        val subjectFiltered =
+            when (chapter.subjectId) {
+                SubjectIds.MATH ->
+                    byChapter.filter {
+                        val s = it.subject.orEmpty().lowercase()
+                        s.isEmpty() || "math" in s || "ಗಣಿತ" in s
+                    }
+                SubjectIds.SCIENCE ->
+                    byChapter.filter {
+                        val s = it.subject.orEmpty().lowercase()
+                        s.isEmpty() || "science" in s || "ವಿಜ್ಞಾನ" in s
+                    }
+                else -> byChapter
+            }
+
+        return (subjectFiltered.ifEmpty { byChapter }).sortedBy { it.title }
 
     private fun ConceptEntity.simulationIdFor(languageCode: String): String? =
         when (languageCode) {
