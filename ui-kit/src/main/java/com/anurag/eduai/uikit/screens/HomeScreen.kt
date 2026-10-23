@@ -25,6 +25,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -77,6 +78,9 @@ import com.anurag.eduai.uikit.garden.CollectionShelf
 import com.anurag.eduai.uikit.garden.CollectionShelfState
 import com.anurag.eduai.uikit.theme.EduChipRole
 import com.anurag.eduai.uikit.theme.EduAiTheme
+import com.anurag.eduai.uikit.components.SearchResultItem
+import com.anurag.eduai.uikit.components.HomeSearchRail
+import com.anurag.eduai.uikit.components.SearchResultCard
 
 data class HomeUiState(
     val greeting: String = "Good morning",
@@ -98,9 +102,7 @@ data class HomeUiState(
     val heroDoneButtonLabel: String = "Start Day 5 early",
     val heroXpEarned: Int = 35,
     val quests: QuestTrailState = QuestTrailState(),
-    /** When non-null, replaces the quest trail (garden feature flag). */
     val garden: GardenRailState? = null,
-    /** Island/colony fallback shelf when the grow rail is unavailable. */
     val collectionShelf: CollectionShelfState? = null,
     val friends: List<FriendUpdate> = emptyList(),
     val friendCount: Int = 0,
@@ -135,7 +137,6 @@ data class HomeUiState(
         ),
     val tutorTitle: String = "Your tutor",
     val tutorMessage: String = "Ready for today's quests? Let's go!",
-    // Section chrome — filled by the app from HomeCopy so EN↔KN toggles update rails.
     val planSectionTitle: String = "Your exam prep plan",
     val planAddLabel: String = "Add plan",
     val planEmptyTitle: String = "No exam plan yet",
@@ -145,7 +146,6 @@ data class HomeUiState(
     val planGrowHint: String = "Finish a day to grow your world — every task plants something new.",
     val questsSectionTitle: String = "Today's quests",
     val revisionSectionTitle: String = "Needs revision",
-    /** Use `%d` for the quiz percent, e.g. `%d%% last quiz` / `ಕೊನೆಯ ರಸಪ್ರಶ್ನೆ %d%%`. */
     val revisionLastQuizTemplate: String = "%d%% last quiz",
     val bookmarksSectionTitle: String = "Bookmarks",
     val seeAllLabel: String = "See all",
@@ -157,19 +157,21 @@ data class HomeUiState(
     val inviteFriendsSubtitle: String = "Share your code",
     val shareLabel: String = "Share",
     val acceptLabel: String = "Accept",
+
+    val searchQuery: String = "",
+    val searchSubject: String = "All",
+    val searchLearningOption: String = "All / infer from search",
+    val searchResults: List<SearchResultItem> = emptyList(),
+    val hasSearched: Boolean = false,
+    val isSearching: Boolean = false
 )
 
-/** Lightweight card model for the home YouTube rail (below subjects). */
 data class YoutubeVideoItem(
     val videoId: String,
     val title: String,
     val thumbnailUrl: String = "",
 )
 
-/**
- * Pixel-faithful Compose port of prototype `screenHome()` rail order:
- * TopBar → Hero → Quests trail → Friends → Bookmarks → Plan trail → Revision → Subjects
- */
 @Composable
 fun EduHomeScreen(
     state: HomeUiState = HomeUiState(),
@@ -199,6 +201,16 @@ fun EduHomeScreen(
     onRevisionOpen: (RevisionItem) -> Unit = {},
     onPracticeClick: (SubjectTile) -> Unit = {},
     onNotesClick: (SubjectTile) -> Unit = {},
+
+    onSearchQueryChange: (String) -> Unit = {},
+    onSearchSubjectChange: (String) -> Unit = {},
+    onSearchLearningOptionChange: (String) -> Unit = {},
+    onSearchClick: () -> Unit = {},
+    onSurpriseMeClick: () -> Unit = {},
+    onSearchLearnWithTutor: (String, Boolean, String, String) -> Unit = { _, _, _, _ -> },
+    onSearchWhiteboard: (String) -> Unit = {},
+    onSearchAskDoubt: (String, String, String) -> Unit = { _, _, _ -> },
+
     subjectIconContent: @Composable (SubjectTile, Color) -> Unit = { subject, tint ->
         Icon(
             imageVector = subjectMaterialIcon(subject.name),
@@ -208,28 +220,21 @@ fun EduHomeScreen(
         )
     },
     belowSubjectsContent: @Composable () -> Unit = {},
-    /** When true, runs the four-step first-run spotlight tour over the real rails. */
     showIntroTour: Boolean = false,
-    /** [skipped] true when the student tapped Skip; [step] is the coach step index (0..2). */
     onIntroTourFinished: (skipped: Boolean, step: Int) -> Unit = { _, _ -> },
-    /** Called with the current tour step index each time it changes (for analytics). */
     onTourStep: (Int) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val colors = EduAiTheme.colors
     val scrollState = rememberScrollState()
-    // Bounds of the four rails the tour spotlights (0 chips, 1 hero, 2 grow/quests, 3 plan) plus the
-    // scroll viewport, so each target can be scrolled into view before it is highlighted.
     var railBounds by remember { mutableStateOf<Map<Int, Rect>>(emptyMap()) }
     var viewportBounds by remember { mutableStateOf<Rect?>(null) }
     var coachStep by remember { mutableIntStateOf(0) }
 
-    // Report each tour step as it becomes visible (analytics).
     LaunchedEffect(coachStep, showIntroTour) {
         if (showIntroTour && coachStep < homeTourSteps.size) onTourStep(coachStep)
     }
 
-    // Bring each target under a comfortable line below the status bar before it is spotlighted.
     LaunchedEffect(coachStep, showIntroTour) {
         if (!showIntroTour) return@LaunchedEffect
         var target = railBounds[coachStep]
@@ -279,9 +284,8 @@ fun EduHomeScreen(
                         onLeagueClick = onLeagueClick,
                     )
                 }
-            } // end rail-0 bounds
+            }
 
-            // Tutor + today's focus in one compact strip (avatar · task · Start).
             Box(Modifier.fillMaxWidth().onGloballyPositioned { railBounds = railBounds + (1 to it.boundsInRoot()) }) {
                 Entrance(delayMillis = 80) {
                     if (state.todayDone) {
@@ -306,10 +310,85 @@ fun EduHomeScreen(
                         )
                     }
                 }
-            } // end rail-1 bounds (focus + tutor merged)
+            }
 
-            // Subjects sits above the garden so browsing by subject is the first thing after
-            // the focus strip.
+            // --- SEARCH UI SECTION ---
+            Entrance(delayMillis = 120) {
+                Column(modifier = Modifier.fillMaxWidth().padding(top = 18.dp)) {
+                    HomeSearchRail(
+                        query = state.searchQuery,
+                        onQueryChange = onSearchQueryChange,
+                        subjectFilter = state.searchSubject,
+                        onSubjectFilterChange = onSearchSubjectChange,
+                        learningOption = state.searchLearningOption,
+                        onLearningOptionChange = onSearchLearningOptionChange,
+                        onSearchClick = onSearchClick,
+                        onSurpriseMeClick = onSurpriseMeClick,
+                        isSearching = state.isSearching
+                    )
+
+                    if (state.hasSearched && !state.isSearching) {
+
+                        // Instantly filter existing results when dropdowns change locally
+                        val filteredResults = remember(state.searchResults, state.searchSubject, state.searchLearningOption) {
+                            state.searchResults.filter { item ->
+                                val subjectMatch = when (state.searchSubject) {
+                                    "Math" -> item.isMath
+                                    "Science" -> !item.isMath
+                                    else -> true
+                                }
+                                val optionMatch = when (state.searchLearningOption) {
+                                    "Whiteboard" -> item.isWhiteboardAvailable
+                                    else -> true // Tutor and Ask a doubt apply to all
+                                }
+                                subjectMatch && optionMatch
+                            }
+                        }
+
+                        if (state.searchQuery.isBlank() && state.searchResults.isEmpty()) {
+                            Box(modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp), contentAlignment = Alignment.Center) {
+                                Text("Please enter a topic to search.", color = colors.warning, fontSize = 13.sp)
+                            }
+                        } else if (filteredResults.isEmpty()) {
+                            Box(modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp), contentAlignment = Alignment.Center) {
+                                Text("No topics found matching your criteria. Try another search.", color = colors.textSecondary, fontSize = 13.sp)
+                            }
+                        } else {
+                            Text(
+                                text = "${filteredResults.size} matches",
+                                color = colors.textSecondary,
+                                fontSize = 12.sp,
+                                modifier = Modifier.padding(bottom = 8.dp)
+                            )
+
+                            var expandedResults by remember(filteredResults) { mutableStateOf(false) }
+                            val resultsToShow = if (expandedResults) filteredResults else filteredResults.take(5)
+
+                            resultsToShow.forEach { result ->
+                                SearchResultCard(
+                                    result = result,
+                                    selectedLearningOption = state.searchLearningOption,
+                                    onLearnWithTutor = onSearchLearnWithTutor,
+                                    onWhiteboard = onSearchWhiteboard,
+                                    onAskDoubt = { conceptId, subject, _ ->
+                                        onSearchAskDoubt(conceptId, subject, result.topicName)
+                                    }
+                                )
+                            }
+
+                            if (!expandedResults && filteredResults.size > 5) {
+                                Box(modifier = Modifier.fillMaxWidth().padding(top = 4.dp), contentAlignment = Alignment.Center) {
+                                    TextButton(onClick = { expandedResults = true }) {
+                                        Text("Show more", color = colors.accent, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            // --- END SEARCH UI ---
+
             Entrance(delayMillis = 150) {
                 SubjectsRail(
                     title = state.subjectsSectionTitle,
@@ -320,7 +399,6 @@ fun EduHomeScreen(
                 )
             }
 
-            // Space / garden colony — above video lessons.
             Box(Modifier.fillMaxWidth().onGloballyPositioned { railBounds = railBounds + (2 to it.boundsInRoot()) }) {
                 Entrance(delayMillis = 158) {
                     when {
@@ -354,9 +432,8 @@ fun EduHomeScreen(
                             )
                     }
                 }
-            } // end rail-2 bounds
+            }
 
-            // Video lessons (+ textbooks from the app slot) — below the colony.
             Entrance(delayMillis = 165) {
                 belowSubjectsContent()
             }
@@ -403,7 +480,7 @@ fun EduHomeScreen(
                         growHint = state.planGrowHint,
                     )
                 }
-            } // end rail-3 bounds
+            }
 
             Spacer(modifier = Modifier.height(12.dp))
 
@@ -418,7 +495,6 @@ fun EduHomeScreen(
                 )
             }
 
-            // Bookmarks.
             Entrance(delayMillis = 640) {
                 BookmarksRail(
                     bookmarks = state.bookmarks,
@@ -428,7 +504,7 @@ fun EduHomeScreen(
                     seeAllLabel = "${state.seeAllLabel} (${state.bookmarks.size})",
                 )
             }
-        } // end scrolling Column
+        }
 
         if (showIntroTour && coachStep < homeTourSteps.size) {
             EduIntroTourOverlay(

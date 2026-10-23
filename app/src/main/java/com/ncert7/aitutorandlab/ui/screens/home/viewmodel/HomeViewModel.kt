@@ -56,9 +56,12 @@ import com.ncert7.aitutorandlab.utils.getCurrentLanguageCode
 import com.ncert7.aitutorandlab.utils.normalizeLanguageCode
 import com.ncert7.aitutorandlab.utils.TrialTitleResolver
 import com.anurag.eduai.uikit.avatar.AvatarUnlockStore
+import com.anurag.eduai.uikit.components.SearchResultItem
+import com.ncert7.aitutorandlab.data.remote.AgenticAIClient
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import android.content.Context
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -95,14 +98,13 @@ class HomeViewModel @Inject constructor(
     private val youtubeVideoRepository: YoutubeVideoRepository,
     private val gardenRepository: GardenRepository,
     private val tutorConfigRepository: TutorConfigRepository,
+    private val apiClient: AgenticAIClient,
     @ApplicationContext private val appContext: Context,
 ) : ViewModel(){
 
     private val userId: String
         get() = sharedPrefs.getUserId() ?: ""
 
-
-    // Pair of ProgressEntity and its corresponding ConceptEntity
     var progressConcepts =
         MutableStateFlow<List<Pair<ProgressEntity?, ConceptEntity?>>>(emptyList())
     var progressSimulations =
@@ -111,11 +113,9 @@ class HomeViewModel @Inject constructor(
     private val _streakCount = MutableStateFlow(0)
     val streakCount: StateFlow<Int> = _streakCount
 
-    /** Non-null (the streak count) when the once-per-day "keep it alive" celebration should show. */
     private val _dailyStreakGreeting = MutableStateFlow<Int?>(null)
     val dailyStreakGreeting: StateFlow<Int?> = _dailyStreakGreeting
 
-    /** Non-null (the new count) when the streak just extended this session — triumphant celebration. */
     private val _streakExtended = MutableStateFlow<Int?>(null)
     val streakExtended: StateFlow<Int?> = _streakExtended
 
@@ -125,7 +125,6 @@ class HomeViewModel @Inject constructor(
     private val _todaySimulationCount = MutableStateFlow(0)
     val todaySimulationCount: StateFlow<Int> = _todaySimulationCount
 
-    // All-time totals — same queries used by ProgressScreenViewModel for consistency
     private val _totalCompletedConcept = MutableStateFlow(0)
     val totalCompletedConcept: StateFlow<Int> = _totalCompletedConcept
 
@@ -141,7 +140,6 @@ class HomeViewModel @Inject constructor(
     private val _greeting = MutableStateFlow("")
     val greeting: StateFlow<String> = _greeting
 
-    // Trigger for language changes - incrementing this will cause UI to recompose
     private val _languageChangeTrigger = MutableStateFlow(0)
     val languageChangeTrigger: StateFlow<Int> = _languageChangeTrigger
 
@@ -154,11 +152,9 @@ class HomeViewModel @Inject constructor(
     private val _availableSubjects = MutableStateFlow<List<SubjectEntity>>(emptyList())
     val availableSubjects: StateFlow<List<SubjectEntity>> = _availableSubjects
 
-    /** chapterId count per subjectId, for the Home subject rows ("N chapters"). */
     private val _chapterCounts = MutableStateFlow<Map<String, Int>>(emptyMap())
     val chapterCounts: StateFlow<Map<String, Int>> = _chapterCounts
 
-    /** Sum of chapter overallPercentage per subjectId, for the Home subject-row progress ring. */
     private val _chapterProgressSums = MutableStateFlow<Map<String, Int>>(emptyMap())
     val chapterProgressSums: StateFlow<Map<String, Int>> = _chapterProgressSums
 
@@ -182,7 +178,6 @@ class HomeViewModel @Inject constructor(
     private val _todayTrialItems = MutableStateFlow<List<PlanTrialItemEntity>>(emptyList())
     val todayTrialItems: StateFlow<List<PlanTrialItemEntity>> = _todayTrialItems
 
-    /** Display-time titles for today's trial items (language-aware). */
     private val _localizedTrialTitles = MutableStateFlow<Map<Long, String>>(emptyMap())
     val localizedTrialTitles: StateFlow<Map<Long, String>> = _localizedTrialTitles
 
@@ -215,11 +210,211 @@ class HomeViewModel @Inject constructor(
     private val _gardenPlantedItems = MutableStateFlow<List<GrownItemEntity>>(emptyList())
     val gardenPlantedItems: StateFlow<List<GrownItemEntity>> = _gardenPlantedItems
 
+    // --- Search Feature State ---
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery
+
+    private val _searchSubject = MutableStateFlow("All")
+    val searchSubject: StateFlow<String> = _searchSubject
+
+    private val _searchLearningOption = MutableStateFlow("All / infer from search")
+    val searchLearningOption: StateFlow<String> = _searchLearningOption
+
+    private val _searchResults = MutableStateFlow<List<SearchResultItem>>(emptyList())
+    val searchResults: StateFlow<List<SearchResultItem>> = _searchResults
+
+    private val _hasSearched = MutableStateFlow(false)
+    val hasSearched: StateFlow<Boolean> = _hasSearched
+
+    private val _isSearching = MutableStateFlow(false)
+    val isSearching: StateFlow<Boolean> = _isSearching
+
+    private var whiteboardTitleToIdMap: Map<String, String> = emptyMap()
+
+    fun updateSearchQuery(query: String) {
+        _searchQuery.value = query
+        _hasSearched.value = false
+    }
+    fun updateSearchSubject(subject: String) { _searchSubject.value = subject }
+    fun updateSearchLearningOption(option: String) { _searchLearningOption.value = option }
+
+    fun performSearch() {
+        viewModelScope.launch {
+            val query = _searchQuery.value.trim().lowercase()
+            val subjectFilter = _searchSubject.value
+            val optionFilter = _searchLearningOption.value
+            val isKn = _currentLanguage.value == "kn"
+
+            _hasSearched.value = true
+
+            if (query.isBlank()) {
+                _searchResults.value = emptyList()
+                return@launch
+            }
+
+            _isSearching.value = true
+            delay(1000)
+
+            try {
+                val needsWbData = optionFilter.contains("All", ignoreCase = true) || optionFilter == "Whiteboard"
+                if (needsWbData && whiteboardTitleToIdMap.isEmpty()) {
+                    val wbResult = apiClient.getWhiteboardConcepts()
+                    if (wbResult.isSuccess) {
+                        whiteboardTitleToIdMap = wbResult.getOrNull()?.concepts
+                            ?.filter { it.hasScene }
+                            ?.associateBy({ it.title.trim().lowercase() }, { it.conceptId })
+                            ?: emptyMap()
+                    }
+                }
+
+                val allSubjects = subjectRepository.getSubjectsForClass(_student.value?.classLevel ?: 7)
+                val chapterMap = mutableMapOf<String, com.ncert7.aitutorandlab.data.local.entities.ChapterEntity>()
+                for (sub in allSubjects) {
+                    chapterDao.getChaptersForSubjectSync(sub.subjectId).forEach { ch ->
+                        chapterMap[ch.chapterId] = ch
+                    }
+                }
+
+                val allConcepts = conceptDao.getConceptsByIds(conceptDao.getAllConceptsSync().map { it.conceptId }).first().ifEmpty { conceptDao.getAllConceptsSync() }
+
+                val mappedResults = mutableListOf<SearchResultItem>()
+
+                for (concept in allConcepts) {
+                    val title = if (isKn && concept.conceptNameKannada.isNotBlank()) concept.conceptNameKannada else concept.conceptName
+                    if (!title.lowercase().contains(query)) continue
+
+                    val chapter = chapterMap[concept.chapterId]
+                    val subjectId = chapter?.subjectId ?: ""
+                    val subjectName = allSubjects.find { it.subjectId == subjectId }?.getLocalizedName(_currentLanguage.value) ?: subjectId
+
+                    val isMath = subjectId.contains("MATH", ignoreCase = true) || subjectName.contains("Math", ignoreCase = true)
+
+                    val subjectMatch = when (subjectFilter) {
+                        "Science" -> !isMath
+                        "Math" -> isMath
+                        else -> true
+                    }
+
+                    val localTitleLower = concept.conceptName.trim().lowercase()
+                    val wbConceptId = whiteboardTitleToIdMap[localTitleLower]
+                    val isWb = wbConceptId != null
+
+                    val optionMatch = when (optionFilter) {
+                        "Whiteboard" -> isWb
+                        else -> true
+                    }
+
+                    if (subjectMatch && optionMatch) {
+                        val chapterName = if (isKn && chapter?.chapterNameKannada?.isNotBlank() == true) chapter.chapterNameKannada else chapter?.chapterName ?: "Unknown Chapter"
+                        mappedResults.add(
+                            SearchResultItem(
+                                conceptId = concept.conceptId,
+                                topicName = title,
+                                subjectName = subjectName,
+                                isWhiteboardAvailable = isWb,
+                                isMath = isMath,
+                                problemId = concept.problemId ?: "",
+                                chapterId = concept.chapterId,
+                                wbConceptId = wbConceptId
+                            )
+                        )
+                    }
+                }
+                _searchResults.value = mappedResults.take(20)
+            } catch (e: Exception) {
+                DebugLogger.errorLog("HomeViewModel", "Search failure: ${e.message}")
+            } finally {
+                _isSearching.value = false
+            }
+        }
+    }
+
+    fun surpriseMe() {
+        viewModelScope.launch {
+            _hasSearched.value = true
+            _isSearching.value = true
+            delay(1000)
+
+            try {
+                val isKn = _currentLanguage.value == "kn"
+                val subjectFilter = _searchSubject.value
+                val optionFilter = _searchLearningOption.value
+
+                val needsWbData = optionFilter.contains("All", ignoreCase = true) || optionFilter == "Whiteboard"
+                if (needsWbData && whiteboardTitleToIdMap.isEmpty()) {
+                    val wbResult = apiClient.getWhiteboardConcepts()
+                    if (wbResult.isSuccess) {
+                        whiteboardTitleToIdMap = wbResult.getOrNull()?.concepts
+                            ?.filter { it.hasScene }
+                            ?.associateBy({ it.title.trim().lowercase() }, { it.conceptId })
+                            ?: emptyMap()
+                    }
+                }
+
+                val allSubjects = subjectRepository.getSubjectsForClass(_student.value?.classLevel ?: 7)
+                val chapterMap = mutableMapOf<String, com.ncert7.aitutorandlab.data.local.entities.ChapterEntity>()
+                for (sub in allSubjects) {
+                    chapterDao.getChaptersForSubjectSync(sub.subjectId).forEach { ch ->
+                        chapterMap[ch.chapterId] = ch
+                    }
+                }
+
+                val allConcepts = conceptDao.getConceptsByIds(conceptDao.getAllConceptsSync().map { it.conceptId }).first().ifEmpty { conceptDao.getAllConceptsSync() }
+
+                val validConcepts = mutableListOf<SearchResultItem>()
+
+                for (concept in allConcepts) {
+                    val title = if (isKn && concept.conceptNameKannada.isNotBlank()) concept.conceptNameKannada else concept.conceptName
+                    val chapter = chapterMap[concept.chapterId]
+                    val subjectId = chapter?.subjectId ?: ""
+                    val subjectName = allSubjects.find { it.subjectId == subjectId }?.getLocalizedName(_currentLanguage.value) ?: subjectId
+                    val isMath = subjectId.contains("MATH", ignoreCase = true) || subjectName.contains("Math", ignoreCase = true)
+
+                    val subjectMatch = when (subjectFilter) {
+                        "Science" -> !isMath
+                        "Math" -> isMath
+                        else -> true
+                    }
+
+                    val localTitleLower = concept.conceptName.trim().lowercase()
+                    val wbConceptId = whiteboardTitleToIdMap[localTitleLower]
+                    val isWb = wbConceptId != null
+
+                    val optionMatch = when (optionFilter) {
+                        "Whiteboard" -> isWb
+                        else -> true
+                    }
+
+                    if (subjectMatch && optionMatch) {
+                        val chapterName = if (isKn && chapter?.chapterNameKannada?.isNotBlank() == true) chapter.chapterNameKannada else chapter?.chapterName ?: "Unknown Chapter"
+                        validConcepts.add(
+                            SearchResultItem(
+                                conceptId = concept.conceptId,
+                                topicName = title,
+                                subjectName = subjectName,
+                                isWhiteboardAvailable = isWb,
+                                isMath = isMath,
+                                problemId = concept.problemId ?: "",
+                                chapterId = concept.chapterId,
+                                wbConceptId = wbConceptId
+                            )
+                        )
+                    }
+                }
+                _searchResults.value = validConcepts.shuffled().take(5)
+            } catch (e: Exception) {
+                DebugLogger.errorLog("HomeViewModel", "Surprise me failure: ${e.message}")
+            } finally {
+                _isSearching.value = false
+            }
+        }
+    }
+    // --- End Search Block ---
+
     fun setLanguage(lang: String) {
         syncLanguage(lang)
     }
 
-    /** Updates language and re-localizes cached plan labels in the same frame. */
     fun syncLanguage(lang: String) {
         val normalized = normalizeLanguageCode(lang)
         if (_currentLanguage.value == normalized) return
@@ -247,12 +442,12 @@ class HomeViewModel @Inject constructor(
         _localizedTrialTitles.value =
             items.associate { item ->
                 item.id to
-                    TrialTitleResolver.localizedItemTitle(
-                        entity = item,
-                        languageCode = language,
-                        conceptDao = conceptDao,
-                        chapterDao = chapterDao,
-                    )
+                        TrialTitleResolver.localizedItemTitle(
+                            entity = item,
+                            languageCode = language,
+                            conceptDao = conceptDao,
+                            chapterDao = chapterDao,
+                        )
             }
     }
 
@@ -298,10 +493,6 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Total chapters per subject for the Home rows ("N chapters"). Reactive: re-emits when
-     * chapters are synced/inserted, so counts appear even if sync finishes after home renders.
-     */
     private fun observeChapterCounts() {
         viewModelScope.launch {
             chapterDao.getChapterCountsBySubjectFlow().collectLatest { rows ->
@@ -310,10 +501,6 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Live chapter overall-% sums per subject. Re-emits when a trial/study completion
-     * writes chapter_agent_progress, so the Home ring moves without a restart.
-     */
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     private fun observeChapterProgressSums() {
         viewModelScope.launch {
@@ -352,8 +539,6 @@ class HomeViewModel @Inject constructor(
     init {
         getStudent()
         observeStreak()
-        // Opening home (logged-in) counts for streak — covers login-after-launch when
-        // ProcessLifecycle onStart ran before userId was available.
         recordAppOpenStreak()
         observeTodayProgress()
         observeTotalCounts()
@@ -374,7 +559,6 @@ class HomeViewModel @Inject constructor(
         applyOnboardingPicksOnce()
     }
 
-    /** Opening the app / landing on home is enough to keep or extend the daily streak. */
     private fun recordAppOpenStreak() {
         viewModelScope.launch {
             val id = userId.takeIf { it.isNotBlank() } ?: return@launch
@@ -387,10 +571,6 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Consumes the first-run picks exactly once: reward world → garden theme + starting scene,
-     * subject → home selection, chapter → a one-week exam plan so home aligns with today's focus.
-     */
     private fun applyOnboardingPicksOnce() {
         viewModelScope.launch {
             if (sharedPrefs.hasAppliedOnboardingPicks()) return@launch
@@ -441,8 +621,6 @@ class HomeViewModel @Inject constructor(
 
             val gardenTheme =
                 if (world.equals("Space", ignoreCase = true)) GardenTheme.OUTPOST else GardenTheme.GARDEN
-            // R.1: remote garden (theme/items) wins over onboarding world when restore applied,
-            // even if plant count is still zero.
             val remoteGardenApplied = DataSyncService.wasGardenRestoredFromRemote()
             val hasRestoredPlants = (gardenRepository.getProgress(id)?.totalPlanted ?: 0) > 0
             if (!remoteGardenApplied && !hasRestoredPlants) {
@@ -452,7 +630,6 @@ class HomeViewModel @Inject constructor(
             _gardenProgress.value = gardenRepository.getProgress(id)
             refreshGardenPlantedItems(id)
 
-            // Re-apply onboarding tutor so Room/Firestore don't keep an earlier default Scholar seed.
             sharedPrefs.getOnboardingAvatar()?.takeIf { it.isNotBlank() }?.let { presetId ->
                 AvatarUnlockStore.unlock(appContext, presetId)
                 runCatching {
@@ -491,7 +668,6 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    /** Home shows the updated rail — pulse when a new plant landed since the last home visit. */
     fun refreshGardenOnHomeResume() {
         viewModelScope.launch {
             val id = _student.value?.studentId?.takeIf { it.isNotBlank() } ?: userId
@@ -555,8 +731,6 @@ class HomeViewModel @Inject constructor(
 
     private fun observeGardenProgress() {
         viewModelScope.launch {
-            // Bug B: wait for login restore before ensureState via getProgress can plant a
-            // starter row that previously blocked pristine detection.
             DataSyncService.awaitGardenRestore()
             combine(_student, _todayTrialItems) { student, items ->
                 val studentId = student?.studentId?.takeIf { it.isNotBlank() } ?: userId
@@ -597,7 +771,6 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    /** Changes when any trial bite completes — list size alone misses DONE transitions. */
     private fun trialProgressSignature(items: List<PlanTrialItemEntity>): String =
         items.joinToString("|") { "${it.id}:${it.status}:${it.completedCount}" }
 
@@ -863,11 +1036,11 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    private suspend fun syncLeagueMember(profile: GamificationProfileEntity) {
+    private suspend fun syncLeagueMember(GamificationProfileEntity: GamificationProfileEntity) {
         val student = studentDao.getStudentSync(userId)
         leagueRepository.syncUserWeeklyXp(
             studentId = userId,
-            weeklyXp = profile.weeklyXp,
+            weeklyXp = GamificationProfileEntity.weeklyXp,
             displayName = student?.studentName.orEmpty(),
             streak = _streakCount.value,
         )
@@ -886,16 +1059,13 @@ class HomeViewModel @Inject constructor(
             if (userId.isEmpty()) return@launch
             _currentLanguage.collectLatest { language ->
                 kotlinx.coroutines.coroutineScope {
-                    // Observe concepts
                     launch {
                         progressDao.getAllProgress(userId, AppConfig.APP_NAME)
                             .collectLatest { allProgressList ->
-                                // Filter by CONCEPT type and LANGUAGE
-                                val allProgress = allProgressList.filter { 
-                                    it.itemType == "CONCEPT" && it.language == language 
+                                val allProgress = allProgressList.filter {
+                                    it.itemType == "CONCEPT" && it.language == language
                                 }
 
-                                // Separate by status
                                 val completedList = allProgress
                                     .filter { it.status == "COMPLETED" }
                                     .sortedByDescending { it.completedAt ?: 0L }
@@ -904,13 +1074,9 @@ class HomeViewModel @Inject constructor(
                                     .filter { it.status == "IN_PROGRESS" }
                                     .sortedByDescending { it.lastAccessedAt }
 
-                                // Build curated list for display
                                 val curatedProgress = mutableListOf<ProgressEntity>()
-
-                                // Strategy: Show ALL in-progress concepts first
                                 curatedProgress.addAll(inProgressList)
 
-                                // Then add most recent completed concepts to fill up to 4 items
                                 val remainingSlots = (4 - curatedProgress.size).coerceAtLeast(0)
                                 if (remainingSlots > 0) {
                                     curatedProgress.addAll(
@@ -918,14 +1084,12 @@ class HomeViewModel @Inject constructor(
                                     )
                                 }
 
-                                // No progress at all
                                 if (curatedProgress.isEmpty()) {
                                     val firstUnitConcepts = conceptDao.getFirstConceptsOfChapter("1", "STUDY", 4)
                                     val combined = firstUnitConcepts.map { concept ->
                                         null to concept
                                     }
                                     progressConcepts.value = combined
-                                    DebugLogger.debugLog("HomeViewModel", "First login/no progress ($language) - showing ${combined.size} default concepts")
                                 } else {
                                     val conceptIds = curatedProgress.map { it.itemId }
                                     val concepts = conceptDao.getConceptsByIds(conceptIds).first()
@@ -934,18 +1098,15 @@ class HomeViewModel @Inject constructor(
                                         progress to concept
                                     }
                                     progressConcepts.value = combined
-                                    DebugLogger.debugLog("HomeViewModel", "Loaded ${combined.size} concepts for $language")
                                 }
                             }
                     }
 
-                    // Observe simulations
                     launch {
                         progressDao.getAllProgress(userId, AppConfig.APP_NAME)
                             .collectLatest { allProgressList ->
-                                // Filter by SIMULATION or SIMULATION_AGENT type and LANGUAGE
-                                val allProgress = allProgressList.filter { 
-                                    (it.itemType == "SIMULATION" || it.itemType == "SIMULATION_AGENT") && it.language == language 
+                                val allProgress = allProgressList.filter {
+                                    (it.itemType == "SIMULATION" || it.itemType == "SIMULATION_AGENT") && it.language == language
                                 }
 
                                 val completedList = allProgress
@@ -970,7 +1131,6 @@ class HomeViewModel @Inject constructor(
                                         null to concept
                                     }
                                     progressSimulations.value = combined
-                                    DebugLogger.debugLog("HomeViewModel", "First login/no simulations ($language) - showing ${combined.size} default simulations")
                                 } else {
                                     val conceptIds = curatedProgress.map { it.itemId }
                                     val concepts = conceptDao.getConceptsByIds(conceptIds).first()
@@ -979,7 +1139,6 @@ class HomeViewModel @Inject constructor(
                                         progress to concept
                                     }
                                     progressSimulations.value = combined
-                                    DebugLogger.debugLog("HomeViewModel", "Loaded ${combined.size} simulations for $language")
                                 }
                             }
                     }
@@ -993,24 +1152,14 @@ class HomeViewModel @Inject constructor(
             if (userId.isEmpty()) return@launch
             var previous: Int? = null
             streakRepository.getStreakFlow(userId).collectLatest { streak ->
-                // New user (null row) → 1; expired lastStreakDate → 0 until next activity.
                 val count = streakRepository.effectiveDisplayStreak(streak)
                 _streakCount.value = count
-
-                // Triumphant "streak extended" beat: a genuine increment observed during the session
-                // (the day's first finished activity flows through StreakRepository.recordActivity →
-                // the streak flow re-emits a higher count). Guarded so the initial load never fires it.
                 val prev = previous
                 if (prev != null && count > prev) {
                     _streakExtended.value = count
-                    // The day's activity is clearly done, so the gentle "keep it alive" beat is
-                    // redundant today — mark it shown so it doesn't appear after the triumphant one.
                     sharedPrefs.setStreakGreetingShownToday()
                 }
                 previous = count
-
-                // Gentle first-open-of-the-day beat: once per calendar day, when there's a streak to
-                // keep. Suppressed if the triumphant one is already queued this emission.
                 if (count >= 1 &&
                     _streakExtended.value == null &&
                     !sharedPrefs.wasStreakGreetingShownToday()
@@ -1036,21 +1185,16 @@ class HomeViewModel @Inject constructor(
             if (userId.isEmpty()) return@launch
             _currentLanguage.collectLatest { language ->
                 kotlinx.coroutines.coroutineScope {
-                    // Observe today's concept count
                     launch {
                         progressDao.getTodayCompletedConceptCountFlow(userId, language, startOfDay, endOfDay, AppConfig.APP_NAME)
                             .collectLatest { count ->
                                 _todayConceptCount.value = count
-                                DebugLogger.debugLog("HomeViewModel", "Today's concept count updated: $count ($language)")
                             }
                     }
-
-                    // Observe today's simulation count
                     launch {
                         progressDao.getTodayCompletedSimulationCountFlow(userId, language, startOfDay, endOfDay, AppConfig.APP_NAME)
                             .collectLatest { count ->
                                 _todaySimulationCount.value = count
-                                DebugLogger.debugLog("HomeViewModel", "Today's simulation count updated: $count ($language)")
                             }
                     }
                 }
@@ -1058,10 +1202,6 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Observes all-time total completed concept and simulation counts.
-     * Uses the same queries as ProgressScreenViewModel so both screens show the same numbers.
-     */
     private fun observeTotalCounts() {
         viewModelScope.launch {
             if (userId.isEmpty()) return@launch
@@ -1071,15 +1211,12 @@ class HomeViewModel @Inject constructor(
                         progressDao.getTotalCompletedConceptsFlow(userId, language, AppConfig.APP_NAME)
                             .collectLatest { count ->
                                 _totalCompletedConcept.value = count
-                                DebugLogger.debugLog("HomeViewModel", "Total completed concepts: $count ($language)")
                             }
                     }
-
                     launch {
                         progressDao.getTotalCompletedSimulationsFlow(userId, language, AppConfig.APP_NAME)
                             .collectLatest { count ->
                                 _totalCompletedSimulation.value = count
-                                DebugLogger.debugLog("HomeViewModel", "Total completed simulations: $count ($language)")
                             }
                     }
                 }
@@ -1087,13 +1224,6 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Returns appropriate greeting based on current time
-     * 5-11: Good Morning
-     * 12-16: Good Afternoon
-     * 17-21: Good Evening
-     * 22-4: Good Night
-     */
     fun getGreeting() {
         val hour = LocalTime.now().hour
 
@@ -1105,20 +1235,15 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-
     fun getStudent() {
         viewModelScope.launch {
             val result = studentDao.getStudentSync(userId)
             _student.value = result
             _studentLoaded.value = true
             refreshAvailableSubjects()
-            DebugLogger.debugLog("HomeViewModel", "Student loaded: ${result?.studentName}")
         }
     }
 
-    /**
-     * Called when app language changes to trigger UI recomposition with new localized names
-     */
     fun onLanguageChanged() {
         _languageChangeTrigger.value += 1
     }

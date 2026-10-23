@@ -88,6 +88,7 @@ import kotlinx.coroutines.launch
 import com.ncert7.aitutorandlab.ui.screens.quests.questClaimDialogCopy
 import com.ncert7.aitutorandlab.ui.screens.quests.questClaimResultMessage
 import com.ncert7.aitutorandlab.ui.screens.quests.questClaimUnableToShowAd
+import com.ncert7.aitutorandlab.ui.screens.doubts.DoubtsBottomSheet
 
 private fun formatLeagueName(tier: String?, languageCode: String): String =
     HomeCopy.leagueCaption(tier, languageCode)
@@ -125,10 +126,8 @@ fun GamifiedHomeRoute(
     onOpenTextbooks: () -> Unit = {},
     onSimulationClick: (String, String) -> Unit,
     onSessionInvalid: () -> Unit,
-    // First-run home-rail tour, driven by the parent (BottomNavBar) which owns both tour phases.
     showIntroTour: Boolean = false,
     onIntroTourFinished: (skipped: Boolean, step: Int) -> Unit = { _, _ -> },
-    // Streak celebrations wait until both tour phases (home rails + nav tabs) are done.
     streaksEnabled: Boolean = true,
 ) {
     TrackScreenEvent(screenName = ScreenName.HOME)
@@ -170,6 +169,18 @@ fun GamifiedHomeRoute(
     val gardenHighlightNewPlant by viewModel.gardenHighlightNewPlant.collectAsState()
     val gardenHighlightStarterPlant by viewModel.gardenHighlightStarterPlant.collectAsState()
     val gardenEnabled = GamificationFeatureFlags.isGardenEnabled(context)
+
+    // Search Flow states
+    val searchQuery by viewModel.searchQuery.collectAsState()
+    val searchSubject by viewModel.searchSubject.collectAsState()
+    val searchLearningOption by viewModel.searchLearningOption.collectAsState()
+    val searchResults by viewModel.searchResults.collectAsState()
+    val hasSearched by viewModel.hasSearched.collectAsState()
+    val isSearching by viewModel.isSearching.collectAsState()
+
+    var showDoubtsSheet by remember { mutableStateOf(false) }
+    var doubtSubjectContext by remember { mutableStateOf("") }
+    var doubtChapterContext by remember { mutableStateOf("") }
 
     var pendingQuestClaim by remember { mutableStateOf<QuestClaimType?>(null) }
     var selectedYoutubeVideo by remember { mutableStateOf<YoutubeVideoItem?>(null) }
@@ -246,9 +257,6 @@ fun GamifiedHomeRoute(
         }
     }
 
-    // Fully policy-compliant rating ask: after finishing a task, flag pending review; on the next
-    // home visit, request Google Play In-App Review. Google shows its own card (or nothing) — no
-    // custom prompt. The gate throttles to once/day, up to 3 times.
     LaunchedEffect(Unit) {
         val hostActivity = activity ?: return@LaunchedEffect
         if (!sharedPreferenceUtils.isPendingReviewOnHome()) return@LaunchedEffect
@@ -268,7 +276,7 @@ fun GamifiedHomeRoute(
         }
     }
 
-    val (homeState, focus) =
+    val (homeStateBase, focus) =
         remember(
             greeting,
             student?.studentName,
@@ -338,6 +346,15 @@ fun GamifiedHomeRoute(
                 localizedTrialTitles = localizedTrialTitles,
             )
         }
+
+    val homeState = homeStateBase.copy(
+        searchQuery = searchQuery,
+        searchSubject = searchSubject,
+        searchLearningOption = searchLearningOption,
+        searchResults = searchResults,
+        hasSearched = hasSearched,
+        isSearching = isSearching
+    )
 
     val shareFriendCodeFromHome: (String) -> Unit = { code ->
         if (code.isNotBlank()) {
@@ -429,8 +446,6 @@ fun GamifiedHomeRoute(
         )
 
         Box(modifier = Modifier.fillMaxSize()) {
-            // When Reels is on, Home taps go to the nocookie Reels player route (passed by parent).
-            // Legacy dialog stays for the flag-off path.
             if (!ReelsFeatureFlags.isReelsEnabled()) {
                 selectedYoutubeVideo?.let { video ->
                     val startIndex =
@@ -650,11 +665,38 @@ fun GamifiedHomeRoute(
                         }
                     },
                     onNotesClick = { subject ->
-                        // Fix: We must pass the name ("Math") to the Notes screen, not the UUID
                         val subjectName = subject.name
                         if (subjectName.isNotBlank()) {
                             onNavigateToNotes(subjectName)
                         }
+                    },
+                    onSearchQueryChange = { viewModel.updateSearchQuery(it) },
+                    onSearchSubjectChange = { viewModel.updateSearchSubject(it) },
+                    onSearchLearningOptionChange = { viewModel.updateSearchLearningOption(it) },
+                    onSearchClick = { viewModel.performSearch() },
+                    onSurpriseMeClick = { viewModel.surpriseMe() },
+                    onSearchLearnWithTutor = { conceptId, isMath, problemId, chapterId ->
+                        gated.run(
+                            trackClick = { ContentClickNavigation.trackHomeLessonClick(conceptId) },
+                            navigate = {
+                                if (isMath && problemId.isNotBlank()) {
+                                    onNavigateToRoute("math_agent?chapterId=$chapterId&problemId=$problemId")
+                                } else {
+                                    onLessonClick(conceptId)
+                                }
+                            }
+                        )
+                    },
+                    onSearchWhiteboard = { wbConceptId ->
+                        gated.run(
+                            trackClick = { ContentClickNavigation.trackHomeLessonClick(wbConceptId) },
+                            navigate = { onNavigateToRoute("whiteboard_chatbot?conceptId=$wbConceptId") }
+                        )
+                    },
+                    onSearchAskDoubt = { conceptId, subject, chapter ->
+                        doubtSubjectContext = subject
+                        doubtChapterContext = chapter
+                        showDoubtsSheet = true
                     },
                     subjectIconContent = { subject, tint ->
                         SubjectRailIcon(subject = subject, tint = tint)
@@ -695,8 +737,6 @@ fun GamifiedHomeRoute(
                 modifier = Modifier.align(Alignment.BottomCenter),
             )
 
-            // Full-screen streak celebrations, on top of home. The triumphant "extended" beat wins if
-            // both are queued (e.g. the day's first task just extended the streak).
             val todayIdx = (java.time.LocalDate.now().dayOfWeek.value - 1).coerceIn(0, 6)
             val streakCopy = remember(currentLanguage) { StreakCopyFactory.forLanguage(currentLanguage) }
             val celebrationName = homeState.userName.takeIf { it.isNotBlank() } ?: streakCopy.fallbackName
@@ -745,11 +785,18 @@ fun GamifiedHomeRoute(
                     viewModel.acknowledgeDailyStreakGreeting()
                 }
             }
+
+            if (showDoubtsSheet) {
+                DoubtsBottomSheet(
+                    subjectName = doubtSubjectContext,
+                    chapterName = doubtChapterContext,
+                    onDismiss = { showDoubtsSheet = false }
+                )
+            }
         }
     }
 }
 
-/** Renders the live backend subject icon (Glide) with a subject-glyph fallback. */
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
 private fun SubjectRailIcon(subject: SubjectTile, tint: Color) {

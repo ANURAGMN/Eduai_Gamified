@@ -2,9 +2,13 @@ package com.anurag.eduai.uikit.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,15 +17,16 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.Biotech
 import androidx.compose.material.icons.outlined.Bolt
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.Calculate
-import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.EmojiEvents
 import androidx.compose.material.icons.outlined.LocalFireDepartment
 import androidx.compose.material.icons.outlined.MenuBook
@@ -29,11 +34,25 @@ import androidx.compose.material.icons.outlined.PersonAddAlt
 import androidx.compose.material.icons.outlined.Public
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Science
+import androidx.compose.material.icons.outlined.School
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Spa
 import androidx.compose.material.icons.outlined.SportsEsports
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.Alignment
@@ -59,16 +78,25 @@ import com.anurag.eduai.uikit.theme.EduAiTheme
 import com.anurag.eduai.uikit.theme.EduChipRole
 import com.anurag.eduai.uikit.theme.forRole
 
+data class SearchResultItem(
+    val conceptId: String,
+    val topicName: String,
+    val subjectName: String,
+    val isWhiteboardAvailable: Boolean,
+    val isMath: Boolean,
+    val problemId: String,
+    val chapterId: String,
+    val wbConceptId: String? = null
+)
+
 data class FriendUpdate(
     val name: String,
     val event: String,
     val cheers: Int,
     val role: EduChipRole = EduChipRole.Accent,
     val seen: Boolean = false,
-    /** Pending friend request — rail tap accepts instead of cheering. */
     val isRequest: Boolean = false,
     val requestFriendId: String = "",
-    /** Feed cheer target; -1 when this card is a request or placeholder. */
     val feedItemId: Long = -1L,
 )
 
@@ -92,19 +120,11 @@ data class SubjectTile(
     val name: String,
     val role: EduChipRole = EduChipRole.Pro,
     val subjectId: String = "",
-    /** Optional remote icon (from the backend); falls back to a subject glyph when null. */
     val iconUrl: String? = null,
-    /** Second line on the row (e.g. "14 chapters"). Falls back to the rail's CTA label when null. */
     val subtitle: String? = null,
-    /** Completion fraction 0f..1f (completed chapters / total). Null → no ring shown. */
     val progress: Float? = null,
 )
 
-/**
- * Compact tutor greeting for the Home feed — a minimized Free avatar in a bubble
- * with a short line of encouragement. Keeps the tutor present without taking a
- * full screen.
- */
 @Composable
 fun HomeTutorBubble(
     title: String = "Your tutor",
@@ -181,25 +201,10 @@ fun FriendsInviteRail(
             RailCard(onClick = onAddFriend, modifier = Modifier.width(170.dp)) {
                 IconBubble(icon = Icons.Outlined.EmojiEvents, fg = colors.pro, bg = colors.proBg)
                 Spacer(modifier = Modifier.height(10.dp))
-                Text(
-                    text = addCardTitle,
-                    color = colors.text,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                Text(
-                    text = addCardBody,
-                    color = colors.textSecondary,
-                    fontSize = 11.sp,
-                    lineHeight = 14.sp,
-                )
+                Text(text = addCardTitle, color = colors.text, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                Text(text = addCardBody, color = colors.textSecondary, fontSize = 11.sp, lineHeight = 14.sp)
             }
-            InviteCard(
-                onInvite = onInviteShare,
-                title = inviteTitle,
-                subtitle = inviteSubtitle,
-                shareLabel = shareLabel,
-            )
+            InviteCard(onInvite = onInviteShare, title = inviteTitle, subtitle = inviteSubtitle, shareLabel = shareLabel)
         }
     }
 }
@@ -223,42 +228,17 @@ fun FriendsUpdatesRail(
                 RailCard(onClick = { onCheer(index) }, modifier = Modifier.width(130.dp)) {
                     Box(modifier = Modifier.padding(bottom = 8.dp)) {
                         Box(
-                            modifier =
-                                Modifier
-                                    .size(28.dp)
-                                    .clip(CircleShape)
-                                    .background(bg),
+                            modifier = Modifier.size(28.dp).clip(CircleShape).background(bg),
                             contentAlignment = Alignment.Center,
                         ) {
-                            Icon(
-                                imageVector = friendIcon(friend.role),
-                                contentDescription = null,
-                                tint = fg,
-                                modifier = Modifier.size(13.dp),
-                            )
+                            Icon(imageVector = friendIcon(friend.role), contentDescription = null, tint = fg, modifier = Modifier.size(13.dp))
                         }
                         if (!friend.seen) {
-                            NotificationDot(
-                                modifier = Modifier.align(Alignment.TopEnd),
-                                size = 8.dp,
-                                borderColor = colors.surface2,
-                            )
+                            NotificationDot(modifier = Modifier.align(Alignment.TopEnd), size = 8.dp, borderColor = colors.surface2)
                         }
                     }
-                    Text(
-                        text = friend.name,
-                        color = colors.text,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                    Text(
-                        text = friend.event,
-                        color = colors.textMuted,
-                        fontSize = 11.sp,
-                        lineHeight = 14.sp,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                    )
+                    Text(text = friend.name, color = colors.text, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                    Text(text = friend.event, color = colors.textMuted, fontSize = 11.sp, lineHeight = 14.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
                     Text(
                         text = if (friend.isRequest) acceptLabel else "👍 ${friend.cheers}",
                         color = if (friend.isRequest) colors.accent else colors.textMuted,
@@ -284,25 +264,13 @@ fun BookmarksRail(
     if (bookmarks.isEmpty()) return
     val colors = EduAiTheme.colors
     Column(modifier = modifier.fillMaxWidth().padding(bottom = 18.dp)) {
-        SectionHeader(
-            title = sectionTitle,
-            seeAllLabel = seeAllLabel,
-            onSeeAllClick = onSeeAll,
-        )
+        SectionHeader(title = sectionTitle, seeAllLabel = seeAllLabel, onSeeAllClick = onSeeAll)
         HorizontalRail {
             bookmarks.take(5).forEach { item ->
                 val (fg, bg) = colors.forRole(item.role)
                 RailCard(onClick = { onOpen(item) }, modifier = Modifier.width(140.dp)) {
                     BookmarkTypeRow(icon = bookmarkIcon(item.role), fg = fg, bg = bg, label = item.typeLabel)
-                    Text(
-                        text = item.key,
-                        color = colors.text,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        lineHeight = 14.sp,
-                        maxLines = 2,
-                        modifier = Modifier.padding(top = 8.dp),
-                    )
+                    Text(text = item.key, color = colors.text, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, lineHeight = 14.sp, maxLines = 2, modifier = Modifier.padding(top = 8.dp))
                 }
             }
         }
@@ -319,55 +287,18 @@ fun RevisionRail(
 ) {
     val colors = EduAiTheme.colors
     Column(modifier = modifier.fillMaxWidth()) {
-        Text(
-            text = sectionTitle,
-            color = colors.text,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(bottom = 10.dp),
-        )
+        Text(text = sectionTitle, color = colors.text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(bottom = 10.dp))
         HorizontalRail {
             items.forEach { item ->
                 Column(
-                    modifier =
-                        Modifier
-                            .width(130.dp)
-                            .clip(RoundedCornerShape(EduAiDimens.cardRadius))
-                            .background(colors.warningBg)
-                            .pressScaleClickable(onClick = { onOpen(item) }, pressedScale = 0.96f)
-                            .padding(12.dp),
+                    modifier = Modifier.width(130.dp).clip(RoundedCornerShape(EduAiDimens.cardRadius)).background(colors.warningBg).pressScaleClickable(onClick = { onOpen(item) }, pressedScale = 0.96f).padding(12.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.Top,
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Refresh,
-                            contentDescription = null,
-                            tint = colors.warning,
-                            modifier = Modifier.size(16.dp),
-                        )
-                        Icon(
-                            imageVector = Icons.Outlined.BookmarkBorder,
-                            contentDescription = null,
-                            tint = colors.warning,
-                            modifier = Modifier.size(15.dp),
-                        )
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
+                        Icon(imageVector = Icons.Outlined.Refresh, contentDescription = null, tint = colors.warning, modifier = Modifier.size(16.dp))
+                        Icon(imageVector = Icons.Outlined.BookmarkBorder, contentDescription = null, tint = colors.warning, modifier = Modifier.size(15.dp))
                     }
-                    Text(
-                        text = item.topic,
-                        color = colors.text,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        maxLines = 2,
-                        modifier = Modifier.padding(top = 8.dp),
-                    )
-                    Text(
-                        text = scoreLabelFor(item.score),
-                        color = colors.warning,
-                        fontSize = 11.sp,
-                    )
+                    Text(text = item.topic, color = colors.text, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 2, modifier = Modifier.padding(top = 8.dp))
+                    Text(text = scoreLabelFor(item.score), color = colors.warning, fontSize = 11.sp)
                 }
             }
         }
@@ -382,37 +313,16 @@ fun SubjectsRail(
     onNotesClick: (SubjectTile) -> Unit = {},
     modifier: Modifier = Modifier,
     ctaLabel: String = "Continue",
-    // App fills this to render the live remote icon (ui-kit has no image loader). Default
-    // is the built-in subject glyph.
     iconContent: @Composable (SubjectTile, Color) -> Unit = { subject, tint ->
-        Icon(
-            imageVector = subjectMaterialIcon(subject.name),
-            contentDescription = null,
-            tint = tint,
-            modifier = Modifier.size(30.dp),
-        )
+        Icon(imageVector = subjectMaterialIcon(subject.name), contentDescription = null, tint = tint, modifier = Modifier.size(30.dp))
     },
 ) {
     val colors = EduAiTheme.colors
     Column(modifier = modifier.fillMaxWidth().padding(top = 18.dp)) {
-        Text(
-            text = title,
-            color = colors.text,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(bottom = 10.dp),
-        )
-        // Full-width list rows: icon chip · name + detail · chevron. Each row is one tap
-        // target → opens the subject's chapters. Role tint only on the icon chip so the
-        // card surface stays theme-safe (no white-on-white in dark mode).
+        Text(text = title, color = colors.text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(bottom = 10.dp))
         subjects.forEachIndexed { index, subject ->
             if (index > 0) Spacer(modifier = Modifier.height(10.dp))
-            SubjectRow(
-                subject = subject,
-                onPracticeClick = onPracticeClick,
-                onNotesClick = onNotesClick,
-                iconContent = iconContent,
-            )
+            SubjectRow(subject = subject, onPracticeClick = onPracticeClick, onNotesClick = onNotesClick, iconContent = iconContent)
         }
     }
 }
@@ -429,18 +339,10 @@ private fun SubjectRow(
     val (fg, bg) = colors.forRole(subject.role)
 
     Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .background(colors.surface2)
-            .border(1.dp, colors.border, RoundedCornerShape(14.dp))
-            .padding(14.dp)
+        modifier = modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(colors.surface2).border(1.dp, colors.border, RoundedCornerShape(14.dp)).padding(14.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)).background(bg),
-                contentAlignment = Alignment.Center,
-            ) {
+            Box(modifier = Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)).background(bg), contentAlignment = Alignment.Center) {
                 iconContent(subject, fg)
             }
             Spacer(modifier = Modifier.width(12.dp))
@@ -455,16 +357,9 @@ private fun SubjectRow(
 
         Spacer(modifier = Modifier.height(14.dp))
 
-        // Notes and Practice Chips
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            // Notes Chip
             Row(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(colors.accentBg)
-                    .border(1.dp, colors.accent.copy(alpha = 0.5f), RoundedCornerShape(8.dp)) // <-- ADDED BORDER
-                    .clickable { onNotesClick(subject) }
-                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(colors.accentBg).border(1.dp, colors.accent.copy(alpha = 0.5f), RoundedCornerShape(8.dp)).clickable { onNotesClick(subject) }.padding(horizontal = 12.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(Icons.Outlined.MenuBook, contentDescription = null, tint = colors.accent, modifier = Modifier.size(16.dp))
@@ -472,14 +367,8 @@ private fun SubjectRow(
                 Text(stringResource(R.string.action_notes), color = colors.accent, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
             }
 
-            // Practice Chip
             Row(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(colors.proBg)
-                    .border(1.dp, colors.pro.copy(alpha = 0.5f), RoundedCornerShape(8.dp)) // <-- ADDED BORDER
-                    .clickable { onPracticeClick(subject) }
-                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(colors.proBg).border(1.dp, colors.pro.copy(alpha = 0.5f), RoundedCornerShape(8.dp)).clickable { onPracticeClick(subject) }.padding(horizontal = 12.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(Icons.Outlined.Bolt, contentDescription = null, tint = colors.pro, modifier = Modifier.size(16.dp))
@@ -490,81 +379,36 @@ private fun SubjectRow(
     }
 }
 
-/** Compact completion ring with a centred percentage — trailing element on a subject row. */
 @Composable
-private fun SubjectProgressRing(
-    progress: Float,
-    color: Color,
-    modifier: Modifier = Modifier,
-) {
+private fun SubjectProgressRing(progress: Float, color: Color, modifier: Modifier = Modifier) {
     val colors = EduAiTheme.colors
     val fraction = progress.coerceIn(0f, 1f)
     val percent = (fraction * 100).roundToInt()
-    Box(
-        modifier = modifier.size(38.dp),
-        contentAlignment = Alignment.Center,
-    ) {
+    Box(modifier = modifier.size(38.dp), contentAlignment = Alignment.Center) {
         Canvas(modifier = Modifier.fillMaxSize()) {
             val strokeWidth = 4.dp.toPx()
             val inset = strokeWidth / 2f
             val arcSize = Size(size.width - strokeWidth, size.height - strokeWidth)
             val topLeft = Offset(inset, inset)
-            drawArc(
-                color = colors.border,
-                startAngle = -90f,
-                sweepAngle = 360f,
-                useCenter = false,
-                topLeft = topLeft,
-                size = arcSize,
-                style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
-            )
+            drawArc(color = colors.border, startAngle = -90f, sweepAngle = 360f, useCenter = false, topLeft = topLeft, size = arcSize, style = Stroke(width = strokeWidth, cap = StrokeCap.Round))
             if (fraction > 0f) {
-                drawArc(
-                    color = color,
-                    startAngle = -90f,
-                    sweepAngle = 360f * fraction,
-                    useCenter = false,
-                    topLeft = topLeft,
-                    size = arcSize,
-                    style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
-                )
+                drawArc(color = color, startAngle = -90f, sweepAngle = 360f * fraction, useCenter = false, topLeft = topLeft, size = arcSize, style = Stroke(width = strokeWidth, cap = StrokeCap.Round))
             }
         }
-        Text(
-            text = "$percent%",
-            color = colors.text,
-            fontSize = 10.sp,
-            fontWeight = FontWeight.SemiBold,
-        )
+        Text(text = "$percent%", color = colors.text, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
     }
 }
 
 @Composable
-private fun BookmarkTypeRow(
-    icon: ImageVector,
-    fg: Color,
-    bg: Color,
-    label: String,
-) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        Box(
-            modifier =
-                Modifier
-                    .size(28.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(bg),
-            contentAlignment = Alignment.Center,
-        ) {
+private fun BookmarkTypeRow(icon: ImageVector, fg: Color, bg: Color, label: String) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        Box(modifier = Modifier.size(28.dp).clip(RoundedCornerShape(8.dp)).background(bg), contentAlignment = Alignment.Center) {
             Icon(imageVector = icon, contentDescription = null, tint = fg, modifier = Modifier.size(14.dp))
         }
         Text(text = label, color = fg, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
     }
 }
 
-/** Subject-specific glyphs so each tile reads at a glance (Math, Science, etc.). */
 fun subjectMaterialIcon(name: String): ImageVector = subjectIcon(name)
 
 private fun subjectIcon(name: String): ImageVector {
@@ -597,12 +441,7 @@ private fun bookmarkIcon(role: EduChipRole): ImageVector =
     }
 
 @Composable
-private fun InviteCard(
-    onInvite: () -> Unit,
-    title: String = "Invite friends",
-    subtitle: String = "Share your code",
-    shareLabel: String = "Share",
-) {
+private fun InviteCard(onInvite: () -> Unit, title: String = "Invite friends", subtitle: String = "Share your code", shareLabel: String = "Share") {
     val colors = EduAiTheme.colors
     RailCard(onClick = onInvite, modifier = Modifier.width(150.dp)) {
         IconBubble(icon = Icons.Outlined.PersonAddAlt, fg = colors.accent, bg = colors.accentBg)
@@ -610,29 +449,218 @@ private fun InviteCard(
         Text(text = title, color = colors.text, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
         Text(text = subtitle, color = colors.textSecondary, fontSize = 11.sp, lineHeight = 14.sp)
         Spacer(modifier = Modifier.height(8.dp))
-        Row(
-            modifier =
-                Modifier
-                    .clip(RoundedCornerShape(EduAiDimens.chipRadius))
-                    .background(colors.accent)
-                    .padding(horizontal = 12.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
+        Row(modifier = Modifier.clip(RoundedCornerShape(EduAiDimens.chipRadius)).background(colors.accent).padding(horizontal = 12.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(text = shareLabel, color = colors.onAccent, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
         }
     }
 }
 
 @Composable
-private fun IconBubble(
-    icon: ImageVector,
-    fg: Color,
-    bg: Color,
-) {
-    Box(
-        modifier = Modifier.size(30.dp).clip(CircleShape).background(bg),
-        contentAlignment = Alignment.Center,
-    ) {
+private fun IconBubble(icon: ImageVector, fg: Color, bg: Color) {
+    Box(modifier = Modifier.size(30.dp).clip(CircleShape).background(bg), contentAlignment = Alignment.Center) {
         Icon(imageVector = icon, contentDescription = null, tint = fg, modifier = Modifier.size(15.dp))
+    }
+}
+
+// ================= NEW SEARCH COMPONENTS ================= //
+
+@Composable
+fun FilterChipMenu(
+    label: String,
+    selectedOption: String,
+    options: List<String>,
+    onSelectionChange: (String) -> Unit,
+    icon: ImageVector,
+    enabled: Boolean = true
+) {
+    val colors = EduAiTheme.colors
+    var expanded by remember { mutableStateOf(false) }
+
+    Box {
+        OutlinedButton(
+            onClick = { expanded = true },
+            enabled = enabled,
+            shape = RoundedCornerShape(20.dp),
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+            border = androidx.compose.foundation.BorderStroke(1.dp, if(enabled) colors.border else colors.border.copy(alpha=0.3f))
+        ) {
+            Icon(icon, contentDescription = null, modifier = Modifier.size(14.dp), tint = if(enabled) colors.textSecondary else colors.textMuted)
+            Spacer(Modifier.width(6.dp))
+            val displayText = if (selectedOption.startsWith("All")) label else selectedOption
+            Text(text = displayText, color = if(enabled) colors.text else colors.textMuted, fontSize = 12.sp)
+            Spacer(Modifier.width(4.dp))
+            Icon(Icons.Default.ArrowDropDown, contentDescription = "Dropdown Options", modifier = Modifier.size(16.dp), tint = if(enabled) colors.textSecondary else colors.textMuted)
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            options.forEach { opt ->
+                DropdownMenuItem(
+                    text = { Text(opt, fontSize = 14.sp) },
+                    onClick = { onSelectionChange(opt); expanded = false }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun HomeSearchRail(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    subjectFilter: String,
+    onSubjectFilterChange: (String) -> Unit,
+    learningOption: String,
+    onLearningOptionChange: (String) -> Unit,
+    onSearchClick: () -> Unit,
+    onSurpriseMeClick: () -> Unit,
+    isSearching: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val colors = EduAiTheme.colors
+
+    Column(modifier = modifier.fillMaxWidth().padding(bottom = 12.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            OutlinedTextField(
+                value = query,
+                onValueChange = onQueryChange,
+                modifier = Modifier.weight(1f),
+                singleLine = true,
+                enabled = !isSearching,
+                placeholder = { Text("Search topics...", color = colors.textSecondary, fontSize = 14.sp) },
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = colors.surface2,
+                    unfocusedContainerColor = colors.surface2,
+                    focusedBorderColor = colors.accent,
+                    unfocusedBorderColor = colors.border
+                ),
+                shape = RoundedCornerShape(12.dp)
+            )
+            Button(
+                onClick = onSearchClick,
+                enabled = !isSearching,
+                colors = ButtonDefaults.buttonColors(containerColor = colors.accent),
+                shape = RoundedCornerShape(12.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 14.dp)
+            ) {
+                Icon(Icons.Outlined.Search, contentDescription = "Search", modifier = Modifier.size(20.dp), tint = colors.onAccent)
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            FilterChipMenu(
+                label = "Subject",
+                selectedOption = subjectFilter,
+                options = listOf("All", "Science", "Math"),
+                onSelectionChange = onSubjectFilterChange,
+                icon = Icons.Outlined.MenuBook,
+                enabled = !isSearching
+            )
+
+            FilterChipMenu(
+                label = "Learning",
+                selectedOption = learningOption,
+                options = listOf("All", "Tutor", "Whiteboard", "Ask a doubt"),
+                onSelectionChange = onLearningOptionChange,
+                icon = Icons.Outlined.School,
+                enabled = !isSearching
+            )
+
+            OutlinedButton(
+                onClick = onSurpriseMeClick,
+                enabled = !isSearching,
+                shape = RoundedCornerShape(20.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, if(!isSearching) colors.border else colors.border.copy(alpha=0.3f))
+            ) {
+                Icon(Icons.Outlined.AutoAwesome, contentDescription = null, modifier = Modifier.size(14.dp), tint = if(!isSearching) colors.textSecondary else colors.textMuted)
+                Spacer(Modifier.width(6.dp))
+                Text("Surprise me", color = if(!isSearching) colors.text else colors.textMuted, fontSize = 12.sp)
+            }
+
+            if (isSearching) {
+                Spacer(Modifier.width(8.dp))
+                CircularProgressIndicator(modifier = Modifier.size(16.dp), color = colors.accent, strokeWidth = 2.dp)
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun SearchResultCard(
+    result: SearchResultItem,
+    selectedLearningOption: String,
+    onLearnWithTutor: (String, Boolean, String, String) -> Unit,
+    onWhiteboard: (String) -> Unit,
+    onAskDoubt: (String, String, String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val colors = EduAiTheme.colors
+
+    val showTutor = selectedLearningOption.startsWith("All") || selectedLearningOption == "Tutor"
+    val showWhiteboard = (selectedLearningOption.startsWith("All") || selectedLearningOption == "Whiteboard") && result.isWhiteboardAvailable
+    val showAskDoubt = selectedLearningOption.startsWith("All") || selectedLearningOption == "Ask a doubt"
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(bottom = 12.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(colors.surface2)
+            .border(1.dp, colors.border, RoundedCornerShape(12.dp))
+            .padding(16.dp)
+    ) {
+        Text(text = result.topicName, color = colors.text, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+        Text(
+            text = result.subjectName,
+            color = colors.textSecondary,
+            fontSize = 12.sp,
+            modifier = Modifier.padding(top = 4.dp, bottom = 12.dp)
+        )
+
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            if (showTutor) {
+                OutlinedButton(
+                    onClick = { onLearnWithTutor(result.conceptId, result.isMath, result.problemId, result.chapterId) },
+                    shape = RoundedCornerShape(8.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                ) {
+                    Text("Learn with tutor", color = colors.text, fontSize = 12.sp)
+                }
+            }
+
+            if (showWhiteboard && result.wbConceptId != null) {
+                OutlinedButton(
+                    onClick = { onWhiteboard(result.wbConceptId) },
+                    shape = RoundedCornerShape(8.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                ) {
+                    Text("Whiteboard", color = colors.text, fontSize = 12.sp)
+                }
+            }
+
+            if (showAskDoubt) {
+                OutlinedButton(
+                    onClick = { onAskDoubt(result.conceptId, result.subjectName, result.chapterId) },
+                    shape = RoundedCornerShape(8.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                ) {
+                    Text("Ask a doubt", color = colors.text, fontSize = 12.sp)
+                }
+            }
+        }
     }
 }
