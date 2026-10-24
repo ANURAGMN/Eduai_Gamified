@@ -739,11 +739,32 @@ class AgenticAIClient(
                         .replace("\\\"", "\"")
                         .replace("\\n", "\n")
                 }
+                // Reject non-SVG error payloads so the UI can show "No visual" instead of a blank WebView.
+                val trimmed = svgString.trimStart()
+                if (!trimmed.startsWith("<svg") && !trimmed.startsWith("<?xml")) {
+                    DebugLogger.errorLog(
+                        "AgenticAIClient",
+                        "Whiteboard SVG for $sceneId is not SVG (len=${svgString.length})",
+                    )
+                    return@withContext null
+                }
+                // Always log in release so blank-board incidents are visible in logcat.
+                android.util.Log.w(
+                    "AgenticAIClient",
+                    "Whiteboard SVG ok scene=$sceneId len=${svgString.length} hasUrlHash=${svgString.contains("url(#")}",
+                )
                 svgString
             } else {
+                DebugLogger.errorLog(
+                    "AgenticAIClient",
+                    "Whiteboard SVG fetch failed for $sceneId: HTTP ${response.code}",
+                )
+                android.util.Log.e("AgenticAIClient", "Whiteboard SVG HTTP ${response.code} for $sceneId")
                 null
             }
         } catch (e: Exception) {
+            DebugLogger.errorLog("AgenticAIClient", "Whiteboard SVG fetch error for $sceneId: ${e.message}")
+            android.util.Log.e("AgenticAIClient", "Whiteboard SVG error for $sceneId: ${e.message}")
             null
         }
     }

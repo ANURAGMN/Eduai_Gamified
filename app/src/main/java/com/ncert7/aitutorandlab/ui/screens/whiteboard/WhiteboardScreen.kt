@@ -2,10 +2,12 @@ package com.ncert7.aitutorandlab.ui.screens.whiteboard
 
 import android.Manifest
 import android.content.pm.PackageManager
-import android.webkit.WebView
-import android.webkit.WebViewClient
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.compose.foundation.Image
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -45,7 +47,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ncert7.aitutorandlab.R
@@ -313,27 +314,42 @@ fun WhiteboardChatbotScreen(
 
     val currentWordIndex by ttsController.currentWordIndex.collectAsState()
     val latestMessage = latestTurn?.message ?: ""
-    val currentCharIndex = remember(currentWordIndex, ttsState.isSpeaking, latestMessage) {
+    // Before the teacher starts speaking this turn, keep reveal at char 0 so scene
+    // parts / flowchart steps stay hidden. After speech finishes, show everything.
+    var speechStartedForTurn by remember(latestMessage) { mutableStateOf(false) }
+    LaunchedEffect(ttsState.isSpeaking, latestMessage) {
+        if (ttsState.isSpeaking) speechStartedForTurn = true
+    }
+    val currentCharIndex = remember(
+        currentWordIndex,
+        ttsState.isSpeaking,
+        latestMessage,
+        speechStartedForTurn,
+    ) {
         when {
-            !ttsState.isSpeaking -> Int.MAX_VALUE
-            currentWordIndex == -1 -> 0
-            else -> {
+            ttsState.isSpeaking && currentWordIndex == -1 -> 0
+            ttsState.isSpeaking -> {
                 val matches = Regex("\\S+").findAll(latestMessage).toList()
                 if (currentWordIndex in matches.indices) {
                     matches[currentWordIndex].range.first
                 } else {
-                    Int.MAX_VALUE
+                    0
                 }
             }
+            !speechStartedForTurn -> 0
+            else -> Int.MAX_VALUE
         }
     }
+    // User can skip timed reveal for this turn (resets when the tutor message changes).
+    var forceRevealAll by remember(latestMessage) { mutableStateOf(false) }
+    val effectiveCharIndex = if (forceRevealAll) Int.MAX_VALUE else currentCharIndex
 
     LaunchedEffect(isDragged) {
         if (isDragged) allowAutoScroll = false
     }
 
-    LaunchedEffect(currentCharIndex) {
-        if (allowAutoScroll && currentCharIndex < Int.MAX_VALUE && scrollState.maxValue > 0) {
+    LaunchedEffect(effectiveCharIndex) {
+        if (allowAutoScroll && effectiveCharIndex < Int.MAX_VALUE && scrollState.maxValue > 0) {
             scrollState.animateScrollTo(scrollState.maxValue)
         }
     }
@@ -435,16 +451,51 @@ fun WhiteboardChatbotScreen(
                     .padding(start = 8.dp, end = 8.dp, top = 0.dp, bottom = 4.dp)
             ) {
                 Column(modifier = Modifier.fillMaxSize().padding(8.dp)) {
-                    Text("Visual Board", fontWeight = FontWeight.Bold, color = Color.Gray, modifier = Modifier.padding(start = 4.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(start = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            "Visual Board",
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Gray,
+                            modifier = Modifier.weight(1f),
+                        )
+                        if (!whiteboardData?.svgString.isNullOrEmpty() && !forceRevealAll) {
+                            OutlinedButton(
+                                onClick = { forceRevealAll = true },
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                                modifier = Modifier.height(32.dp),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF4F46E5)),
+                            ) {
+                                Text("Show all", fontSize = 12.sp)
+                            }
+                        }
+                    }
                     HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
 
-                    if (whiteboardData == null || whiteboardData?.svgString.isNullOrEmpty()) {
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text("Visuals loading...", color = Color.LightGray)
+                    when {
+                        isLoading && whiteboardData == null -> {
+                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Text("Visuals loading...", color = Color.LightGray)
+                            }
                         }
-                    } else {
-                        val timeline = latestTurn?.revealTimeline ?: emptyList()
-                        SvgRenderer(svgString = whiteboardData!!.svgString!!, timeline = timeline, currentCharIndex = currentCharIndex)
+                        whiteboardData?.svgString.isNullOrEmpty() -> {
+                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Text(
+                                    if (isLoading) "Visuals loading..." else "No visual for this step",
+                                    color = Color.LightGray,
+                                )
+                            }
+                        }
+                        else -> {
+                            val timeline = latestTurn?.revealTimeline ?: emptyList()
+                            SvgRenderer(
+                                svgString = whiteboardData!!.svgString!!,
+                                timeline = timeline,
+                                currentCharIndex = effectiveCharIndex,
+                            )
+                        }
                     }
                 }
             }
@@ -488,7 +539,7 @@ fun WhiteboardChatbotScreen(
 
                         whiteboardData?.explanationCard?.let { card ->
                             val cardTimeline = timeline.find { it.unitType == "text_card" }
-                            val isRevealed = cardTimeline == null || cardTimeline.triggerCharIndex <= currentCharIndex
+                            val isRevealed = cardTimeline == null || cardTimeline.triggerCharIndex <= effectiveCharIndex
                             AnimatedVisibility(visible = isRevealed, enter = fadeIn()) {
                                 HandwritingExplanationSection(card = card, messageFontSp = settingsState.messageFontSp)
                                 Spacer(modifier = Modifier.height(16.dp))
@@ -497,7 +548,7 @@ fun WhiteboardChatbotScreen(
 
                         whiteboardData?.flowchartSteps?.let { steps ->
                             if (steps.isNotEmpty()) {
-                                FlowchartSection(steps = steps, timeline = timeline, currentCharIndex = currentCharIndex, messageFontSp = settingsState.messageFontSp)
+                                FlowchartSection(steps = steps, timeline = timeline, currentCharIndex = effectiveCharIndex, messageFontSp = settingsState.messageFontSp)
                             }
                         }
                     }
@@ -636,61 +687,38 @@ fun ErrorBanner(message: String) {
 
 @Composable
 fun SvgRenderer(svgString: String, timeline: List<WbRevealTimelineUnit>, currentCharIndex: Int) {
-    var webViewInstance by remember { mutableStateOf<WebView?>(null) }
-    var isWebViewLoaded by remember { mutableStateOf(false) }
-    var lastLoadedSvg by remember { mutableStateOf<String?>(null) }
-
-    LaunchedEffect(currentCharIndex, timeline, isWebViewLoaded, webViewInstance) {
-        if (isWebViewLoaded && webViewInstance != null) {
-            val jsBuilder = StringBuilder()
-            timeline.filter { it.unitType == "scene_part" && it.partId != null }.forEach { unit ->
-                val opacity = if (currentCharIndex >= unit.triggerCharIndex) "1" else "0"
-                jsBuilder.append("var el = document.getElementById('${unit.partId}'); if(el) el.style.opacity = '$opacity';\n")
-            }
-            webViewInstance?.evaluateJavascript(jsBuilder.toString(), null)
+    val context = LocalContext.current
+    val renderedSvg = remember(svgString, timeline, currentCharIndex) {
+        WhiteboardSvgBitmapRenderer.applyReveal(svgString, timeline, currentCharIndex)
+    }
+    val bitmap = remember(renderedSvg) {
+        try {
+            // Persist last SVG for adb pull diagnostics:
+            // /sdcard/Android/data/com.ncert7.aitutorandlab/files/wb_last.svg
+            context.getExternalFilesDir(null)?.resolve("wb_last.svg")?.writeText(svgString)
+            val bmp = WhiteboardSvgBitmapRenderer.renderToBitmap(renderedSvg, sized = true)
+            val hiddenParts = Regex("""(?i)\bopacity\s*=\s*["']0["']""").findAll(renderedSvg).count()
+            Log.w(
+                "SvgRenderer",
+                "SVG bitmap ${bmp.width}x${bmp.height} len=${svgString.length} " +
+                    "urlHash=${svgString.contains("url(#")} parts=${timeline.count { it.unitType == "scene_part" }} " +
+                    "charIdx=$currentCharIndex hiddenOpacity0=$hiddenParts",
+            )
+            bmp
+        } catch (e: Exception) {
+            Log.e("SvgRenderer", "SVG render failed: ${e.message}", e)
+            null
         }
     }
 
-    AndroidView(
-        factory = { context ->
-            WebView(context).apply {
-                settings.javaScriptEnabled = true
-                setBackgroundColor(android.graphics.Color.TRANSPARENT)
-
-                webViewClient = object : WebViewClient() {
-                    override fun onPageFinished(view: WebView?, url: String?) {
-                        super.onPageFinished(view, url)
-                        isWebViewLoaded = true
-                    }
-                }
-                webViewInstance = this
-            }
-        },
-        update = { webView ->
-            if (lastLoadedSvg != svgString) {
-                lastLoadedSvg = svgString
-                isWebViewLoaded = false
-
-                val html = """
-                    <!DOCTYPE html>
-                    <html>
-                    <head>
-                        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-                        <style>
-                            body { margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; }
-                            svg { width: 100%; height: auto; max-height: 100%; display: block; }
-                        </style>
-                    </head>
-                    <body>
-                        $svgString
-                    </body>
-                    </html>
-                """.trimIndent()
-                webView.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null)
-            }
-        },
-        modifier = Modifier.fillMaxSize()
-    )
+    if (bitmap != null) {
+        Image(
+            bitmap = bitmap.asImageBitmap(),
+            contentDescription = "Whiteboard visual",
+            contentScale = ContentScale.Fit,
+            modifier = Modifier.fillMaxSize(),
+        )
+    }
 }
 
 /**

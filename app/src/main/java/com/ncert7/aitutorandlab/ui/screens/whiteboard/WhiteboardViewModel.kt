@@ -175,6 +175,9 @@ class WhiteboardViewModel @Inject constructor(
         var explanationCard: ExplanationCard? = null
         var rawSvgString: String? = null
 
+        val typeSummary = objects?.values?.map { "${it.object_type_id}:${it.props?.scene_id}" } ?: emptyList()
+        android.util.Log.w("WhiteboardVM", "parse objects=${objects?.size} types=$typeSummary")
+
         objects?.values?.forEach { obj ->
             val instanceId = obj.instance_id ?: ""
             when (obj.object_type_id) {
@@ -194,7 +197,16 @@ class WhiteboardViewModel @Inject constructor(
                     val sceneId = obj.props?.scene_id
                     if (!sceneId.isNullOrEmpty()) {
                         rawSvgString = apiClient.fetchWhiteboardSvg(sceneId)
+                        android.util.Log.w(
+                            "WhiteboardVM",
+                            "scene_asset id=$sceneId svgLen=${rawSvgString?.length}",
+                        )
+                    } else {
+                        android.util.Log.e("WhiteboardVM", "scene_asset missing scene_id props=${obj.props}")
                     }
+                }
+                else -> {
+                    android.util.Log.w("WhiteboardVM", "unknown object_type_id=${obj.object_type_id}")
                 }
             }
         }

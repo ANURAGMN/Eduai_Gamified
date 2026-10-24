@@ -127,6 +127,9 @@ android {
     kotlinOptions {
         jvmTarget = "11"
     }
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+    }
 }
 
 // KSP Configuration for Room Schema Export
@@ -188,6 +191,8 @@ dependencies {
     implementation(libs.androidx.webkit)
     implementation(libs.material)
     implementation(libs.androidx.activity)
+    // Native SVG → PictureDrawable (geometry whiteboard scenes; WebView data:/# broken for url(#id))
+    implementation("com.caverock:androidsvg-aar:1.4")
 
 // room database
     implementation("androidx.room:room-runtime:2.8.4")
@@ -227,6 +232,7 @@ dependencies {
     implementation("com.google.android.gms:play-services-ads:25.4.0")
 
     testImplementation("junit:junit:4.13.2")
+    testImplementation("org.robolectric:robolectric:4.14.1")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test:runner:1.6.2")
     androidTestImplementation(platform(libs.compose.bom))
