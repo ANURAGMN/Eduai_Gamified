@@ -406,4 +406,18 @@
     <string name="ask_ai_doubt_response">AI Response</string>
     <string name="ask_ai_doubt_failed">Failed to get a clear answer. Please try again.</string>
     <string name="ask_ai_doubt_offline">Unable to connect to the server.</string>
+
+    <!-- Home topic search -->
+    <string name="home_search_placeholder">Search topics…</string>
+    <string name="home_search_subject_filter">Subject</string>
+    <string name="home_search_learning_filter">Learning</string>
+    <string name="home_search_surprise_me">Surprise me</string>
+    <string name="home_search_empty_query">Please enter a topic to search.</string>
+    <string name="home_search_no_results">No topics found matching your criteria. Try another search.</string>
+    <string name="home_search_notes">Notes</string>
+    <string name="home_search_whiteboard">Whiteboard</string>
+    <string name="home_search_ask_doubt">Ask a doubt</string>
+    <string name="home_search_filter_all">All</string>
+    <string name="home_search_filter_science">Science</string>
+    <string name="home_search_filter_math">Math</string>
 </resources>

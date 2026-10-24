@@ -409,4 +409,18 @@
     <string name="ask_ai_doubt_response">AI ಉತ್ತರ</string>
     <string name="ask_ai_doubt_failed">ಸ್ಪಷ್ಟ ಉತ್ತರ ಸಿಗಲಿಲ್ಲ. ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.</string>
     <string name="ask_ai_doubt_offline">ಸರ್ವರ್‌ಗೆ ಸಂಪರ್ಕಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.</string>
+
+    <!-- Home topic search -->
+    <string name="home_search_placeholder">ವಿಷಯಗಳನ್ನು ಹುಡುಕಿ…</string>
+    <string name="home_search_subject_filter">ವಿಷಯ</string>
+    <string name="home_search_learning_filter">ಕಲಿಕೆ</string>
+    <string name="home_search_surprise_me">ಆಶ್ಚರ್ಯ</string>
+    <string name="home_search_empty_query">ಹುಡುಕಲು ಒಂದು ವಿಷಯ ನಮೂದಿಸಿ.</string>
+    <string name="home_search_no_results">ಹೊಂದಾಣಿಕೆಯಾಗುವ ವಿಷಯಗಳು ಸಿಗಲಿಲ್ಲ. ಬೇರೆ ಹುಡುಕಾಟ ಪ್ರಯತ್ನಿಸಿ.</string>
+    <string name="home_search_notes">ಟಿಪ್ಪಣಿಗಳು</string>
+    <string name="home_search_whiteboard">ವೈಟ್‌ಬೋರ್ಡ್</string>
+    <string name="home_search_ask_doubt">ಸಂದೇಹ ಕೇಳಿ</string>
+    <string name="home_search_filter_all">ಎಲ್ಲಾ</string>
+    <string name="home_search_filter_science">ವಿಜ್ಞಾನ</string>
+    <string name="home_search_filter_math">ಗಣಿತ</string>
 </resources>

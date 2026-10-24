@@ -29,6 +29,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import com.anurag.eduai.uikit.components.HomeSearchFilterIds
+import com.anurag.eduai.uikit.components.SearchFilterOption
 import com.anurag.eduai.uikit.components.SubjectTile
 import com.anurag.eduai.uikit.components.subjectMaterialIcon
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
@@ -171,17 +173,38 @@ fun GamifiedHomeRoute(
     val gardenHighlightNewPlant by viewModel.gardenHighlightNewPlant.collectAsState()
     val gardenHighlightStarterPlant by viewModel.gardenHighlightStarterPlant.collectAsState()
     val gardenEnabled = GamificationFeatureFlags.isGardenEnabled(context)
+    val searchQuery by viewModel.searchQuery.collectAsState()
+    val searchSubjectFilterId by viewModel.searchSubjectFilterId.collectAsState()
+    val searchLearningOptionId by viewModel.searchLearningOptionId.collectAsState()
+    val searchResults by viewModel.searchResults.collectAsState()
+    val hasSearched by viewModel.hasSearched.collectAsState()
+    val isSearching by viewModel.isSearching.collectAsState()
 
     var pendingQuestClaim by remember { mutableStateOf<QuestClaimType?>(null) }
     var selectedYoutubeVideo by remember { mutableStateOf<YoutubeVideoItem?>(null) }
     var showGemsInfoDialog by remember { mutableStateOf(false) }
     var showDoubtsSheet by remember { mutableStateOf(false) }
+    var doubtSubjectContext by remember { mutableStateOf("") }
+    var doubtChapterContext by remember { mutableStateOf("") }
+    var doubtInitialQuestion by remember { mutableStateOf("") }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val notesLabel = stringResource(R.string.action_notes)
     val practiceLabel = stringResource(R.string.action_practice)
     val askDoubtLabel = stringResource(R.string.ask_ai_doubt)
     val askDoubtChapterGeneral = stringResource(R.string.ask_ai_doubt_chapter_general)
+    val searchPlaceholder = stringResource(R.string.home_search_placeholder)
+    val searchSubjectFilterLabel = stringResource(R.string.home_search_subject_filter)
+    val searchLearningFilterLabel = stringResource(R.string.home_search_learning_filter)
+    val searchSurpriseMeLabel = stringResource(R.string.home_search_surprise_me)
+    val searchEmptyQueryHint = stringResource(R.string.home_search_empty_query)
+    val searchNoResultsHint = stringResource(R.string.home_search_no_results)
+    val searchNotesLabel = stringResource(R.string.home_search_notes)
+    val searchWhiteboardLabel = stringResource(R.string.home_search_whiteboard)
+    val searchAskDoubtLabel = stringResource(R.string.home_search_ask_doubt)
+    val searchFilterAll = stringResource(R.string.home_search_filter_all)
+    val searchFilterScience = stringResource(R.string.home_search_filter_science)
+    val searchFilterMath = stringResource(R.string.home_search_filter_math)
 
     LaunchedEffect(Unit) {
         viewModel.preloadRewardedAd()
@@ -274,7 +297,7 @@ fun GamifiedHomeRoute(
         }
     }
 
-    val (homeState, focus) =
+    val (homeStateBase, focus) =
         remember(
             greeting,
             student?.studentName,
@@ -342,6 +365,60 @@ fun GamifiedHomeRoute(
                 gardenHighlightStarterPlant = gardenHighlightStarterPlant,
                 gardenPlantedItems = gardenPlantedItems,
                 localizedTrialTitles = localizedTrialTitles,
+            )
+        }
+
+    val homeState =
+        remember(
+            homeStateBase,
+            searchQuery,
+            searchSubjectFilterId,
+            searchLearningOptionId,
+            searchResults,
+            hasSearched,
+            isSearching,
+            searchPlaceholder,
+            searchSubjectFilterLabel,
+            searchLearningFilterLabel,
+            searchSurpriseMeLabel,
+            searchEmptyQueryHint,
+            searchNoResultsHint,
+            searchNotesLabel,
+            searchWhiteboardLabel,
+            searchAskDoubtLabel,
+            searchFilterAll,
+            searchFilterScience,
+            searchFilterMath,
+        ) {
+            homeStateBase.copy(
+                searchQuery = searchQuery,
+                searchSubjectFilterId = searchSubjectFilterId,
+                searchLearningOptionId = searchLearningOptionId,
+                searchResults = searchResults,
+                hasSearched = hasSearched,
+                isSearching = isSearching,
+                searchPlaceholder = searchPlaceholder,
+                searchSubjectFilterLabel = searchSubjectFilterLabel,
+                searchLearningFilterLabel = searchLearningFilterLabel,
+                searchSurpriseMeLabel = searchSurpriseMeLabel,
+                searchEmptyQueryHint = searchEmptyQueryHint,
+                searchNoResultsHint = searchNoResultsHint,
+                searchNotesLabel = searchNotesLabel,
+                searchWhiteboardLabel = searchWhiteboardLabel,
+                searchAskDoubtLabel = searchAskDoubtLabel,
+                searchSubjectOptions =
+                    listOf(
+                        SearchFilterOption(HomeSearchFilterIds.SUBJECT_ALL, searchFilterAll),
+                        SearchFilterOption(HomeSearchFilterIds.SUBJECT_SCIENCE, searchFilterScience),
+                        SearchFilterOption(HomeSearchFilterIds.SUBJECT_MATH, searchFilterMath),
+                    ),
+                searchLearningOptions =
+                    listOf(
+                        SearchFilterOption(HomeSearchFilterIds.LEARN_ALL, searchFilterAll),
+                        SearchFilterOption(HomeSearchFilterIds.LEARN_NOTES, searchNotesLabel),
+                        SearchFilterOption(HomeSearchFilterIds.LEARN_WHITEBOARD, searchWhiteboardLabel),
+                        SearchFilterOption(HomeSearchFilterIds.LEARN_ASK_DOUBT, searchAskDoubtLabel),
+                    ),
             )
         }
 
@@ -663,8 +740,35 @@ fun GamifiedHomeRoute(
                 },
                 notesLabel = notesLabel,
                 practiceLabel = practiceLabel,
-                onAskDoubtClick = { showDoubtsSheet = true },
+                onAskDoubtClick = {
+                    doubtSubjectContext = selectedSubjectName.ifBlank { "" }
+                    doubtChapterContext = askDoubtChapterGeneral
+                    doubtInitialQuestion = ""
+                    showDoubtsSheet = true
+                },
                 askDoubtLabel = askDoubtLabel,
+                onSearchQueryChange = { viewModel.updateSearchQuery(it) },
+                onSearchSubjectFilterChange = { viewModel.updateSearchSubjectFilter(it) },
+                onSearchLearningOptionChange = { viewModel.updateSearchLearningOption(it) },
+                onSearchClick = { viewModel.performSearch() },
+                onSurpriseMeClick = { viewModel.surpriseMe() },
+                onSearchNotes = { subjectId, _ ->
+                    if (subjectId.isNotBlank()) {
+                        onNavigateToNotes(subjectId)
+                    }
+                },
+                onSearchWhiteboard = { wbConceptId ->
+                    gated.run(
+                        trackClick = { ContentClickNavigation.trackHomeLessonClick(wbConceptId) },
+                        navigate = { onNavigateToRoute("whiteboard_chatbot?conceptId=$wbConceptId") },
+                    )
+                },
+                onSearchAskDoubt = { topicName, subjectName, chapterName ->
+                    doubtSubjectContext = subjectName
+                    doubtChapterContext = chapterName.ifBlank { askDoubtChapterGeneral }
+                    doubtInitialQuestion = topicName
+                    showDoubtsSheet = true
+                },
                 subjectIconContent = { subject, tint ->
                     SubjectRailIcon(subject = subject, tint = tint)
                 },
@@ -701,9 +805,16 @@ fun GamifiedHomeRoute(
         }
             if (showDoubtsSheet) {
                 DoubtsBottomSheet(
-                    subjectName = selectedSubjectName.ifBlank { stringResource(R.string.app_name) },
-                    chapterName = askDoubtChapterGeneral,
-                    onDismiss = { showDoubtsSheet = false },
+                    subjectName =
+                        doubtSubjectContext.ifBlank {
+                            selectedSubjectName.ifBlank { stringResource(R.string.app_name) }
+                        },
+                    chapterName = doubtChapterContext.ifBlank { askDoubtChapterGeneral },
+                    initialQuestion = doubtInitialQuestion,
+                    onDismiss = {
+                        showDoubtsSheet = false
+                        doubtInitialQuestion = ""
+                    },
                 )
             }
 

@@ -57,6 +57,8 @@ import com.anurag.eduai.uikit.components.FriendsInviteRail
 import com.anurag.eduai.uikit.components.FriendsUpdatesRail
 import com.anurag.eduai.uikit.components.EduIntroTourOverlay
 import com.anurag.eduai.uikit.components.HomeFocusStrip
+import com.anurag.eduai.uikit.components.HomeSearchFilterIds
+import com.anurag.eduai.uikit.components.HomeSearchRail
 import com.anurag.eduai.uikit.components.PlanDayNode
 import com.anurag.eduai.uikit.components.PlanDayStatus
 import com.anurag.eduai.uikit.components.PlanDayType
@@ -67,6 +69,9 @@ import com.anurag.eduai.uikit.components.QuestTrail
 import com.anurag.eduai.uikit.components.QuestTrailState
 import com.anurag.eduai.uikit.components.RevisionItem
 import com.anurag.eduai.uikit.components.RevisionRail
+import com.anurag.eduai.uikit.components.SearchFilterOption
+import com.anurag.eduai.uikit.components.SearchResultCard
+import com.anurag.eduai.uikit.components.SearchResultItem
 import com.anurag.eduai.uikit.components.SectionHeader
 import androidx.compose.material3.Icon
 import com.anurag.eduai.uikit.components.SubjectTile
@@ -157,6 +162,35 @@ data class HomeUiState(
     val inviteFriendsSubtitle: String = "Share your code",
     val shareLabel: String = "Share",
     val acceptLabel: String = "Accept",
+    // Home topic search
+    val searchQuery: String = "",
+    val searchSubjectFilterId: String = HomeSearchFilterIds.SUBJECT_ALL,
+    val searchLearningOptionId: String = HomeSearchFilterIds.LEARN_ALL,
+    val searchResults: List<SearchResultItem> = emptyList(),
+    val hasSearched: Boolean = false,
+    val isSearching: Boolean = false,
+    val searchPlaceholder: String = "Search topics…",
+    val searchSubjectFilterLabel: String = "Subject",
+    val searchLearningFilterLabel: String = "Learning",
+    val searchSurpriseMeLabel: String = "Surprise me",
+    val searchEmptyQueryHint: String = "Please enter a topic to search.",
+    val searchNoResultsHint: String = "No topics found matching your criteria. Try another search.",
+    val searchNotesLabel: String = "Notes",
+    val searchWhiteboardLabel: String = "Whiteboard",
+    val searchAskDoubtLabel: String = "Ask a doubt",
+    val searchSubjectOptions: List<SearchFilterOption> =
+        listOf(
+            SearchFilterOption(HomeSearchFilterIds.SUBJECT_ALL, "All"),
+            SearchFilterOption(HomeSearchFilterIds.SUBJECT_SCIENCE, "Science"),
+            SearchFilterOption(HomeSearchFilterIds.SUBJECT_MATH, "Math"),
+        ),
+    val searchLearningOptions: List<SearchFilterOption> =
+        listOf(
+            SearchFilterOption(HomeSearchFilterIds.LEARN_ALL, "All"),
+            SearchFilterOption(HomeSearchFilterIds.LEARN_NOTES, "Notes"),
+            SearchFilterOption(HomeSearchFilterIds.LEARN_WHITEBOARD, "Whiteboard"),
+            SearchFilterOption(HomeSearchFilterIds.LEARN_ASK_DOUBT, "Ask a doubt"),
+        ),
 )
 
 /** Lightweight card model for the home YouTube rail (below subjects). */
@@ -203,6 +237,15 @@ fun EduHomeScreen(
     practiceLabel: String = "Practice",
     onAskDoubtClick: (() -> Unit)? = null,
     askDoubtLabel: String = "Ask AI a Doubt",
+    onSearchQueryChange: (String) -> Unit = {},
+    onSearchSubjectFilterChange: (String) -> Unit = {},
+    onSearchLearningOptionChange: (String) -> Unit = {},
+    onSearchClick: () -> Unit = {},
+    onSurpriseMeClick: () -> Unit = {},
+    onSearchNotes: (subjectId: String, chapterId: String) -> Unit = { _, _ -> },
+    onSearchWhiteboard: (wbConceptId: String) -> Unit = {},
+    onSearchAskDoubt: (topicName: String, subjectName: String, chapterName: String) -> Unit =
+        { _, _, _ -> },
     subjectIconContent: @Composable (SubjectTile, Color) -> Unit = { subject, tint ->
         Icon(
             imageVector = subjectMaterialIcon(subject.name),
@@ -312,8 +355,88 @@ fun EduHomeScreen(
             }
         } // end rail-1 bounds (focus + tutor merged)
 
-        // Subjects sits above the garden so browsing by subject is the first thing after
-        // the focus strip.
+        // Topic search sits above Subjects so discovery comes before subject browsing.
+        Entrance(delayMillis = 140) {
+            Column(modifier = Modifier.fillMaxWidth().padding(top = 10.dp)) {
+                HomeSearchRail(
+                    query = state.searchQuery,
+                    onQueryChange = onSearchQueryChange,
+                    subjectFilterId = state.searchSubjectFilterId,
+                    onSubjectFilterChange = onSearchSubjectFilterChange,
+                    learningOptionId = state.searchLearningOptionId,
+                    onLearningOptionChange = onSearchLearningOptionChange,
+                    subjectOptions = state.searchSubjectOptions,
+                    learningOptions = state.searchLearningOptions,
+                    placeholder = state.searchPlaceholder,
+                    subjectFilterLabel = state.searchSubjectFilterLabel,
+                    learningFilterLabel = state.searchLearningFilterLabel,
+                    surpriseMeLabel = state.searchSurpriseMeLabel,
+                    onSearchClick = onSearchClick,
+                    onSurpriseMeClick = onSurpriseMeClick,
+                    isSearching = state.isSearching,
+                )
+                if (state.hasSearched && !state.isSearching) {
+                    val filteredResults =
+                        remember(state.searchResults, state.searchSubjectFilterId, state.searchLearningOptionId) {
+                            state.searchResults.filter { item ->
+                                val subjectMatch =
+                                    when (state.searchSubjectFilterId) {
+                                        HomeSearchFilterIds.SUBJECT_MATH -> item.isMath
+                                        HomeSearchFilterIds.SUBJECT_SCIENCE -> !item.isMath
+                                        else -> true
+                                    }
+                                val optionMatch =
+                                    when (state.searchLearningOptionId) {
+                                        HomeSearchFilterIds.LEARN_WHITEBOARD -> item.isWhiteboardAvailable
+                                        else -> true
+                                    }
+                                subjectMatch && optionMatch
+                            }
+                        }
+                    when {
+                        state.searchQuery.isBlank() && state.searchResults.isEmpty() -> {
+                            Box(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    state.searchEmptyQueryHint,
+                                    color = colors.warning,
+                                    fontSize = 13.sp,
+                                )
+                            }
+                        }
+                        filteredResults.isEmpty() -> {
+                            Box(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    state.searchNoResultsHint,
+                                    color = colors.textSecondary,
+                                    fontSize = 13.sp,
+                                )
+                            }
+                        }
+                        else -> {
+                            filteredResults.forEach { result ->
+                                SearchResultCard(
+                                    result = result,
+                                    learningOptionId = state.searchLearningOptionId,
+                                    notesLabel = state.searchNotesLabel,
+                                    whiteboardLabel = state.searchWhiteboardLabel,
+                                    askDoubtLabel = state.searchAskDoubtLabel,
+                                    onNotes = onSearchNotes,
+                                    onWhiteboard = onSearchWhiteboard,
+                                    onAskDoubt = onSearchAskDoubt,
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         Entrance(delayMillis = 150) {
             SubjectsRail(
                 title = state.subjectsSectionTitle,
@@ -347,21 +470,43 @@ fun EduHomeScreen(
                         fontSize = 16.sp,
                     )
                 }
-                        onOpenCollection = onOpenGarden,
-                    )
-                }
-                state.quests.simsTotal > 0 || state.quests.studyTotal > 0 ->
-                    QuestTrail(
-                        state = state.quests,
-                        onSeeAll = onQuestsSeeAll,
-                        onSimsClick = onSimsQuestClick,
-                        onStudyClick = onStudyQuestClick,
-                        onBonusClick = onBonusQuestClick,
-                        sectionTitle = state.questsSectionTitle,
-                        seeAllLabel = state.seeAllLabel,
-                    )
             }
         }
+
+        // Space / garden colony — above video lessons.
+        Box(Modifier.fillMaxWidth().onGloballyPositioned { railBounds = railBounds + (2 to it.boundsInRoot()) }) {
+            Entrance(delayMillis = 158) {
+                when {
+                    state.garden != null ->
+                        GrowRail(
+                            state = state.garden,
+                            onOpenWorld = onOpenGarden,
+                            onRailClick = onGardenRailClick,
+                        )
+                    state.collectionShelf != null -> {
+                        val shelf = state.collectionShelf
+                        SectionHeader(
+                            title = shelf.sectionTitle,
+                            seeAllLabel = shelf.seeAllLabel,
+                            onSeeAllClick = onOpenGarden,
+                        )
+                        CollectionShelf(
+                            state = shelf,
+                            onOpenCollection = onOpenGarden,
+                        )
+                    }
+                    state.quests.simsTotal > 0 || state.quests.studyTotal > 0 ->
+                        QuestTrail(
+                            state = state.quests,
+                            onSeeAll = onQuestsSeeAll,
+                            onSimsClick = onSimsQuestClick,
+                            onStudyClick = onStudyQuestClick,
+                            onBonusClick = onBonusQuestClick,
+                            sectionTitle = state.questsSectionTitle,
+                            seeAllLabel = state.seeAllLabel,
+                        )
+                }
+            }
         } // end rail-2 bounds
 
         // Video lessons (+ textbooks from the app slot) — below the colony.

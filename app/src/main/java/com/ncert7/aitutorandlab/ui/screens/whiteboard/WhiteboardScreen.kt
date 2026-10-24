@@ -808,3 +808,6 @@ fun HandwritingExplanationSection(card: ExplanationCard, messageFontSp: Float = 
                 color = Color(0xFF1F2937),
                 lineHeight = (28 * scale).sp,
             )
+        }
+    }
+}

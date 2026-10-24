@@ -56,6 +56,10 @@ import com.ncert7.aitutorandlab.utils.getCurrentLanguageCode
 import com.ncert7.aitutorandlab.utils.normalizeLanguageCode
 import com.ncert7.aitutorandlab.utils.TrialTitleResolver
 import com.anurag.eduai.uikit.avatar.AvatarUnlockStore
+import com.anurag.eduai.uikit.components.HomeSearchFilterIds
+import com.anurag.eduai.uikit.components.SearchResultItem
+import com.ncert7.aitutorandlab.data.remote.AgenticAIClient
+import com.ncert7.aitutorandlab.utils.SubjectIds
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import android.content.Context
@@ -95,6 +99,7 @@ class HomeViewModel @Inject constructor(
     private val youtubeVideoRepository: YoutubeVideoRepository,
     private val gardenRepository: GardenRepository,
     private val tutorConfigRepository: TutorConfigRepository,
+    private val apiClient: AgenticAIClient,
     @ApplicationContext private val appContext: Context,
 ) : ViewModel(){
 
@@ -214,6 +219,179 @@ class HomeViewModel @Inject constructor(
 
     private val _gardenPlantedItems = MutableStateFlow<List<GrownItemEntity>>(emptyList())
     val gardenPlantedItems: StateFlow<List<GrownItemEntity>> = _gardenPlantedItems
+
+    // --- Home topic search ---
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery
+
+    private val _searchSubjectFilterId = MutableStateFlow(HomeSearchFilterIds.SUBJECT_ALL)
+    val searchSubjectFilterId: StateFlow<String> = _searchSubjectFilterId
+
+    private val _searchLearningOptionId = MutableStateFlow(HomeSearchFilterIds.LEARN_ALL)
+    val searchLearningOptionId: StateFlow<String> = _searchLearningOptionId
+
+    private val _searchResults = MutableStateFlow<List<SearchResultItem>>(emptyList())
+    val searchResults: StateFlow<List<SearchResultItem>> = _searchResults
+
+    private val _hasSearched = MutableStateFlow(false)
+    val hasSearched: StateFlow<Boolean> = _hasSearched
+
+    private val _isSearching = MutableStateFlow(false)
+    val isSearching: StateFlow<Boolean> = _isSearching
+
+    /** conceptId → whiteboard API conceptId for concepts that have a scene. */
+    private var whiteboardConceptIds: Set<String> = emptySet()
+    /** EN title lowercase → whiteboard conceptId (fallback when ids diverge). */
+    private var whiteboardTitleToId: Map<String, String> = emptyMap()
+
+    fun updateSearchQuery(query: String) {
+        _searchQuery.value = query
+        _hasSearched.value = false
+    }
+
+    fun updateSearchSubjectFilter(filterId: String) {
+        _searchSubjectFilterId.value = filterId
+    }
+
+    fun updateSearchLearningOption(optionId: String) {
+        _searchLearningOptionId.value = optionId
+    }
+
+    fun performSearch() {
+        viewModelScope.launch {
+            val query = _searchQuery.value.trim()
+            _hasSearched.value = true
+            if (query.isBlank()) {
+                _searchResults.value = emptyList()
+                return@launch
+            }
+            _isSearching.value = true
+            try {
+                _searchResults.value = buildSearchResults(queryFilter = query, limit = 20, shuffle = false)
+            } catch (e: Exception) {
+                DebugLogger.errorLog("HomeViewModel", "Search failure: ${e.message}")
+                _searchResults.value = emptyList()
+            } finally {
+                _isSearching.value = false
+            }
+        }
+    }
+
+    fun surpriseMe() {
+        viewModelScope.launch {
+            _hasSearched.value = true
+            _isSearching.value = true
+            try {
+                _searchResults.value = buildSearchResults(queryFilter = null, limit = 5, shuffle = true)
+            } catch (e: Exception) {
+                DebugLogger.errorLog("HomeViewModel", "Surprise me failure: ${e.message}")
+                _searchResults.value = emptyList()
+            } finally {
+                _isSearching.value = false
+            }
+        }
+    }
+
+    private suspend fun ensureWhiteboardIndex() {
+        if (whiteboardConceptIds.isNotEmpty() || whiteboardTitleToId.isNotEmpty()) return
+        val result = apiClient.getWhiteboardConcepts()
+        if (result.isFailure) return
+        val withScene = result.getOrNull()?.concepts.orEmpty().filter { it.hasScene }
+        whiteboardConceptIds = withScene.map { it.conceptId }.toSet()
+        whiteboardTitleToId =
+            withScene.associateBy({ it.title.trim().lowercase() }, { it.conceptId })
+    }
+
+    private suspend fun buildSearchResults(
+        queryFilter: String?,
+        limit: Int,
+        shuffle: Boolean,
+    ): List<SearchResultItem> {
+        val subjectFilter = _searchSubjectFilterId.value
+        val optionFilter = _searchLearningOptionId.value
+        val isKn = _currentLanguage.value == "kn"
+        val queryLower = queryFilter?.trim()?.lowercase().orEmpty()
+
+        val needsWb =
+            optionFilter == HomeSearchFilterIds.LEARN_ALL ||
+                optionFilter == HomeSearchFilterIds.LEARN_WHITEBOARD
+        if (needsWb) ensureWhiteboardIndex()
+
+        val classLevel = _student.value?.classLevel ?: 7
+        val allSubjects = subjectRepository.getSubjectsForClass(classLevel)
+        val chapterMap = mutableMapOf<String, com.ncert7.aitutorandlab.data.local.entities.ChapterEntity>()
+        for (sub in allSubjects) {
+            chapterDao.getChaptersForSubjectSync(sub.subjectId).forEach { ch ->
+                chapterMap[ch.chapterId] = ch
+            }
+        }
+
+        val allConcepts = conceptDao.getAllConceptsSync()
+        val mapped = mutableListOf<SearchResultItem>()
+
+        for (concept in allConcepts) {
+            val title =
+                if (isKn && concept.conceptNameKannada.isNotBlank()) {
+                    concept.conceptNameKannada
+                } else {
+                    concept.conceptName
+                }
+            if (queryLower.isNotEmpty() && !title.lowercase().contains(queryLower)) continue
+
+            val chapter = chapterMap[concept.chapterId]
+            val subjectId = chapter?.subjectId.orEmpty()
+            val subjectName =
+                allSubjects.find { it.subjectId == subjectId }
+                    ?.getLocalizedName(_currentLanguage.value)
+                    .orEmpty()
+            val isMath = subjectId == SubjectIds.MATH
+
+            val subjectMatch =
+                when (subjectFilter) {
+                    HomeSearchFilterIds.SUBJECT_SCIENCE -> !isMath
+                    HomeSearchFilterIds.SUBJECT_MATH -> isMath
+                    else -> true
+                }
+            if (!subjectMatch) continue
+
+            val wbById = concept.conceptId.takeIf { it in whiteboardConceptIds }
+            val wbByTitle = whiteboardTitleToId[concept.conceptName.trim().lowercase()]
+            val wbConceptId = wbById ?: wbByTitle
+            val isWb = wbConceptId != null
+
+            val optionMatch =
+                when (optionFilter) {
+                    HomeSearchFilterIds.LEARN_WHITEBOARD -> isWb
+                    else -> true
+                }
+            if (!optionMatch) continue
+
+            val chapterName =
+                when {
+                    isKn && chapter?.chapterNameKannada?.isNotBlank() == true -> chapter.chapterNameKannada
+                    !chapter?.chapterName.isNullOrBlank() -> chapter!!.chapterName
+                    else -> ""
+                }
+
+            mapped.add(
+                SearchResultItem(
+                    conceptId = concept.conceptId,
+                    topicName = title,
+                    subjectName = subjectName,
+                    chapterName = chapterName,
+                    subjectId = subjectId,
+                    isWhiteboardAvailable = isWb,
+                    isMath = isMath,
+                    problemId = concept.problemId,
+                    chapterId = concept.chapterId,
+                    wbConceptId = wbConceptId,
+                ),
+            )
+        }
+
+        val ordered = if (shuffle) mapped.shuffled() else mapped
+        return ordered.take(limit)
+    }
 
     fun setLanguage(lang: String) {
         syncLanguage(lang)

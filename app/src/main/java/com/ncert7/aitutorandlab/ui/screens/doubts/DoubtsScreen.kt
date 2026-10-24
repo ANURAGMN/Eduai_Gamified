@@ -20,11 +20,21 @@ import kotlinx.coroutines.delay
 fun DoubtsBottomSheet(
     subjectName: String,
     chapterName: String,
+    /** Prefills the question field (e.g. topic heading); user types after it. */
+    initialQuestion: String = "",
     onDismiss: () -> Unit,
     viewModel: DoubtsViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
-    var questionText by remember { mutableStateOf("") }
+    var questionText by remember(initialQuestion) {
+        mutableStateOf(
+            if (initialQuestion.isBlank()) {
+                ""
+            } else {
+                initialQuestion.trimEnd() + " "
+            },
+        )
+    }
 
     val keyboardController = LocalSoftwareKeyboardController.current
     val scrollState = rememberScrollState()

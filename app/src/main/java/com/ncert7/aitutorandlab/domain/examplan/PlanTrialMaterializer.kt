@@ -30,6 +30,7 @@ class PlanTrialMaterializer @Inject constructor(
     private val conceptDao: ConceptDao,
     private val chapterDao: ChapterDao,
     private val examPlanDao: ExamPlanDao,
+    private val aiClient: AgenticAIClient,
 ) {
     suspend fun materializeDay(
         day: ExamPlanDayEntity,
@@ -450,6 +451,7 @@ class PlanTrialMaterializer @Inject constructor(
             }
 
         return (subjectFiltered.ifEmpty { byChapter }).sortedBy { it.title }
+    }
 
     private fun ConceptEntity.simulationIdFor(languageCode: String): String? =
         when (languageCode) {
