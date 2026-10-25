@@ -15,10 +15,10 @@ Ship gates for the Play upload after `1.0.13` (vc15). Status: ☑ done · ◻ to
 - ☑ **Timed scene reveal** — inject `opacity` on `scene_part` ids from TTS char index; **Show all** skips timing.
 - ☑ **Home topic search** — Notes / Whiteboard / Ask doubt actions from home search rail.
 - ☑ **Prior cut already in tree (1.0.13)** — whiteboard tutor, Notes, Doubts, bite-based chapter trials.
-- ◻ **Commit ship set** — version bump + this checklist + pending/CLAUDE update on `gamified/main`.
-- ◻ **Build release AAB** — `./gradlew bundleRelease` (heap now 4g in `gradle.properties`).
-  Output: `app/build/outputs/bundle/release/app-release.aab`.
-- ◻ **Install release APK/AAB on device** — sideload APK or Closed testing track.
+- ☑ **Commit ship set** — `de07f80` on `gamified/main` (version + checklist + pending/CLAUDE).
+- ☑ **Build release AAB** — built 2026-10-25: `app/build/outputs/bundle/release/app-release.aab`
+  (~24.8 MB, versionCode 16 / 1.0.14).
+- ◻ **Install release APK on device** — `app/build/outputs/apk/release/app-release.apk` (1.0.14 / 16).
 - ⚠ **R8 smoke** — onboarding → home → search → whiteboard (Angle Validity / Photosynthesis) → Notes →
   sim → settings. Confirm Visual Board paints and parts reveal with TTS; **Show all** works.
 
