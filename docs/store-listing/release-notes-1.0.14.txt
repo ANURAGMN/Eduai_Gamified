@@ -1,0 +1,25 @@
+EduAI — Release notes (1.0.14)
+
+Short (Play Console — What's new, EN, ~500 chars max)
+---
+• Interactive Whiteboard visuals now show reliably (geometry diagrams no longer blank)
+• Diagrams reveal step-by-step with the teacher — tap Show all anytime to see the full picture
+• Search topics from Home and jump straight to Notes, Whiteboard, or Ask a doubt
+• Notes, doubts, and chapter study trials improvements from the latest build
+
+Short (Play Console — What's new, KN)
+---
+• ಇಂಟರಾಕ್ಟಿವ್ ವೈಟ್‌ಬೋರ್ಡ್ ಚಿತ್ರಗಳು ಈಗ ಸರಿಯಾಗಿ ಕಾಣುತ್ತವೆ (ಜ್ಯಾಮಿತಿ ರೇಖಾಚಿತ್ರಗಳು ಖಾಲಿ ಇರುವುದಿಲ್ಲ)
+• ಶಿಕ್ಷಕರೊಂದಿಗೆ ಹಂತ ಹಂತವಾಗಿ ಚಿತ್ರಗಳು ಕಾಣಿಸುತ್ತವೆ — ಪೂರ್ಣ ಚಿತ್ರಕ್ಕೆ Show all ಒತ್ತಿ
+• ಹೋಮ್‌ನಿಂದ ವಿಷಯ ಹುಡುಕಿ Notes, Whiteboard ಅಥವಾ ಸಂಶಯಕ್ಕೆ ನೇರವಾಗಿ ಹೋಗಿ
+• Notes, ಸಂಶಯಗಳು ಮತ್ತು ಅಧ್ಯಾಯ ಅಧ್ಯಯನ ಪ್ರಯತ್ನಗಳ ಸುಧಾರಣೆಗಳು
+
+Full (internal)
+---
+Version: 1.0.14 (versionCode 16)
+Commits since 1.0.13 (vc15): home topic search; whiteboard AndroidSVG bitmap render + timed reveal + Show all.
+
+Upload:
+[ ] bundleRelease → app/build/outputs/bundle/release/app-release.aab
+[ ] Closed testing → Pre-launch → Production as 16
+[ ] Do not resubmit versionCode 13

@@ -15,15 +15,14 @@ and is where most locale bugs hide. Package: `com.ncert7.aitutorandlab`.
   content changes ship by **git push to Pages**, not a Play update.
 - GitHub (fork for MRs): `ANURAGMN/Eduai_Gamified` (remote often referred to as `gamified`).
 
-## 3. Versions / release state (as of 2026-10-09)
-- **Live Play:** v1.0.11 / **versionCode 13** — got a Broken-Functionality rejection; **appeal filed; do NOT
- resubmit 13.**
-- **Shipping next:** v1.0.12 / **versionCode 14** — `b66f5c0` pushed to `gamified/main`; Avatar unlock fix
- `9c34206` committed on top (in the AAB; push pending). Release AAB built 2026-10-08; device test (Kannada
- class pick) + Play closed testing still pending.
-- **Post-vc14 branches:** `feature/notif-reprompt` (local); whiteboard PR #2.
-- The whole "what's left" list is `docs/PENDING_BEFORE_NEXT_RELEASE.md`; ship checkboxes in
-  `docs/RELEASE_CHECKLIST_v1.0.12.md`.
+## 3. Versions / release state (as of 2026-10-25)
+- **Do NOT resubmit versionCode 13** (v1.0.11 Broken-Functionality rejection; appeal filed).
+- **Shipping next:** v1.0.14 / **versionCode 16** — home topic search + whiteboard blank-board fix (AndroidSVG,
+  timed reveal, Show all) on top of 1.0.13 (whiteboard tutor / Notes / Doubts / bite trials). Tip includes
+  `575ecdb` + `28ade34` on `gamified/main`; version bump + AAB pending ship commit.
+- **Prior cut:** v1.0.13 / versionCode **15** (`51ff85e`) — sideloaded; confirm Play Console state before upload.
+- **Post-ship branches:** `feature/notif-reprompt` (local).
+- Pending list: `docs/PENDING_BEFORE_NEXT_RELEASE.md`; ship checkboxes: `docs/RELEASE_CHECKLIST_v1.0.14.md`.
 
 ## 4. Build / test / verify
 ```bash
@@ -84,19 +83,18 @@ Don't write "ruled out" conclusions from inference; label unconfirmed things as 
 - Math coach is **not** authored yet (EN Ch.2–9, KN Ch.1–4 silent) — known backlog, not a regression.
 
 ## 9. Current open threads (see PENDING doc for the live list)
-- vc14: push `9c34206`, device-test the **release** APK (**Kannada class pick** = the rejection fix), closed
- testing → Pre-launch → Production. Do not resubmit 13. Release build OOMs at the default 2g heap — use
- `-Dorg.gradle.jvmargs=-Xmx4g`.
-- Ads: `sign_up` is correct in code; switch campaign bid to it **only once daily signup volume supports it**
-  (~1.5/day now is too low). Console steps in the Ads doc.
-- MRs on `Eduai_Gamified`: **#2 whiteboard** (rebase onto post-vc14 main; strip the BottomNavBar reformat;
-  check it reuses the hardened `AgenticAIClient`/auth, not a new client); **#1 notifications** (close/clean —
-  has release binaries; likely superseded by `21dbd20`).
+- **1.0.14 / vc16:** commit version bump + docs, `bundleRelease`, sideload smoke (whiteboard + home search),
+  Closed testing → Pre-launch → Production as **16**. Do not resubmit 13. Gradle heap is **4g** in
+  `gradle.properties` (was OOMing at 2g).
+- Ads: `sign_up` is correct in code; switch campaign bid only once daily signup volume supports it.
+- After ship: rebase/QA `feature/notif-reprompt`; close stale PRs #1 / #2 on `Eduai_Gamified`.
 
 ## 10. Doc index (authoritative detail)
 - `docs/PENDING_BEFORE_NEXT_RELEASE.md` — single "what's left" list (release + Ads + MRs + backlog).
-- `docs/RELEASE_CHECKLIST_v1.0.12.md` — ship-gate checkboxes.
-- `docs/STATUS_play_vc14_coach_language_notifications.md` — live-vs-in-tree context.
+- `docs/RELEASE_CHECKLIST_v1.0.14.md` — current ship-gate checkboxes (1.0.14 / vc16).
+- `docs/store-listing/release-notes-1.0.14.txt` — Play “What’s new” EN + KN.
+- `docs/RELEASE_CHECKLIST_v1.0.12.md` — historical vc14 gates.
+- `docs/STATUS_play_vc14_coach_language_notifications.md` — live-vs-in-tree context (vc14 era).
 - `docs/AUDIT_chat_auth_jwt_vc14.md` — chat auth / JWT-R8 package (canonical).
 - `docs/CHAT_SERVER_ERRORS.md` — pointer to the audit.
 - `docs/ADS_SIGNUP_VS_INSTALL_REVIEW.md` — install-vs-signup tracking for Ads.
