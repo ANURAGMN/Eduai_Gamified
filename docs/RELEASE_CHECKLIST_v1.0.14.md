@@ -1,59 +1,53 @@
 # Release checklist — v1.0.14 (versionCode 16)
 
-Ship gates for the Play upload after `1.0.13` (vc15). Status: ☑ done · ◻ to do · ⚠ verify on device/console.
+**Status: LIVE on Google Play** (2026-10-30).
 
-**Tip to ship:** `gamified/main` at whiteboard blank-board fix + home search (`575ecdb` and later ship bump).  
-**Do not** resubmit versionCode **13**. Prefer uploading **16** (this cut) even if vc15 was only sideloaded.
+Ship gates for the Play upload after `1.0.13` (vc15). Status: ☑ done · ◻ deferred / open.
+
+**Tip shipped:** `gamified/main` — whiteboard blank-board fix + home search (`575ecdb` / `28ade34`) + version bump `de07f80`.  
+**Do not** resubmit versionCode **13**.
 
 ---
 
 ## 1. Blockers — must be in the build
 
-- ☑ **Version bumped** — `versionCode = 16`, `versionName = "1.0.14"` in `app/build.gradle.kts`.
-- ☑ **Whiteboard Visual Board blank fix** — AndroidSVG bitmap path, viewBox sizing, `orient` sanitize
-  (`WhiteboardSvgBitmapRenderer`); rejects non-SVG fetch payloads in `AgenticAIClient`.
-- ☑ **Timed scene reveal** — inject `opacity` on `scene_part` ids from TTS char index; **Show all** skips timing.
-- ☑ **Home topic search** — Notes / Whiteboard / Ask doubt actions from home search rail.
-- ☑ **Prior cut already in tree (1.0.13)** — whiteboard tutor, Notes, Doubts, bite-based chapter trials.
-- ☑ **Commit ship set** — `de07f80` on `gamified/main` (version + checklist + pending/CLAUDE).
-- ☑ **Build release AAB** — built 2026-10-25: `app/build/outputs/bundle/release/app-release.aab`
-  (~24.8 MB, versionCode 16 / 1.0.14).
-- ◻ **Install release APK on device** — `app/build/outputs/apk/release/app-release.apk` (1.0.14 / 16).
-- ⚠ **R8 smoke** — onboarding → home → search → whiteboard (Angle Validity / Photosynthesis) → Notes →
-  sim → settings. Confirm Visual Board paints and parts reveal with TTS; **Show all** works.
+- ☑ **Version bumped** — `versionCode = 16`, `versionName = "1.0.14"`.
+- ☑ **Whiteboard Visual Board blank fix** — AndroidSVG bitmap path, viewBox sizing, `orient` sanitize.
+- ☑ **Timed scene reveal** + **Show all**.
+- ☑ **Home topic search** — Notes / Whiteboard / Ask doubt.
+- ☑ **Prior cut (1.0.13)** — whiteboard tutor, Notes, Doubts, bite-based chapter trials.
+- ☑ **Commit ship set** — `de07f80` on `gamified/main`.
+- ☑ **Build release AAB** — 2026-10-25 (~24.8 MB).
+- ☑ **Install release APK on device** — sideload smoke 2026-10-25+.
+- ☑ **Production as 16 / 1.0.14** — **live on Play** 2026-10-30.
 
 ## 2. Device QA (release build)
 
-- ◻ **Whiteboard** — Science concept with SVG: board not blank; timed reveal; Replay/Stop; voice input.
-- ◻ **Home search** — query a topic → open Notes / Whiteboard / Ask doubt; EN + KN strings.
-- ◻ **Kannada class pick** — signup + Edit Profile (vc13 rejection class; still regression-gate).
-- ◻ **Notes / Doubts** — open from home; PDF if available.
-- ◻ **Chapter trial** — 2 whiteboard + 1 sim bite path still navigates.
+- ☑ Whiteboard / search smoke covered enough to ship (further regression as needed via Vitals).
+- ◻ Kannada class pick — keep as ongoing regression when touching profile/locale.
+- ◻ Notes / Doubts / chapter trial — ongoing.
 
 ## 3. Play Console
 
-- ◻ Upload AAB to **Closed testing** (Pre-launch report).
-- ◻ Review Pre-launch / vitals (no new crashes).
-- ◻ Promote to Production as **16** / **1.0.14**.
-- ◻ Paste short release notes (EN + KN) from `docs/store-listing/release-notes-1.0.14.txt`.
+- ☑ Upload / Closed testing / Pre-launch as needed.
+- ☑ **Promote to Production as 16 / 1.0.14** — live 2026-10-30.
+- ☑ Release notes from `docs/store-listing/release-notes-1.0.14.txt`.
 
-## 4. Deploy re-checks (Pages / Firestore — no APK dependency)
+## 4. Deploy re-checks (ongoing)
 
-- ⚠ `curl -I` GitHub Pages `guide-coach.js` → 200.
-- ⚠ `node scripts/check-coach-coverage.js` → Science **0 silent** (EduAI_app).
-- ⚠ Kannada sim URL dry-run → 0 pending.
+- ⚠ Pages `guide-coach.js` / coach coverage / KN sim URLs — re-check when changing coach content.
 
-## 5. Ads / Analytics (carry-over — not blocking upload)
+## 5. Ads / Analytics (carry-over)
 
 - ◻ GA4: mark `sign_up` as Key event (if not already).
-- ◻ Ads: import `sign_up` conversion; **hold** bid switch until daily signup volume supports it.
+- ◻ Ads: import `sign_up`; **hold** bid switch until volume supports it.
 
 ## 6. Explicitly not in this cut
 
-- `feature/notif-reprompt` (rebase + QA after ship).
-- Closing stale PR #1 / leftover whiteboard PR #2 (whiteboard already on main).
+- `feature/notif-reprompt` (rebase + QA next).
+- Closing stale PR #1 / leftover whiteboard PR #2.
 - Math coach authoring backlog.
 
 ---
 
-*When an item finishes, tick it here and mirror status in `docs/PENDING_BEFORE_NEXT_RELEASE.md`.*
+*Historical checklist for 1.0.14. Next ship: new versionCode + new checklist.*

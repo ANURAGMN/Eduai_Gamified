@@ -15,14 +15,13 @@ and is where most locale bugs hide. Package: `com.ncert7.aitutorandlab`.
   content changes ship by **git push to Pages**, not a Play update.
 - GitHub (fork for MRs): `ANURAGMN/Eduai_Gamified` (remote often referred to as `gamified`).
 
-## 3. Versions / release state (as of 2026-10-25)
+## 3. Versions / release state (as of 2026-10-30)
+- **Live Play:** v1.0.14 / **versionCode 16** — home topic search + whiteboard blank-board fix (AndroidSVG,
+  timed reveal, Show all) on top of 1.0.13 (whiteboard tutor / Notes / Doubts / bite trials). Live on Google
+  Play 2026-10-30. Tip: `de07f80` / features `575ecdb` + `28ade34` on `gamified/main`.
 - **Do NOT resubmit versionCode 13** (v1.0.11 Broken-Functionality rejection; appeal filed).
-- **Shipping next:** v1.0.14 / **versionCode 16** — home topic search + whiteboard blank-board fix (AndroidSVG,
-  timed reveal, Show all) on top of 1.0.13 (whiteboard tutor / Notes / Doubts / bite trials). Tip includes
-  `575ecdb` + `28ade34` on `gamified/main`; version bump + AAB pending ship commit.
-- **Prior cut:** v1.0.13 / versionCode **15** (`51ff85e`) — sideloaded; confirm Play Console state before upload.
-- **Post-ship branches:** `feature/notif-reprompt` (local).
-- Pending list: `docs/PENDING_BEFORE_NEXT_RELEASE.md`; ship checkboxes: `docs/RELEASE_CHECKLIST_v1.0.14.md`.
+- **Post-ship:** rebase/QA `feature/notif-reprompt`; Ads `sign_up` Key event / import (hold bid switch).
+- Pending list: `docs/PENDING_BEFORE_NEXT_RELEASE.md`; ship checklist (historical): `docs/RELEASE_CHECKLIST_v1.0.14.md`.
 
 ## 4. Build / test / verify
 ```bash
@@ -83,11 +82,10 @@ Don't write "ruled out" conclusions from inference; label unconfirmed things as 
 - Math coach is **not** authored yet (EN Ch.2–9, KN Ch.1–4 silent) — known backlog, not a regression.
 
 ## 9. Current open threads (see PENDING doc for the live list)
-- **1.0.14 / vc16:** commit version bump + docs, `bundleRelease`, sideload smoke (whiteboard + home search),
-  Closed testing → Pre-launch → Production as **16**. Do not resubmit 13. Gradle heap is **4g** in
-  `gradle.properties` (was OOMing at 2g).
-- Ads: `sign_up` is correct in code; switch campaign bid only once daily signup volume supports it.
-- After ship: rebase/QA `feature/notif-reprompt`; close stale PRs #1 / #2 on `Eduai_Gamified`.
+- **1.0.14 / vc16 is live on Play** (2026-10-30). Watch Vitals/Crashlytics for new issues on 16.
+- Ads: `sign_up` is correct in code; Key event + Ads import still to confirm; switch campaign bid only once
+  daily signup volume supports it.
+- Next: rebase/QA `feature/notif-reprompt`; close stale PRs #1 / #2 on `Eduai_Gamified`.
 
 ## 10. Doc index (authoritative detail)
 - `docs/PENDING_BEFORE_NEXT_RELEASE.md` — single "what's left" list (release + Ads + MRs + backlog).
