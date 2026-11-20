@@ -5,16 +5,15 @@ import android.content.pm.PackageManager
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.compose.foundation.Image
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.layout.ContentScale
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -32,9 +31,16 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
@@ -44,6 +50,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -60,6 +67,15 @@ import com.ncert7.aitutorandlab.ui.screens.whiteboard.components.WhiteboardSetti
 import com.ncert7.aitutorandlab.ui.screens.whiteboard.components.WhiteboardVoiceInputBar
 import com.ncert7.aitutorandlab.ui.viewModel.SpeechToText
 import com.ncert7.aitutorandlab.ui.viewModel.TextToSpeech
+import kotlin.math.roundToInt
+
+private const val VISUAL_MIN_ZOOM = 1.0f
+private const val VISUAL_MAX_ZOOM = 2.5f
+private const val VISUAL_ZOOM_STEP = 0.25f
+
+private const val FLOW_MIN_ZOOM = 1.0f
+private const val FLOW_MAX_ZOOM = 1.8f
+private const val FLOW_ZOOM_STEP = 0.2f
 
 @Composable
 fun CustomTopBar(title: String, onBack: () -> Unit) {
@@ -194,6 +210,10 @@ fun WhiteboardChatbotScreen(
 
     var inputText by remember { mutableStateOf("") }
     var showSettingsMenu by remember { mutableStateOf(false) }
+
+    // Zoom levels for Visual Board and Process Flow (minimum locked to 1.0f default)
+    var visualZoom by remember(whiteboardData?.svgString) { mutableStateOf(VISUAL_MIN_ZOOM) }
+    var flowZoom by remember(conceptId) { mutableStateOf(FLOW_MIN_ZOOM) }
 
     LaunchedEffect(Unit) {
         Toast.makeText(context, volumeHint, Toast.LENGTH_LONG).show()
@@ -454,6 +474,7 @@ fun WhiteboardChatbotScreen(
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(start = 4.dp),
                         verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
                         Text(
                             "Visual Board",
@@ -461,15 +482,24 @@ fun WhiteboardChatbotScreen(
                             color = Color.Gray,
                             modifier = Modifier.weight(1f),
                         )
-                        if (!whiteboardData?.svgString.isNullOrEmpty() && !forceRevealAll) {
-                            OutlinedButton(
-                                onClick = { forceRevealAll = true },
-                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-                                modifier = Modifier.height(32.dp),
-                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF4F46E5)),
-                            ) {
-                                Text("Show all", fontSize = 12.sp)
+                        if (!whiteboardData?.svgString.isNullOrEmpty()) {
+                            if (!forceRevealAll) {
+                                OutlinedButton(
+                                    onClick = { forceRevealAll = true },
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                                    modifier = Modifier.height(32.dp),
+                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF4F46E5)),
+                                ) {
+                                    Text("Show all", fontSize = 12.sp)
+                                }
                             }
+                            ZoomControls(
+                                zoom = visualZoom,
+                                minZoom = VISUAL_MIN_ZOOM,
+                                maxZoom = VISUAL_MAX_ZOOM,
+                                step = VISUAL_ZOOM_STEP,
+                                onZoomChange = { visualZoom = it },
+                            )
                         }
                     }
                     HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
@@ -494,6 +524,8 @@ fun WhiteboardChatbotScreen(
                                 svgString = whiteboardData!!.svgString!!,
                                 timeline = timeline,
                                 currentCharIndex = effectiveCharIndex,
+                                zoom = visualZoom,
+                                onZoomChange = { visualZoom = it },
                             )
                         }
                     }
@@ -507,7 +539,26 @@ fun WhiteboardChatbotScreen(
                 modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)
             ) {
                 Column(modifier = Modifier.fillMaxSize().verticalScroll(scrollState).padding(8.dp)) {
-                    Text("Process Flow", fontWeight = FontWeight.Bold, color = Color.Gray, modifier = Modifier.padding(start = 4.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(start = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            "Process Flow",
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Gray,
+                            modifier = Modifier.weight(1f),
+                        )
+                        if (whiteboardData?.explanationCard != null || !whiteboardData?.flowchartSteps.isNullOrEmpty()) {
+                            ZoomControls(
+                                zoom = flowZoom,
+                                minZoom = FLOW_MIN_ZOOM,
+                                maxZoom = FLOW_MAX_ZOOM,
+                                step = FLOW_ZOOM_STEP,
+                                onZoomChange = { flowZoom = it },
+                            )
+                        }
+                    }
 
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 8.dp),
@@ -541,14 +592,24 @@ fun WhiteboardChatbotScreen(
                             val cardTimeline = timeline.find { it.unitType == "text_card" }
                             val isRevealed = cardTimeline == null || cardTimeline.triggerCharIndex <= effectiveCharIndex
                             AnimatedVisibility(visible = isRevealed, enter = fadeIn()) {
-                                HandwritingExplanationSection(card = card, messageFontSp = settingsState.messageFontSp)
+                                HandwritingExplanationSection(
+                                    card = card,
+                                    messageFontSp = settingsState.messageFontSp,
+                                    zoomFactor = flowZoom,
+                                )
                                 Spacer(modifier = Modifier.height(16.dp))
                             }
                         }
 
                         whiteboardData?.flowchartSteps?.let { steps ->
                             if (steps.isNotEmpty()) {
-                                FlowchartSection(steps = steps, timeline = timeline, currentCharIndex = effectiveCharIndex, messageFontSp = settingsState.messageFontSp)
+                                FlowchartSection(
+                                    steps = steps,
+                                    timeline = timeline,
+                                    currentCharIndex = effectiveCharIndex,
+                                    messageFontSp = settingsState.messageFontSp,
+                                    zoomFactor = flowZoom,
+                                )
                             }
                         }
                     }
@@ -667,6 +728,82 @@ fun WhiteboardChatbotScreen(
 // ---------------- UI COMPONENTS ----------------
 
 @Composable
+private fun ZoomControls(
+    zoom: Float,
+    minZoom: Float,
+    maxZoom: Float,
+    step: Float,
+    onZoomChange: (Float) -> Unit,
+) {
+    val canZoomOut = zoom > minZoom + 0.01f
+    val canZoomIn = zoom < maxZoom - 0.01f
+    val accent = Color(0xFF4F46E5)
+
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(28.dp)
+                .clip(RoundedCornerShape(6.dp))
+                .background(if (canZoomOut) Color(0xFFEEF2FF) else Color(0xFFF3F4F6))
+                .border(
+                    width = 1.dp,
+                    color = if (canZoomOut) accent else Color(0xFFD1D5DB),
+                    shape = RoundedCornerShape(6.dp),
+                )
+                .clickable(enabled = canZoomOut) {
+                    val next = (((zoom - step) * 100f).roundToInt() / 100f).coerceIn(minZoom, maxZoom)
+                    onZoomChange(next)
+                },
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = "−",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = if (canZoomOut) accent else Color.Gray,
+            )
+        }
+
+        Box(
+            modifier = Modifier
+                .size(28.dp)
+                .clip(RoundedCornerShape(6.dp))
+                .background(if (canZoomIn) Color(0xFFEEF2FF) else Color(0xFFF3F4F6))
+                .border(
+                    width = 1.dp,
+                    color = if (canZoomIn) accent else Color(0xFFD1D5DB),
+                    shape = RoundedCornerShape(6.dp),
+                )
+                .clickable(enabled = canZoomIn) {
+                    val next = (((zoom + step) * 100f).roundToInt() / 100f).coerceIn(minZoom, maxZoom)
+                    onZoomChange(next)
+                },
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = "+",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = if (canZoomIn) accent else Color.Gray,
+            )
+        }
+    }
+}
+
+private fun clampPanOffset(raw: Offset, scale: Float, containerSize: IntSize): Offset {
+    if (scale <= 1f || containerSize.width == 0 || containerSize.height == 0) return Offset.Zero
+    val maxX = (containerSize.width * (scale - 1f)) / 2f
+    val maxY = (containerSize.height * (scale - 1f)) / 2f
+    return Offset(
+        x = raw.x.coerceIn(-maxX, maxX),
+        y = raw.y.coerceIn(-maxY, maxY),
+    )
+}
+
+@Composable
 fun ErrorBanner(message: String) {
     val displayMessage = if (message.contains("{") || message.contains("500")) {
         "The tutor is taking a break. Please try again."
@@ -686,7 +823,13 @@ fun ErrorBanner(message: String) {
 }
 
 @Composable
-fun SvgRenderer(svgString: String, timeline: List<WbRevealTimelineUnit>, currentCharIndex: Int) {
+fun SvgRenderer(
+    svgString: String,
+    timeline: List<WbRevealTimelineUnit>,
+    currentCharIndex: Int,
+    zoom: Float = VISUAL_MIN_ZOOM,
+    onZoomChange: (Float) -> Unit = {},
+) {
     val context = LocalContext.current
     val renderedSvg = remember(svgString, timeline, currentCharIndex) {
         WhiteboardSvgBitmapRenderer.applyReveal(svgString, timeline, currentCharIndex)
@@ -701,8 +844,8 @@ fun SvgRenderer(svgString: String, timeline: List<WbRevealTimelineUnit>, current
             Log.w(
                 "SvgRenderer",
                 "SVG bitmap ${bmp.width}x${bmp.height} len=${svgString.length} " +
-                    "urlHash=${svgString.contains("url(#")} parts=${timeline.count { it.unitType == "scene_part" }} " +
-                    "charIdx=$currentCharIndex hiddenOpacity0=$hiddenParts",
+                        "urlHash=${svgString.contains("url(#")} parts=${timeline.count { it.unitType == "scene_part" }} " +
+                        "charIdx=$currentCharIndex hiddenOpacity0=$hiddenParts",
             )
             bmp
         } catch (e: Exception) {
@@ -711,13 +854,46 @@ fun SvgRenderer(svgString: String, timeline: List<WbRevealTimelineUnit>, current
         }
     }
 
+    var offset by remember(svgString) { mutableStateOf(Offset.Zero) }
+    var containerSize by remember { mutableStateOf(IntSize.Zero) }
+    val currentZoom by rememberUpdatedState(zoom)
+    val currentOnZoomChange by rememberUpdatedState(onZoomChange)
+
+    LaunchedEffect(zoom, containerSize) {
+        offset = clampPanOffset(offset, zoom, containerSize)
+    }
+
     if (bitmap != null) {
-        Image(
-            bitmap = bitmap.asImageBitmap(),
-            contentDescription = "Whiteboard visual",
-            contentScale = ContentScale.Fit,
-            modifier = Modifier.fillMaxSize(),
-        )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .clipToBounds()
+                .onSizeChanged { containerSize = it }
+                .pointerInput(svgString) {
+                    detectTransformGestures { _, pan, gestureZoom, _ ->
+                        val nextZoom = (currentZoom * gestureZoom).coerceIn(VISUAL_MIN_ZOOM, VISUAL_MAX_ZOOM)
+                        if (nextZoom != currentZoom) {
+                            currentOnZoomChange(nextZoom)
+                        }
+                        offset = clampPanOffset(offset + pan, nextZoom, containerSize)
+                    }
+                },
+            contentAlignment = Alignment.Center,
+        ) {
+            Image(
+                bitmap = bitmap.asImageBitmap(),
+                contentDescription = "Whiteboard visual",
+                contentScale = ContentScale.Fit,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        scaleX = zoom
+                        scaleY = zoom
+                        translationX = offset.x
+                        translationY = offset.y
+                    },
+            )
+        }
     }
 }
 
@@ -766,12 +942,19 @@ private fun WhiteboardStyledText(
 }
 
 @Composable
-fun FlowchartSection(steps: List<FlowchartStep>, timeline: List<WbRevealTimelineUnit>, currentCharIndex: Int, messageFontSp: Float = 28f) {
-    val scale = when (messageFontSp) {
+fun FlowchartSection(
+    steps: List<FlowchartStep>,
+    timeline: List<WbRevealTimelineUnit>,
+    currentCharIndex: Int,
+    messageFontSp: Float = 28f,
+    zoomFactor: Float = FLOW_MIN_ZOOM,
+) {
+    val baseScale = when (messageFontSp) {
         24f -> 0.8f
         32f -> 1.2f
         else -> 1.0f
     }
+    val scale = baseScale * zoomFactor
 
     Card(
         shape = RoundedCornerShape(12.dp), border = BorderStroke(1.5.dp, Color(0xFFFCD34D)),
@@ -808,12 +991,17 @@ fun FlowchartSection(steps: List<FlowchartStep>, timeline: List<WbRevealTimeline
 }
 
 @Composable
-fun HandwritingExplanationSection(card: ExplanationCard, messageFontSp: Float = 28f) {
-    val scale = when (messageFontSp) {
+fun HandwritingExplanationSection(
+    card: ExplanationCard,
+    messageFontSp: Float = 28f,
+    zoomFactor: Float = FLOW_MIN_ZOOM,
+) {
+    val baseScale = when (messageFontSp) {
         24f -> 0.8f
         32f -> 1.2f
         else -> 1.0f
     }
+    val scale = baseScale * zoomFactor
 
     Card(
         shape = RoundedCornerShape(12.dp), border = BorderStroke(1.5.dp, Color(0xFFFCD34D)),
