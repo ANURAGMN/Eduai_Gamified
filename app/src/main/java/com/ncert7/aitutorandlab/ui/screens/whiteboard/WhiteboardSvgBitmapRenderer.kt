@@ -41,48 +41,69 @@ object WhiteboardSvgBitmapRenderer {
         if (parts.isEmpty()) {
             return forceFullyVisible(svgString)
         }
-        var out = svgString
-        var matched = 0
-        for (unit in parts) {
-            val op = if (charIndex >= unit.triggerCharIndex) "1" else "0"
-            val (next, ok) = setElementOpacityById(out, unit.partId!!, op)
-            if (ok) {
-                matched++
-                out = next
-            }
-        }
-        // Timeline part ids didn't hit any element — don't leave authored opacity-0 scenes blank.
-        return if (matched == 0) forceFullyVisible(svgString) else out
-    }
 
-    /**
-     * Set or inject `opacity` on the opening tag that owns [id].
-     * Tutor scene SVGs often ship fully visible groups (no opacity attr); timed reveal
-     * must inject opacity="0" until [charIndex] reaches the trigger.
-     */
-    fun setElementOpacityById(svgString: String, id: String, opacity: String): Pair<String, Boolean> {
-        val tagPattern = Regex(
-            """(?is)<([a-zA-Z_][\w:-]*)\b([^>]*?\bid\s*=\s*["']${Regex.escape(id)}["'][^>]*?)(/?)>""",
-        )
-        val m = tagPattern.find(svgString) ?: return svgString to false
-        val tagName = m.groupValues[1]
-        var attrs = m.groupValues[2]
-        val selfClose = m.groupValues[3]
-        val opacityAttr = Regex("""(?i)\bopacity\s*=\s*["'][^"']*["']""")
-        attrs = if (opacityAttr.containsMatchIn(attrs)) {
-            opacityAttr.replace(attrs, """opacity="$opacity"""")
-        } else {
-            attrs.trimEnd() + """ opacity="$opacity""""
+        // The strict whitelist: Only these specific IDs are allowed to be visible in this turn.
+        val whitelistIds = parts.map { it.partId!! }.toSet()
+
+        // Regex to find EVERY tag in the SVG that has an id="..."
+        val tagPattern = Regex("""(?is)<([a-zA-Z_][\w:-]*)\b([^>]*?\bid\s*=\s*["']([^"']+)["'][^>]*?)(/?)>""")
+
+        // We must never hide core SVG structural definitions, otherwise the image breaks.
+        val structuralTags = setOf("clippath", "mask", "lineargradient", "radialgradient", "pattern", "filter", "marker", "defs", "symbol", "style", "svg")
+
+        var matchedWhitelist = false
+
+        // Do a single global sweep of the entire SVG file
+        val out = tagPattern.replace(svgString) { m ->
+            val tagName = m.groupValues[1]
+            var attrs = m.groupValues[2]
+            val id = m.groupValues[3]
+            val selfClose = m.groupValues[4]
+
+            // Leave technical SVG drawing definitions alone
+            if (structuralTags.contains(tagName.lowercase())) {
+                return@replace m.value
+            }
+
+            // Strip any existing visibility attributes so we can cleanly inject our own
+            attrs = attrs.replace(Regex("""(?i)\b(opacity|display|visibility|font-size|fill-opacity|stroke-opacity)\s*=\s*["'][^"']*["']"""), "")
+            attrs = attrs.replace(Regex("""(?i)(opacity|display|visibility|font-size|fill-opacity|stroke-opacity)\s*:\s*[^;"]*;?"""), "")
+
+            if (whitelistIds.contains(id)) {
+                // This ID is on the timeline list for this turn.
+                matchedWhitelist = true
+                val unit = parts.find { it.partId == id }
+                if (unit != null && charIndex >= unit.triggerCharIndex) {
+                    // Trigger reached: SHOW IT
+                    attrs = attrs.trimEnd() + """ opacity="1" display="inline" visibility="visible""""
+                } else {
+                    // Trigger not reached yet: HIDE IT (waiting for AI to speak)
+                    attrs = attrs.trimEnd() + """ opacity="0" display="none" visibility="hidden" font-size="0" fill-opacity="0" stroke-opacity="0""""
+                }
+            } else {
+                // This ID is NOT on the timeline list. It belongs to a future turn.
+                // Aggressively HIDE IT so it doesn't bleed onto the screen.
+                attrs = attrs.trimEnd() + """ opacity="0" display="none" visibility="hidden" font-size="0" fill-opacity="0" stroke-opacity="0""""
+            }
+
+            "<$tagName$attrs$selfClose>"
         }
-        val replacement = "<$tagName$attrs$selfClose>"
-        return svgString.replaceRange(m.range, replacement) to true
+
+        // If the timeline had parts, but we found absolutely none of them in the SVG, fallback to visible
+        return if (matchedWhitelist) out else forceFullyVisible(svgString)
     }
 
     fun forceFullyVisible(svgString: String): String =
         svgString
-            .replace(Regex("""(?i)opacity\s*=\s*["']0(?:\.0+)?["']"""), """opacity="1"""")
+            .replace(Regex("""(?i)\bopacity\s*=\s*["']0(?:\.0+)?["']"""), """opacity="1"""")
             .replace(Regex("""(?i)opacity\s*:\s*0(?:\.0+)?"""), "opacity:1")
-            .replace(Regex("""(?i)visibility\s*=\s*["']hidden["']"""), """visibility="visible"""")
+            .replace(Regex("""(?i)\bvisibility\s*=\s*["']hidden["']"""), """visibility="visible"""")
+            .replace(Regex("""(?i)visibility\s*:\s*hidden;?"""), "visibility:visible;")
+            .replace(Regex("""(?i)\bdisplay\s*=\s*["']none["']"""), """display="inline"""")
+            .replace(Regex("""(?i)display\s*:\s*none;?"""), "display:inline;")
+            .replace(Regex("""(?i)\bfont-size\s*=\s*["']0(?:\.0+)?["']"""), "")
+            .replace(Regex("""(?i)\bfill-opacity\s*=\s*["']0(?:\.0+)?["']"""), "")
+            .replace(Regex("""(?i)\bstroke-opacity\s*=\s*["']0(?:\.0+)?["']"""), "")
 
     /**
      * AndroidSVG 1.4 rejects some SVG2 marker values used by tutor geometry scenes
